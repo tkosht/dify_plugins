@@ -35,6 +35,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Detect Python tests
+        id: detect_tests
+        run: |
+          if compgen -G "tests/**/*.py" > /dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up uv
         uses: astral-sh/setup-uv@v3
         with:
@@ -61,6 +70,7 @@ jobs:
           # Run only unit tests in CI to avoid timeout issues
           # Integration tests are run separately with proper API key setup
           uv run pytest -q
+        if: steps.detect_tests.outputs.run == 'true'
       
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
@@ -69,3 +79,4 @@ jobs:
           fail_ci_if_error: false  # Make codecov optional
           token: ${{ secrets.CODECOV_TOKEN }}
         continue-on-error: true
+        if: steps.detect_tests.outputs.run == 'true'
