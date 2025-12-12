@@ -1,5 +1,5 @@
 {
-	"name": "Base Project",
+	"name": "Dify Plugins Project",
 	"dockerComposeFile": [
 		"../compose.yml"
 	],
