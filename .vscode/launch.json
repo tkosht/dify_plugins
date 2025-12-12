@@ -1,0 +1,78 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "."
+            },
+            "args": [],
+            "justMyCode": false
+        },
+        {
+            "name": "Streamlit",
+            "type": "python",
+            "request": "launch",
+            "module": "streamlit",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "SHOW_INFO": "False"
+            },
+            "args": [
+                "run",
+                "${workspaceFolder}/app/codeinterpreter/executable/demo_stream.py",
+                "--server.port",
+                "8501"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Chainlit: Run bot.py (module)",
+            "type": "python",
+            "request": "launch",
+            "module": "chainlit",
+            "args": ["run", "bot.py", "--port", "8000"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/app/sample",
+            "envFile": "${workspaceFolder}/app/sample/.env",
+            "justMyCode": false,
+            "subProcess": false
+        },
+        {
+            "name": "Python: Flask",
+            "type": "python",
+            "request": "launch",
+            "module": "flask",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "FLASK_APP": "app/lowcode_llm/webapp.py",
+                "FLASK_DEBUG": "1",
+                "PYTHONPATH": "."
+            },
+            "args": [
+                "run",
+                "--no-debugger",
+                "--no-reload",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000"
+            ],
+            "jinja": true,
+            "justMyCode": false
+        },
+        {
+            "name": "Fastapi: webapi",
+            "type": "python",
+            "request": "launch",
+            "module": "webapi",
+            "justMyCode": false
+        }
+    ]
+}

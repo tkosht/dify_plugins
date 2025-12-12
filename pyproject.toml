@@ -1,0 +1,202 @@
+[project]
+name = "base"
+version = "0.1.0"
+description = "ベース開発環境"
+authors = [{ name = "AI Developer", email = "dev@example.com" }]
+requires-python = ">=3.10,<=3.14"
+dependencies = [
+    "aiohttp>=3.9.1,<4",
+    "beautifulsoup4",
+    "numpy",
+    "matplotlib",
+    "python-dotenv",
+    "requests",
+    "click>=8.1.7,<8.2",
+    "typer>=0.12.5,<0.13",
+    "ipykernel",
+    "fastapi",
+    "uvicorn",
+    "httpx",
+    "pydantic",
+    "python-multipart",
+    "starlette",
+    "a2a-sdk",
+    "scipy",
+    "claude-code-sdk>=0.0.14,<0.0.15",
+    "langgraph>=0.5.3,<0.6",
+    "langchain-openai>=0.3.28,<0.4",
+    "langchain-google-genai>=2.1.8,<3",
+    "langchain-tavily>=0.2.10,<0.3",
+    "langchain-experimental>=0.3.4,<0.4",
+    "mcp>=1.12.4,<2",
+    "fastmcp>=2.11.2,<3",
+    "chainlit>=2.6.9,<3",
+    "passlib[bcrypt]>=1.7.4,<2",
+    "aiosqlite>=0.21.0,<0.22",
+    "asyncpg>=0.30.0,<0.31",
+    "psycopg2>=2.9.10,<3",
+    "gradio>=5.42.0,<6",
+    "markdown-it-py>=4.0.0,<5",
+    "gunicorn[uvicorn]>=23.0.0,<24",
+    "sqlalchemy~=2.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "black",
+    "flake8",
+    "isort",
+    "pytest-asyncio",
+    "mypy",
+    "pytest-benchmark",
+    "memory-profiler",
+    "psutil",
+    "ruff",
+]
+
+[tool.uv]
+package = false
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.black]
+line-length = 79
+target-version = ['py310']
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.pytest_cache
+  | \.venv
+  | venv
+  | htmlcov
+  | output
+  | backup
+  | docs
+  | memory-bank
+  | templates
+  | examples
+  | node_modules
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 79
+multi_line_output = 3
+skip = ["backup", "docs", "memory-bank", "templates", "examples", "output"]
+
+[tool.flake8]
+max-line-length = 88
+max-complexity = 10
+ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".pytest_cache",
+    "backup",
+    "output"
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+# Enable common rulesets: pycodestyle (E/W), Pyflakes (F), isort (I), bugbear (B), pyupgrade (UP)
+select = ["E", "W", "F", "I", "B", "UP"]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
+"app/ui/**/*.py" = ["E501"]
+"app/ui/html/**/*.py" = ["E501"]
+"app/utils/svg.py" = ["E501"]
+"app/web/assets.py" = ["E501"]
+"tests/**/*.py" = ["E501"]
+"bin/claude_slash_runner.py" = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+pythonpath = ["."]
+markers = [
+    "unit: 単体テスト（高速・独立）",
+    "integration: 統合テスト（中速・依存あり）",
+    "e2e: E2Eテスト（低速・完全シナリオ）",
+    "slow: 実行時間の長いテスト",
+    "security: セキュリティ関連テスト",
+    "asyncio: mark the test as a coroutine, it will be run using an asyncio event loop",
+    "timeout: mark a test as having a timeout (seconds)",
+    "performance: パフォーマンステスト（ベンチマーク・プロファイリング）",
+]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--cov=app",
+    "--cov-report=term-missing",
+    "--cov-report=html:output/coverage/html",
+    "--cov-report=json:output/coverage/coverage.json",
+    "--cov-report=xml:output/coverage/coverage.xml",
+    "--cov-fail-under=85",
+]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "error",
+
+    # 自前コードは Deprecation を見逃さない
+    "error::DeprecationWarning:app\\..*",
+
+    # 外部ライブラリ由来の Deprecation は必要に応じて無視
+    "ignore::DeprecationWarning:gradio.*",
+    "ignore::DeprecationWarning:fastapi.*",
+    "ignore::DeprecationWarning:starlette.*",
+    "ignore::DeprecationWarning:sqlalchemy.*",
+    "ignore::DeprecationWarning:gradio_client.*",
+    "ignore::DeprecationWarning:websockets.*",
+
+    # 実行環境のノイズ抑制
+    "ignore::pytest.PytestUnraisableExceptionWarning",
+    "ignore::ResourceWarning",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    # Gradio コンポーネントとの直接インタフェース（UI構築・マウント）は
+    # ヘッドレス実行時に外部ライブラリの未クローズ警告を誘発しがちで、
+    # 実運用検証はE2E/UIテスト領域で担保する方針のため、単体カバレッジからは除外する。
+    "app/app_factory.py",
+    # UI 構築・イベント配線レイヤは単体テスト対象外
+    "app/ui/*",
+    "app/ui/**",
+    # デモ/実験用スクリプトはカバレッジ対象外
+    "app/demo.py",
+    "app/ex.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+

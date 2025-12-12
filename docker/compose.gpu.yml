@@ -1,0 +1,37 @@
+services:
+  app:
+    build:
+      context: ./
+      dockerfile: docker/Dockerfile.gpu
+      args:
+        user_name: $user_name
+        group_name: $group_name
+    image: $pj_name.app
+    container_name: $pj_name.app
+    privileged: true
+    tty: true
+    init: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, utility, compute, video]
+    volumes:
+      - .:/home/$user_name/workspace
+      - .ssh/:/home/$user_name/.ssh/
+    working_dir: /home/$user_name/workspace
+    ports:
+      - "8000:8000"
+      - "7860:7860"
+#     networks:
+#       - base_net
+# 
+# 
+# networks:
+#   base_net:
+#     external: true
+#     name: base_net
+
+
