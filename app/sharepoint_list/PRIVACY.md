@@ -1,0 +1,1 @@
+This plugin does not log or persist user data beyond what is necessary for runtime execution. Access tokens are obtained via OAuth and kept within Dify's credential store; the plugin does not transmit secrets elsewhere.
