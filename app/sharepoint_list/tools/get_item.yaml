@@ -1,0 +1,58 @@
+identity:
+  name: sharepoint_list_get_item
+  author: tkosht
+  label:
+    en_US: Get List Item
+    ja_JP: リストアイテム取得
+description:
+  human:
+    en_US: Retrieve a SharePoint list item
+    ja_JP: SharePoint リストのアイテムを取得します
+  llm: Get a SharePoint list item
+parameters:
+  - name: site_identifier
+    type: string
+    required: true
+    label:
+      en_US: Site Identifier
+      ja_JP: サイト指定
+    human_description:
+      en_US: "Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo"
+      ja_JP: "サイトURLまたはサイトID。URL推奨。例: https://contoso.sharepoint.com/sites/demo"
+    llm_description: Site URL or site ID
+    form: llm
+  - name: list_identifier
+    type: string
+    required: true
+    label:
+      en_US: List Identifier
+      ja_JP: リスト指定
+    human_description:
+      en_US: "List ID (GUID) or list display name."
+      ja_JP: "リストID（GUID）またはリスト表示名。"
+    llm_description: List ID or display name
+    form: llm
+  - name: item_id
+    type: string
+    required: true
+    label:
+      en_US: Item ID
+      ja_JP: アイテムID
+    human_description:
+      en_US: ID of the item to retrieve
+      ja_JP: 取得するアイテムのID
+    form: llm
+  - name: select_fields
+    type: string
+    required: false
+    label:
+      en_US: Select Fields (comma separated)
+      ja_JP: 取得するフィールド（カンマ区切り）
+    human_description:
+      en_US: Optional. Comma separated internal field names to return.
+      ja_JP: 任意。返したい内部フィールド名をカンマ区切りで指定。
+    llm_description: Comma separated internal field names to return
+    form: llm
+extra:
+  python:
+    source: tools/get_item.py

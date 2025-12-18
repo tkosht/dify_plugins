@@ -24,6 +24,7 @@ bkup/
 ?.sh
 .env*
 ex*.ipynb
+*.difypkg
 
 NotebookLM
 
