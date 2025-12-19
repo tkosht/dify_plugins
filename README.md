@@ -1,10 +1,9 @@
-# Base Project
+# Dify Plugins Project
 
-基本プロジェクト
+Dify Plugins プロジェクト
 
-## ドキュメント要約リンク
 
-- Gradio×FastAPI Threads UI 連携の設計・拡張・注意点（要点まとめ）
-  - [gradio_fastapi_threads_ui_lessons.md](./docs/04.knowledge/gradio_fastapi_threads_ui_lessons.md)
-  - JS↔Python 連携の実体、拡張手順チェックリスト、落とし穴、Mermaid図を収録
+## Plugins 一覧
+
+- sharepoint_list プラグイン
 
