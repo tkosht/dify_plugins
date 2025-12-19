@@ -74,3 +74,4 @@ Prefer: HonorNonIndexedQueriesWarning=true
 - list_items の組み立て: `app/sharepoint_list/internal/operations.py`
 - tool I/F: `app/sharepoint_list/tools/list_items.yaml`, `app/sharepoint_list/tools/list_items.py`
 
+

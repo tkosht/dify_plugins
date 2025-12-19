@@ -62,6 +62,9 @@ Manage SharePoint list items (create/update/read) via Microsoft Graph using Dele
 
 ## 注意
 - `client_secret` はユーザー資格情報に保存しません（Dify system credential のみ）。
+  - **system credentials（システム資格情報）**: プラグイン設定で管理者が入力する `client_id` / `client_secret`（アプリ共通）。Provider が OAuth のトークン取得/更新にのみ使用します。
+  - **ユーザー資格情報（OAuth credentials）**: 認可後にユーザーごとに保存される `access_token` / `refresh_token` / `expires_at`。Tool 実行時は `runtime.credentials` として参照されます。
+  - `client_secret` はユーザー credentials に含めず、Tool 実行時にも渡しません（漏洩防止）。
 - トークン・シークレットはログ/出力に含めません。
 - フィルタで利用する列は SharePoint 側で **インデックス化** しておくと 400 エラーを防止できます。
 
