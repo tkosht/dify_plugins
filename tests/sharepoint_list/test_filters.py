@@ -101,3 +101,4 @@ def test_parse_filters_non_json_input_raises() -> None:
     with pytest.raises(ValueError) as exc:
         filters.parse_filters("field__eq=value")
     assert "JSON" in str(exc.value)
+
