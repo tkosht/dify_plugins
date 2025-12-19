@@ -25,6 +25,7 @@ bkup/
 .env*
 ex*.ipynb
 *.difypkg
+plugins/
 
 NotebookLM
 
