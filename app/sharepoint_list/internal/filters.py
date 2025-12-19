@@ -99,4 +99,3 @@ def parse_filters(filters_raw: str) -> list[FilterCondition]:
             )
         )
     return results
-
