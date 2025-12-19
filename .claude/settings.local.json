@@ -23,7 +23,10 @@
       "mcp__serena__execute_shell_command",
       "mcp__cognee__list_data",
       "mcp__cognee__get_developer_rules",
-      "mcp__cognee__search"
+      "mcp__cognee__search",
+      "Bash(uv run ruff check:*)",
+      "Bash(uv run black:*)",
+      "Skill(tasks:mainbranch)"
     ],
     "deny": []
   },
