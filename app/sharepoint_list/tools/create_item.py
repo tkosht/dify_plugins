@@ -6,6 +6,11 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from internal import operations, validators
+from internal.http_client import (
+    AuthenticationError,
+    AuthorizationError,
+    RateLimitError,
+)
 
 
 class CreateItemTool(Tool):
@@ -46,6 +51,43 @@ class CreateItemTool(Tool):
             )
             yield self.create_json_message(result or {})
             yield self.create_text_message("Item created successfully.")
+        except AuthenticationError as e:
+            yield self.create_json_message(
+                {
+                    "error": "authentication_failed",
+                    "error_type": "AuthenticationError",
+                    "message": str(e),
+                }
+            )
+            yield self.create_text_message(
+                "Authentication failed. Your access token may have expired. "
+                "Please re-authorize the SharePoint List connection."
+            )
+        except AuthorizationError as e:
+            yield self.create_json_message(
+                {
+                    "error": "authorization_failed",
+                    "error_type": "AuthorizationError",
+                    "message": str(e),
+                }
+            )
+            yield self.create_text_message(
+                f"Permission denied: {e}. "
+                "Please check your SharePoint permissions."
+            )
+        except RateLimitError as e:
+            yield self.create_json_message(
+                {
+                    "error": "rate_limit_exceeded",
+                    "error_type": "RateLimitError",
+                    "retry_after": e.retry_after,
+                    "message": str(e),
+                }
+            )
+            yield self.create_text_message(
+                f"Rate limit exceeded. Please try again later. "
+                f"(Retry after: {e.retry_after or 'unknown'} seconds)"
+            )
         except Exception as e:  # noqa: BLE001
             yield self.create_json_message({"error": str(e)})
             yield self.create_text_message(f"Failed to create item: {e}")

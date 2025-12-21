@@ -7,7 +7,7 @@ from typing import Any
 
 import requests
 
-from . import filters, request_builders, validators
+from . import filters, http_client, request_builders, validators
 
 LOG_PATH_DEFAULT = "/tmp/sharepoint_list.debug.ndjson"
 
@@ -16,8 +16,8 @@ def _get_debug_log_path() -> str:
     return os.getenv("SHAREPOINT_LIST_DEBUG_LOG_PATH", LOG_PATH_DEFAULT)
 
 
-class GraphError(ValueError):
-    """Raised when Graph API returns an error response."""
+class GraphError(http_client.GraphAPIError):
+    """Raised when Graph API returns an error response. (Legacy alias)"""
 
 
 def _send_request(
@@ -25,18 +25,12 @@ def _send_request(
     access_token: str,
     extra_headers: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Accept": "application/json",
-    }
-    if spec.json is not None:
-        headers["Content-Type"] = "application/json"
-    if extra_headers:
-        headers.update(extra_headers)
-
+    """Send request with retry logic. Wrapper for http_client."""
     if _is_debug_log_enabled():
         safe_headers = {
-            k: v for k, v in headers.items() if k.lower() != "authorization"
+            k: v
+            for k, v in (extra_headers or {}).items()
+            if k.lower() != "authorization"
         }
         _log_debug(
             location="operations.py:_send_request",
@@ -49,40 +43,24 @@ def _send_request(
             },
         )
 
-    resp = requests.request(
-        method=spec.method,
-        url=spec.url,
-        params=spec.params or None,
-        json=spec.json,
-        headers=headers,
-        timeout=30,
-    )
-    if resp.status_code >= 400:
-        token_len = (
-            len(access_token) if isinstance(access_token, str) else "non-str"
+    try:
+        return http_client.send_request_with_retry(
+            spec=spec,
+            access_token=access_token,
+            extra_headers=extra_headers,
         )
+    except http_client.GraphAPIError as e:
         if _is_debug_log_enabled():
             _log_debug(
                 location="operations.py:_send_request",
                 message="error",
                 data={
-                    "status": resp.status_code,
-                    "text": resp.text[:200],
-                    "params": spec.params,
-                    "url": spec.url,
+                    "status": e.status_code,
+                    "text": (e.response_text or "")[:200],
+                    "error_type": type(e).__name__,
                 },
             )
-        err_msg = (
-            f"Graph API error {resp.status_code}: {resp.text[:200]} "
-            f"(access_token_len={token_len})"
-        )
-        raise GraphError(err_msg)
-    if resp.text:
-        try:
-            return resp.json()
-        except ValueError:
-            return {}
-    return {}
+        raise
 
 
 def _is_debug_log_enabled() -> bool:
@@ -448,8 +426,6 @@ def list_items(
     page_size: int = 20,
     page_token: str | None = None,
     filters_raw: str | None = None,
-    created_after: str | None = None,
-    created_before: str | None = None,
 ) -> dict[str, Any]:
     site_id = resolve_site_id(access_token, target.site_identifier)
     list_id = resolve_list_id(access_token, site_id, target.list_identifier)
@@ -476,10 +452,6 @@ def list_items(
     )
 
     clauses: list[str] = []
-    if created_after:
-        clauses.append(f"createdDateTime ge {created_after}")
-    if created_before:
-        clauses.append(f"createdDateTime le {created_before}")
 
     uses_fields_clause = False
 
@@ -523,8 +495,6 @@ def list_items(
             message="request_args",
             data={
                 "filters_raw": filters_raw,
-                "created_after": created_after,
-                "created_before": created_before,
                 "filter_expr": filter_expr,
                 "orderby": "createdDateTime desc",
                 "page_size": top,

@@ -1,5 +1,5 @@
 projects = { "/home/devuser/workspace" = { trust_level = "trusted" } }
-model = "gpt-5.1-codex-max"
+model = "gpt-5.2-codex"
 # model = "gpt-5-codex"
 model_provider = "openai"
 approval_policy = "never"           # 完全自動
@@ -74,6 +74,9 @@ args = ["-y", "mcp-remote@latest", "http://serena:9121/sse", "--allow-http", "--
 [notice]
 hide_gpt5_1_migration_prompt = true
 "hide_gpt-5.1-codex-max_migration_prompt" = true
+
+[notice.model_migrations]
+"gpt-5.1-codex-max" = "gpt-5.2-codex"
 
 # [mcp_servers.cognee]
 # command = "sh"

@@ -1,11 +1,17 @@
 from __future__ import annotations
 
 from collections.abc import Generator
+import json
 from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from internal import operations, validators
+from internal.http_client import (
+    AuthenticationError,
+    AuthorizationError,
+    RateLimitError,
+)
 
 
 class ListItemsTool(Tool):
@@ -51,7 +57,22 @@ class ListItemsTool(Tool):
 
             created_after = tool_parameters.get("created_after")
             created_before = tool_parameters.get("created_before")
+            if created_after or created_before:
+                yield self.create_json_message(
+                    {
+                        "error": "deprecated_parameter",
+                        "message": "Use filters with createdDateTime instead of created_after/created_before.",
+                    }
+                )
+                yield self.create_text_message(
+                    "created_after / created_before は廃止しました。"
+                    "filters の createdDateTime を使用してください。"
+                )
+                return
+
             filters_raw = tool_parameters.get("filters")
+            if isinstance(filters_raw, (dict, list)):
+                filters_raw = json.dumps(filters_raw)
 
             result = operations.list_items(
                 access_token=access_token,
@@ -60,8 +81,6 @@ class ListItemsTool(Tool):
                 page_size=page_size,
                 page_token=page_token,
                 filters_raw=filters_raw,
-                created_after=created_after,
-                created_before=created_before,
             )
 
             yield self.create_json_message(result or {})
@@ -69,6 +88,43 @@ class ListItemsTool(Tool):
             if result.get("next_page_token"):
                 text += " More pages available."
             yield self.create_text_message(text)
+        except AuthenticationError as e:
+            yield self.create_json_message(
+                {
+                    "error": "authentication_failed",
+                    "error_type": "AuthenticationError",
+                    "message": str(e),
+                }
+            )
+            yield self.create_text_message(
+                "Authentication failed. Your access token may have expired. "
+                "Please re-authorize the SharePoint List connection."
+            )
+        except AuthorizationError as e:
+            yield self.create_json_message(
+                {
+                    "error": "authorization_failed",
+                    "error_type": "AuthorizationError",
+                    "message": str(e),
+                }
+            )
+            yield self.create_text_message(
+                f"Permission denied: {e}. "
+                "Please check your SharePoint permissions."
+            )
+        except RateLimitError as e:
+            yield self.create_json_message(
+                {
+                    "error": "rate_limit_exceeded",
+                    "error_type": "RateLimitError",
+                    "retry_after": e.retry_after,
+                    "message": str(e),
+                }
+            )
+            yield self.create_text_message(
+                f"Rate limit exceeded. Please try again later. "
+                f"(Retry after: {e.retry_after or 'unknown'} seconds)"
+            )
         except Exception as e:  # noqa: BLE001
             yield self.create_json_message({"error": str(e)})
             yield self.create_text_message(f"Failed to list items: {e}")
