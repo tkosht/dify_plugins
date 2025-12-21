@@ -26,14 +26,19 @@
       "mcp__cognee__search",
       "Bash(uv run ruff check:*)",
       "Bash(uv run black:*)",
-      "Skill(tasks:mainbranch)"
+      "Skill(tasks:mainbranch)",
+      "Bash(wc:*)",
+      "WebFetch(domain:docs.dify.ai)",
+      "WebSearch",
+      "WebFetch(domain:tenacity.readthedocs.io)",
+      "WebFetch(domain:towardsdatascience.com)",
+      "Bash(uv run pytest:*)"
     ],
     "deny": []
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "sequential-thinking",
-    "serena",
-    "cognee"
+    "serena"
   ]
 }
