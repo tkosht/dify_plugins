@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator
+import json
 from typing import Any
 
 from dify_plugin import Tool
@@ -51,7 +52,22 @@ class ListItemsTool(Tool):
 
             created_after = tool_parameters.get("created_after")
             created_before = tool_parameters.get("created_before")
+            if created_after or created_before:
+                yield self.create_json_message(
+                    {
+                        "error": "deprecated_parameter",
+                        "message": "Use filters with createdDateTime instead of created_after/created_before.",
+                    }
+                )
+                yield self.create_text_message(
+                    "created_after / created_before は廃止しました。"
+                    "filters の createdDateTime を使用してください。"
+                )
+                return
+
             filters_raw = tool_parameters.get("filters")
+            if isinstance(filters_raw, (dict, list)):
+                filters_raw = json.dumps(filters_raw)
 
             result = operations.list_items(
                 access_token=access_token,
@@ -60,8 +76,6 @@ class ListItemsTool(Tool):
                 page_size=page_size,
                 page_token=page_token,
                 filters_raw=filters_raw,
-                created_after=created_after,
-                created_before=created_before,
             )
 
             yield self.create_json_message(result or {})

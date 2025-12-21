@@ -59,7 +59,11 @@ def build_filter_fragment(cond: FilterCondition, mapped_field: str) -> str:
         val_repr = format_odata_value(cond.value, value_type or "string")
         return f"{op}({mapped_field}, {val_repr})"
 
-    val_repr = format_odata_value(cond.value, value_type)
+    if value_type == "datetime" and mapped_field.startswith("fields/"):
+        # Graph list item fields are filtered as strings; quote datetime values.
+        val_repr = format_odata_value(cond.value, "string")
+    else:
+        val_repr = format_odata_value(cond.value, value_type)
     return f"{mapped_field} {op} {val_repr}"
 
 
@@ -86,7 +90,10 @@ def parse_filters(filters_raw: str) -> list[FilterCondition]:
         if not isinstance(item, dict):
             raise ValueError("each filter entry must be an object")
         field = str(item.get("field") or "").strip()
-        op = str(item.get("op") or "").strip().lower()
+        op_raw = item.get("op")
+        if not op_raw:
+            op_raw = item.get("operator")
+        op = str(op_raw or "").strip().lower()
         if not field or not op:
             raise ValueError("filter entry must include field and op")
         if op not in ALLOWED_OPS:
@@ -99,3 +106,4 @@ def parse_filters(filters_raw: str) -> list[FilterCondition]:
             )
         )
     return results
+

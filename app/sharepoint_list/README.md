@@ -13,7 +13,7 @@ Manage SharePoint list items (create/update/read) via Microsoft Graph using Dele
 - `sharepoint_list_create_item`: `site_identifier` + `list_identifier` + `fields_json` で新規作成
 - `sharepoint_list_update_item`: 上記 + `item_id` + `fields_json` で更新
 - `sharepoint_list_get_item`: 上記 + `item_id` (+ `select_fields` 任意) で参照
-- `sharepoint_list_list_items`: 一覧取得（`site_identifier`/`list_identifier` 必須、`select_fields`/`filters`（JSON配列）/`created_after`/`created_before`/`page_size`/`page_token`）
+- `sharepoint_list_list_items`: 一覧取得（`site_identifier`/`list_identifier` 必須、`select_fields`/`filters`（JSON配列）/`page_size`/`page_token`）
 - `sharepoint_list_get_choices`: choice 列の選択肢を取得（`site_identifier`/`list_identifier`/`field_identifier`）
 
 ## 入力のコツ
@@ -52,13 +52,24 @@ Manage SharePoint list items (create/update/read) via Microsoft Graph using Dele
 ]
 ```
 
+登録日時（リスト列）での日時フィルタ例:
+
+```json
+[
+  {"field": "登録日時", "op": "gt", "value": "2025-12-16T15:00:00Z", "type": "datetime"}
+]
+```
+
 ### フィールド参照ルール（重要）
 - `createdDateTime` は **トップレベル**のフィールドとして扱います（`createdDateTime ge ...`）。
 - それ以外の列は SharePoint List の `fields/<internalName>` として `$filter` を組み立てます。
 - `field` に **表示名（日本語）**を渡した場合も、内部的に列定義を取得して **内部名へ解決**します。
+- 作成日時の条件も `filters` の `createdDateTime` で指定します（`type: "datetime"` を推奨）。
+- リスト列の日時（例: 登録日時）に `type: "datetime"` を指定した場合、`fields/<name>` の比較は文字列としてクォートされます。
 
 ## 互換性
 - `filter_field` / `filter_operator` / `filter_value` は廃止しました。フィルタは `filters`（JSON配列）で指定してください。
+- `created_after` / `created_before` は廃止しました。作成日時の絞り込みは `filters` の `createdDateTime` を使用してください。
 
 ## 注意
 - `client_secret` はユーザー資格情報に保存しません（Dify system credential のみ）。

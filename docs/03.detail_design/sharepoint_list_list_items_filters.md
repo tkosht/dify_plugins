@@ -2,6 +2,7 @@
 
 ## 概要
 `sharepoint_list_list_items` ツールの `filters`（JSON配列）から、Microsoft Graph の SharePoint List Items API に渡す `$filter` を生成するルールをまとめます。
+作成日時の絞り込みは `filters` の `createdDateTime` で統一します（`created_after` / `created_before` は廃止）。
 
 ## 入力仕様（filters）
 `filters` は **JSON配列（またはJSONオブジェクト1件）**を文字列として渡します。
@@ -39,7 +40,9 @@
 ### 値のリテラル化
 - `type == number`: クォートせず数値として扱う（`3`, `3.14`）
 - `type == bool`: `true` / `false`
-- `type == datetime`: クォートせず文字列をそのまま（既存の `created_after/before` と整合）
+- `type == datetime`:
+  - `createdDateTime` などトップレベルの日時はクォートせず文字列をそのまま使用
+  - リスト列（`fields/<name>`）は文字列としてクォート
 - 上記以外（未指定含む）: 文字列として単引用符で囲む
 
 ### 文字列エスケープ

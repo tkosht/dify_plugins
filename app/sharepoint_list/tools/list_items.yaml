@@ -67,48 +67,41 @@ parameters:
     type: string
     required: false
     label:
-      en_US: Filters (JSON array)
-      ja_JP: フィルタ（JSON配列）
+      en_US: Filters (JSON)
+      ja_JP: フィルタ（JSON）
     human_description:
       en_US: |
-        Provide filters as a JSON array of objects.
-        Example:
+        Provide filters as a JSON array of objects or a single JSON object.
+        Keys: field / op / value / type. Use "op" (not "operator").
+        field accepts display name or internal name (case-insensitive).
+        Example (array):
         [
           {"field": "Status", "op": "eq", "value": "InProgress"},
-          {"field": "Priority", "op": "ge", "value": 3},
-          {"field": "createdDateTime", "op": "ge", "value": "2025-12-15T00:00:00Z"}
+          {"field": "createdDateTime", "op": "ge", "value": "2025-12-15T00:00:00Z", "type": "datetime"},
+          {"field": "Priority", "op": "ge", "value": 3, "type": "number"}
         ]
+        Example (single object):
+        {"field": "Status", "op": "eq", "value": "Active"}
         Note: Use indexed columns for server-side filters to avoid 400 errors.
       ja_JP: |
-        フィルタ条件は JSON 配列で指定してください。
-        例:
+        フィルタ条件は JSON 配列または単一の JSON オブジェクトで指定できます。
+        キーは field / op / value / type です（"operator" ではなく "op" を使用）。
+        field は表示名または内部名（大文字小文字は無視）を指定します。
+        例（配列）:
         [
           {"field": "ステータス", "op": "eq", "value": "処理中"},
-          {"field": "優先度", "op": "ge", "value": 3},
-          {"field": "createdDateTime", "op": "ge", "value": "2025-12-15T00:00:00Z"}
+          {"field": "createdDateTime", "op": "ge", "value": "2025-12-15T00:00:00Z", "type": "datetime"},
+          {"field": "優先度", "op": "ge", "value": 3, "type": "number"}
         ]
+        例（単一オブジェクト）:
+        {"field": "ステータス", "op": "eq", "value": "処理中"}
         備考: サーバーフィルタにはインデックス済み列を推奨（未インデックスだと 400 になる場合があります）。
-    llm_description: "Filters in JSON array format. See human description for example."
-    form: llm
-  - name: created_after
-    type: string
-    required: false
-    label:
-      en_US: Created After (ISO8601)
-      ja_JP: 作成日時以降 (ISO8601)
-    human_description:
-      en_US: "Filter items created at or after this timestamp (e.g., 2025-12-15T00:00:00Z)"
-      ja_JP: "この日時以降に作成されたアイテムに絞り込み（例: 2025-12-15T00:00:00Z）"
-    form: llm
-  - name: created_before
-    type: string
-    required: false
-    label:
-      en_US: Created Before (ISO8601)
-      ja_JP: 作成日時以前 (ISO8601)
-    human_description:
-      en_US: "Filter items created at or before this timestamp."
-      ja_JP: "この日時以前に作成されたアイテムに絞り込み。"
+    llm_description: |
+      Filters JSON string (array or object). Each entry must have: field, op, value, optional type (string|number|bool|datetime).
+      field can be a display name or internal name (case-insensitive). Use "op" (not "operator").
+      Note: For list date columns (fields/<name>), type=datetime is treated as a quoted string.
+      Example:
+      [{"field":"ステータス","op":"eq","value":"処理中"},{"field":"登録日時","op":"gt","value":"2025-12-16T15:00:00Z","type":"datetime"}]
     form: llm
 extra:
   python:

@@ -51,6 +51,17 @@ def test_build_filter_fragment_bool_and_datetime() -> None:
     frag_dt = filters.build_filter_fragment(cond_dt, "createdDateTime")
     assert frag_dt == "createdDateTime ge 2025-12-15T00:00:00Z"
 
+    cond_field_dt = filters.FilterCondition(
+        field="Created",
+        op="gt",
+        value="2025-12-16T15:00:00Z",
+        value_type="datetime",
+    )
+    frag_field_dt = filters.build_filter_fragment(
+        cond_field_dt, "fields/Created"
+    )
+    assert frag_field_dt == "fields/Created gt '2025-12-16T15:00:00Z'"
+
 
 def test_parse_filters_json_with_explicit_type() -> None:
     raw = '[{"field": "Priority", "op": "gt", "value": "3", "type": "number"}]'
@@ -64,6 +75,13 @@ def test_parse_filters_json_single_object() -> None:
     result = filters.parse_filters(raw)
     assert len(result) == 1
     assert result[0].op == "ne"
+
+
+def test_parse_filters_operator_alias() -> None:
+    raw = '[{"field": "Status", "operator": "eq", "value": "処理中"}]'
+    result = filters.parse_filters(raw)
+    assert len(result) == 1
+    assert result[0].op == "eq"
 
 
 def test_parse_filters_empty_string_returns_empty() -> None:
@@ -101,3 +119,4 @@ def test_parse_filters_non_json_input_raises() -> None:
     with pytest.raises(ValueError) as exc:
         filters.parse_filters("field__eq=value")
     assert "JSON" in str(exc.value)
+
