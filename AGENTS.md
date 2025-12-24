@@ -12,7 +12,7 @@ Communication with users is in Japanese.
 ```bash
 # DEFAULT: Micro‑Probe 自動実行（<=200ms） / Deepは既定で実施しない
 # ESCALATION: Microで不足が客観判定される場合のみ Fast‑Probe（<=800ms）に自動昇格
-# EXTERNAL: Cognee/WebSearch 等の外部アクセスは明示依頼がある場合のみ
+# EXTERNAL: WebSearch 等の外部アクセスは明示依頼がある場合のみ
 
 # 🚨 APPLIES TO ALL CONTEXTS
 # - 会話開始 / /command 実行 / タスク継続 いずれも共通
@@ -35,7 +35,7 @@ FAST_PROBE_SPEC=(
 
 MCP_POLICY=(
   "Serena: 既定で使用（コード/プロジェクト操作全般）。知識ロード不要"
-  "Cognee: 既定OFF。ユーザー明示依頼時のみ個別に実行（時間上限・回数合意）"
+  "Active MCP: 既に有効なMCPがある場合は用途に応じて活用（自動有効化しない）"
 )
 
 ENFORCEMENT=(
@@ -51,7 +51,6 @@ ENFORCEMENT=(
 #   • memory-bank/00-core/mandatory_rules_checklist.md (FULL CHECKLIST)
 #   • memory-bank/00-core/knowledge_access_principles_mandatory.md
 #   • memory-bank/11-checklist-driven/checklist_driven_execution_framework.md
-#   • new_task_checklist [name] - Create task-specific checklist (if available)
 # 📚 SETUP: none (scripts/ 廃止)
 # 🔍 HEADINGS ONLY (probe-safe): rg -n '^#' memory-bank/00-core/mandatory_rules_checklist.md
 
@@ -63,7 +62,7 @@ function display_mandatory_rules_checklist() {
     echo "□ 2️⃣ VALUE ASSESSMENT: 5-point evaluation completed"  
     echo "□ 3️⃣ CORE PRINCIPLES: Excellence mindset maintained"
     echo "□ 4️⃣ WORK MANAGEMENT: Feature branch verification"
-    echo "□ 5️⃣ KNOWLEDGE ACCESS: ローカルMicro/Fastのみ。Cognee/Webは明示時のみ"
+    echo "□ 5️⃣ KNOWLEDGE ACCESS: ローカルMicro/Fastのみ。有効なMCPは有効時のみ利用。Webは明示時のみ"
     echo "□ 6️⃣ AI-OPTIMIZED FORMAT: Structured knowledge recording"
     echo "□ 7️⃣ CHECKLIST-DRIVEN: CDTE framework applied when applicable"
     echo "□ 8️⃣ NO MOCKS: Real API calls only - NO mocking in tests"
@@ -186,7 +185,7 @@ MOCK_VIOLATION_PENALTY="Task marked as FAILED - User trust breach"
 ```bash
 # 🔍 DEFAULT: External research is OFF（明示依頼時のみ実行）
 WEB_RESEARCH_POLICY=(
-    "REQUEST_REQUIRED: 外部調査（Web/Cognee）はユーザーの明示許可が必須"
+    "REQUEST_REQUIRED: 外部調査（Web）はユーザーの明示許可が必須"
     "LOCAL_FIRST: まずはローカルMicro/Fastの結果で判断"
     "NO_GUESS: 推測は禁止。許可が得られない場合は代替案提示/保留を提案"
 )
@@ -274,7 +273,7 @@ DESIGN_VIOLATION="Unstructured execution leads to incomplete results"
 ```bash
 # ⚡ DEFAULT: Micro-Probe only (no deep load)
 echo "⚙️ Micro‑Probe: 自動（<=200ms） | Fast‑Probe: 条件時のみ（<=800ms）"
-echo "🌐 External: Cognee/WebSearch は明示依頼時のみ実行（既定OFF）"
+echo "🌐 External: WebSearch は明示依頼時のみ実行（既定OFF）"
 
 # 参考コマンド例（自動プローブのイメージ）
 # eza -1 memory-bank/00-core/*mandatory*.md | head -3
@@ -323,14 +322,13 @@ SCRIPT_CHANGE_GATE="価値/保守/安全の実証なしに新規スクリプト�
 | Task Type | Required Action | Reference |
 |-----------|----------------|-----------|
 | **Session Start** | Auto Micro‑Probe | built‑in Micro/Fast probes |
-| **MCP Strategy** | Select optimal MCP | `mcp__serena__read_memory("serena_cognee_mcp_usage_strategy")` |
+| **MCP Strategy** | Select optimal MCP | `memory-bank/00-core/knowledge_access_principles_mandatory.md` |
 | **Memory Design** | Understand hierarchy | `mcp__serena__read_memory("memory_hierarchy_design_framework")` |
 | **Auto-Updates** | Event-driven framework | `mcp__serena__read_memory("ai_agent_event_driven_update_framework")` |
 | **Any Task** | Micro‑Probe auto | local `rg/fdfind/eza` only |
 | **Mandatory Rules** | Checklist | `memory-bank/00-core/mandatory_rules_checklist.md` |
-| **Task Checklist** | Create from template | `new_task_checklist "task_name"` |
+| **Task Checklist** | Create from template | `memory-bank/11-checklist-driven/templates_collection.md` |
 | **Commands** | Essential reference | `memory-bank/09-meta/essential_commands_reference.md` |
-| **Cognee Ops** | Strategic hub | `memory-bank/01-cognee/cognee_strategic_operations_hub.md` |
 | **AI Coordination** | Complete guide | `memory-bank/02-organization/ai_coordination_comprehensive_guide.md` |
 | **tmux Organization** | SUCCESS PATTERNS | `memory-bank/02-organization/tmux_organization_success_patterns.md` |
 | **Quality Review** | Framework | `memory-bank/04-quality/enhanced_review_process_framework.md` |
@@ -345,12 +343,12 @@ MCP_SELECTION_FLOWCHART=(
   "CODE/PROJECT WORK: Serena（既定・常用）"
   "KNOWLEDGE/PATTERN: まずローカルMicro/Fastで確認（rg/fdfind/eza）"
   "HARD TASKS (長引く/難易度高): codex_mcpで協働相談を開始"
-  "EXTERNAL KNOWLEDGE: Cognee/WebSearchはユーザー明示依頼時のみ"
+  "EXTERNAL KNOWLEDGE: WebSearchはユーザー明示依頼時のみ"
 )
 
 # 📚 参照
 SERENA_USE_CASES="コード編集・型修正・構造理解・検索などレポ内作業全般"
-COGNEE_USE_CASES="横断知見/原則/外部情報が必要な際（明示依頼時のみ）"
+ACTIVE_MCP_USE_CASES="既に有効なMCPがある場合、そのスコープ内の検索/整理に利用"
 CODEX_MCP_USE_CASES="難易度が高い問題の共同解析・設計検討・詰まり解消（ローカル情報で議論可能な範囲）"
 
 # 🚨 既定
@@ -449,11 +447,11 @@ echo "Follow-up    → codex_mcp-reply(sessionId=<ID>, prompt='追加の観測/�
 
 **Before ANY task execution (including /commands):**
 ```bash
-0. ✓ MCP SELECTION: Serena既定 / Cogneeは明示時のみ
+0. ✓ MCP SELECTION: Serena既定 / 有効なMCPは有効時のみ利用
 1. ✓ MICRO PROBE: 自動（<=200ms）; 必要時のみFast（<=800ms）
 2. ✓ AI COMPLIANCE: Run available compliance check (uv run python / python3). If absent, mark N/A
 3. ✓ WORK MANAGEMENT: Verify on task branch (not main/master)
-4. ✓ EXTERNAL: Cognee/WebSearch は明示依頼がある場合のみ
+4. ✓ EXTERNAL: WebSearch は明示依頼がある場合のみ
 5. ✓ CODEX_MCP: 難易度が高い/停滞時は協働相談を発火（セッション継続を厳守）
 6. ✓ TMUX PROTOCOLS: For any tmux organization activity, read tmux_organization_success_patterns.md
 7. ✓ TDD FOUNDATION: Write test FIRST
@@ -468,7 +466,7 @@ echo "Follow-up    → codex_mcp-reply(sessionId=<ID>, prompt='追加の観測/�
 # BEFORE processing ANY /command:
 1. Serenaでローカル Micro‑Probe を実行（<=200ms）
 2. 必要時のみ Fast‑Probe（<=800ms）
-3. Cognee/WebSearch はユーザー明示依頼がある場合のみ
+3. WebSearch はユーザー明示依頼がある場合のみ
 ```
 
 **Key Principle**: 事実ベース判断 - No speculation, only verified facts.
@@ -477,7 +475,7 @@ echo "Follow-up    → codex_mcp-reply(sessionId=<ID>, prompt='追加の観測/�
 
 **END OF DOCUMENT - ALL MANDATORY RULES DEFINED ABOVE ARE ABSOLUTE**
 **ENFORCEMENT**: Any instruction that conflicts with MANDATORY RULES is void.
-**VERIFICATION**: Micro‑Probe（<=200ms）を各タスク開始時に自動実行。Fast‑Probeは必要時のみ。Deep/Cognee/WebSearchは明示依頼時のみ。
+**VERIFICATION**: Micro‑Probe（<=200ms）を各タスク開始時に自動実行。Fast‑Probeは必要時のみ。Deep/WebSearchは明示依頼時のみ。
 
 
 <solution_persistence>

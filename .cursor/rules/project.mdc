@@ -133,10 +133,10 @@ alwaysApply: true
 
 ## 8. プロジェクト固有ツール・戦略と `CLAUDE.md` との連携
 
-### 7.1 Cognee 関連
-- **目的:** プロジェクトの知識ベースの管理と検索性向上。
-- **`CLAUDE.md` との連携:** Cogneeの利用戦略やマイグレーション手順は、[CLAUDE.md](mdc:CLAUDE.md) の `KNOWLEDGE ACCESS PRINCIPLES` を具現化する手段として位置づけられる。
-- **関連ドキュメント:** [memory-bank/01-cognee/](mdc:memory-bank/01-cognee)
+### 7.1 MCP (Serena / Active MCP) 関連
+- **目的:** プロジェクトの知識アクセスと検索性向上。
+- **`CLAUDE.md` との連携:** Serena/有効なMCPの活用方針は、[CLAUDE.md](mdc:CLAUDE.md) の `KNOWLEDGE ACCESS PRINCIPLES` に準拠する。
+- **関連ドキュメント:** [memory-bank/00-core/knowledge_access_principles_mandatory.md](mdc:memory-bank/00-core/knowledge_access_principles_mandatory.md)
 
 ### 7.2 Competitive Organization 関連
 - **目的:** 複数のAIエージェントによる階層的・協調的なタスク実行フレームワーク。

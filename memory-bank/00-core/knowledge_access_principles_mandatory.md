@@ -116,7 +116,7 @@
 CLAUDE.md → smart_knowledge_load() → domain files → specific knowledge
 
 # Secondary Access Paths  
-1. Cognee search → mcp__cognee__search "keyword" GRAPH_COMPLETION
+1. Active MCP (Serena/既に有効なMCP) → スコープ内の検索/参照を活用
 2. File pattern search → find memory-bank/ -name "*keyword*.md"
 3. Content search → grep -r "pattern" memory-bank/
 4. Cross-reference → Related sections in files
@@ -154,7 +154,7 @@ Phase 3: Comprehensive context (10-20 seconds)
 ```markdown
 ## Hub Structure
 Central Hub (CLAUDE.md) 
-├── Domain Hubs (00-core/, 01-cognee/, etc.)
+├── Domain Hubs (00-core/, 02-organization/, 03-patterns/, etc.)
 ├── Functional Hubs (Essential Commands, Strategic Operations)
 └── Reference Hubs (Most Used Commands, Emergency Protocols)
 
@@ -293,7 +293,7 @@ Central Hub (CLAUDE.md)
 ### 実装関連
 - CLAUDE.md → smart_knowledge_load() function (自動ロード機能)
 - CLAUDE.md → WORK MANAGEMENT PROTOCOL (作業管理)
-- memory-bank/01-cognee/cognee_effective_utilization_strategy.md (検索戦略)
+- memory-bank/00-core/knowledge_loading_functions.md (知識ロード戦略)
 
 ### 品質関連
 - memory-bank/00-core/value_assessment_mandatory.md (価値評価)

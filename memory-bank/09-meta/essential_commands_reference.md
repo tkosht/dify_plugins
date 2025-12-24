@@ -49,15 +49,11 @@ echo "📋 Rules: memory-bank/09-meta/progress_recording_mandatory_rules.md"
 echo "✅ Checklist: memory-bank/09-meta/session_start_checklist.md"
 ```
 
-## Cognee Strategic Utilization (Knowledge Management)
-```bash
-mcp__cognee__cognify_status                 # Status check
-mcp__cognee__search "query" GRAPH_COMPLETION # Strategic search
-mcp__cognee__cognee_add_developer_rules     # Load core knowledge
-
-# Emergency & optimization  
-mcp__cognee__prune && sleep 5               # Emergency reset
-time mcp__cognee__search "test" CHUNKS      # Performance test
+## MCP Utilization (Serena / Active MCP)
+```text
+- Serena は既定のMCPとして使用（コード/プロジェクト操作）
+- 既に有効なMCPがある場合は、そのスコープ内で検索/参照に活用
+- MCPの自動有効化は行わない（明示依頼時のみ）
 ```
 
 ## Enhanced Integrated Knowledge Access

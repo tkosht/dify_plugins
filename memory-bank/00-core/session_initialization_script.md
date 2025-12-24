@@ -37,30 +37,15 @@ echo "Loading core constraints..."
 [ -f memory-bank/00-core/claude_code_hooks_constraints_mandatory.md ] && echo "✅ Claude Code hooks constraints found"
 [ -f memory-bank/09-meta/progress_recording_mandatory_rules.md ] && echo "✅ Progress recording rules found"
 
-# 4. Cognee strategic integration (knowledge management optimization)
-if mcp__cognee__cognify_status > /dev/null 2>&1; then
-    mcp__cognee__cognee_add_developer_rules --base_path /home/devuser/workspace
-    echo "✅ Cognee enhanced mode active"
-    
-    # Performance check (detailed analysis: see Cognee Strategic Operations)
-    if ! mcp__cognee__search "test" GRAPH_COMPLETION >/dev/null 2>&1; then
-        echo "⚠️ COGNEE PERFORMANCE: Check 'Cognee Strategic Operations (Central Hub)' for optimization"
-    else
-        echo "🎯 Cognee optimal performance confirmed"
-    fi
-else
-    echo "🚨 COGNEE CRITICAL: Database unavailable"
-    echo "🔧 Full protocols: See 'Cognee Strategic Operations (Central Hub)' in Reference section"
-    echo "⚡ Quick restart: mcp__cognee__prune && mcp__cognee__cognee_add_developer_rules"
-    echo "⚠️ Fallback: Direct constraint mode only"
-fi
+# 4. MCP note (Serena / active MCP only)
+echo "🧩 MCP NOTE: Serenaは既定。既に有効なMCPがある場合は用途に応じて利用（自動有効化しない）"
 
 echo "🎯 Session ready! You can now start development."
 
 # 🚨 CRITICAL: Pre-Task Knowledge Protocol  
 echo "⚠️ REMINDER: Smart knowledge loading is DEFAULT for all tasks"
 echo "🔍 Usage: smart_knowledge_load 'domain' 'task_context' (5-15s)"
-echo "📋 Layers: Local→Cognee (fast) = Efficient understanding"
+echo "📋 Layers: Local→Active MCP (if available) = Efficient understanding"
 echo "🎯 Upgrade: Use comprehensive_knowledge_load only on explicit user request"
 
 # 📋 CHECKLIST-DRIVEN EXECUTION FRAMEWORK

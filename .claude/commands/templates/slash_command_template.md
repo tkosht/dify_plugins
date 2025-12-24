@@ -105,7 +105,7 @@ $ARGUMENTS
 - [ ] **ABSOLUTE REQUIREMENT**: Project Manager として/team04 のtmux組織のコンペ方式 及び /worktree 方式で実行（技術的強制）
     - [ ] **TECHNICAL ENFORCEMENT**: 既存tmux を活用したコンペ方式で実施（検証関数による確認）
     - [ ] **AUTO-SETUP**: 環境不備時は自動セットアップ実行後に再開
-- [ ] **EFFICIENCY ENHANCEMENT**: cognee MCP ツールを活用して情報収集の効率化を図る
+- [ ] **EFFICIENCY ENHANCEMENT**: Serena または有効なMCPツールを活用して情報収集の効率化を図る
 - [ ] **CHECKLIST COMPLIANCE**: 本制約をチェックリスト化する
 {ADDITIONAL_CONSTRAINTS}
 </constraints>

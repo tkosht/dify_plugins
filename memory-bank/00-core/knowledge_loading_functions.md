@@ -71,11 +71,8 @@ function smart_knowledge_load() {
         echo "💡 Use for strategic decisions: enforce_strategic_completeness [topic]"
     fi
     
-    # Optional Cognee if available and fast
-    if mcp__cognee__cognify_status >/dev/null 2>&1; then
-        echo "🧠 Cognee search: $domain"
-        mcp__cognee__search "$domain" CHUNKS | head -5
-    fi
+    # Optional MCP (Serena / active MCP if already enabled)
+    echo "🧩 MCP: Serenaまたは既に有効なMCPがある場合は、スコープ内の検索/参照に活用する"
     
     echo "✅ Smart Loading Complete (5-15s)"
     echo "💡 Need more comprehensive analysis? Request comprehensive_knowledge_load()"
@@ -103,24 +100,11 @@ function comprehensive_knowledge_load() {
         grep -A 5 -B 2 -i "rule\|pattern\|example\|mandatory\|forbidden" "$file" 2>/dev/null
     done
     
-    # Layer 2: Cognee Knowledge Graph (必須 if available)
-    echo "🧠 Layer 2: Cognee Knowledge Graph"
-    if mcp__cognee__cognify_status >/dev/null 2>&1; then
-        # Multi-phase strategic search
-        echo "  Phase 1: Fast metadata search"
-        mcp__cognee__search "$domain $task_context rules" CHUNKS
-        
-        echo "  Phase 2: Semantic relationship search"  
-        mcp__cognee__search "$domain implementation patterns examples" RAG_COMPLETION
-        
-        echo "  Phase 3: Comprehensive knowledge synthesis"
-        mcp__cognee__search "$domain best practices mandatory guidelines" GRAPH_COMPLETION
-    else
-        echo "⚠️ Cognee unavailable - relying on local + web search"
-    fi
+    # Layer 2: Active MCP (既に有効なMCPのみ)
+    echo "🧩 Layer 2: Active MCP (Serena/有効なMCPがある場合のみ活用)"
     
-    # Layer 3: Web Search for External Knowledge (必須)
-    echo "🌐 Layer 3: Web Search - External Best Practices"
+    # Layer 3: Web Search for External Knowledge (明示依頼時のみ)
+    echo "🌐 Layer 3: Web Search - External Best Practices (explicit request only)"
     
     # Search 1: Current best practices and standards
     echo "📡 Web search: $domain best practices guide" 
@@ -141,7 +125,7 @@ function comprehensive_knowledge_load() {
     fi
     
     echo "✅ 3-Layer Knowledge Loading Complete"
-    echo "📊 Sources: Local(${#local_files[@]} files) + Cognee + Web = Comprehensive Understanding"
+    echo "📊 Sources: Local(${#local_files[@]} files) + Active MCP (if any) + Web = Comprehensive Understanding"
     echo "🎯 Ready for informed strategy formulation"
 }
 ```

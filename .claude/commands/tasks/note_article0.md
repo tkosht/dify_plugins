@@ -219,7 +219,7 @@ $ARGUMENTS
     - [ ] **AUTO-SETUP**: 環境不備時は自動セットアップ実行後に再開
     - [ ] **FORBIDDEN TOOLS**: Write/Edit/MultiEdit ツールの使用禁止
     - [ ] **MANDATORY TMUX WORK**: 全作業を tmux ペイン内で実行
-- [ ] **EFFICIENCY ENHANCEMENT**: cognee MCP ツールを活用して情報収集の効率化を図る
+- [ ] **EFFICIENCY ENHANCEMENT**: Serena または有効なMCPツールを活用して情報収集の効率化を図る
 - [ ] **CHECKLIST COMPLIANCE**: 本制約をチェックリスト化する
 </constraints>
 
