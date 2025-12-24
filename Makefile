@@ -70,7 +70,7 @@ clean-venv:
 	rm -rf .venv uv.lock
 
 clean-npm:
-	rm -rf .npm-global
+	rm -rf .npm-global node_modules
 
 clean-logs:
 	rm -rf logs/*.log
