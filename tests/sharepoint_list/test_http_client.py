@@ -1,4 +1,5 @@
 """Tests for http_client module."""
+
 from __future__ import annotations
 
 import json
@@ -20,7 +21,9 @@ def _make_spec(
     json_body: dict[str, object] | None = None,
 ) -> RequestSpec:
     url = f"{base_url}{path}"
-    return RequestSpec(method=method, url=url, params=params or {}, json=json_body)
+    return RequestSpec(
+        method=method, url=url, params=params or {}, json=json_body
+    )
 
 
 @pytest.fixture
@@ -125,7 +128,10 @@ class TestCalculateBackoffWait:
             max_wait_seconds=10.0,
             jitter=False,
         )
-        assert http_client.calculate_backoff_wait(0, config, retry_after=30) == 30.0
+        assert (
+            http_client.calculate_backoff_wait(0, config, retry_after=30)
+            == 30.0
+        )
 
     def test_jitter_adds_randomness(self) -> None:
         config = http_client.RetryConfig(
@@ -200,7 +206,9 @@ class TestSendSingleRequest:
             http_client._send_single_request(spec, "test_token")
         assert exc_info.value.status_code == 403
 
-    def test_429_raises_rate_limit_error(self, stub_server: StubServer) -> None:
+    def test_429_raises_rate_limit_error(
+        self, stub_server: StubServer
+    ) -> None:
         stub_server.enqueue(
             StubResponse(
                 status=429,
@@ -241,7 +249,9 @@ class TestSendSingleRequest:
         headers = stub_server.requests[-1]["headers"]
         assert headers.get("Content-Type") == "application/json"
 
-    def test_extra_headers_are_forwarded(self, stub_server: StubServer) -> None:
+    def test_extra_headers_are_forwarded(
+        self, stub_server: StubServer
+    ) -> None:
         stub_server.enqueue(StubResponse(status=200, body="{}"))
         spec = _make_spec(stub_server.base_url, "/extra")
         http_client._send_single_request(
@@ -250,7 +260,9 @@ class TestSendSingleRequest:
         headers = stub_server.requests[-1]["headers"]
         assert headers.get("Prefer") == "test"
 
-    def test_params_and_json_body_are_sent(self, stub_server: StubServer) -> None:
+    def test_params_and_json_body_are_sent(
+        self, stub_server: StubServer
+    ) -> None:
         stub_server.enqueue(StubResponse(status=200, body="{}"))
         spec = _make_spec(
             stub_server.base_url,
@@ -272,7 +284,10 @@ class TestSendRequestWithRetry:
         stub_server.enqueue(StubResponse(status=200, body={"value": []}))
         spec = _make_spec(stub_server.base_url, "/flaky")
         config = http_client.RetryConfig(
-            max_attempts=3, min_wait_seconds=0, max_wait_seconds=0, jitter=False
+            max_attempts=3,
+            min_wait_seconds=0,
+            max_wait_seconds=0,
+            jitter=False,
         )
         result = http_client.send_request_with_retry(
             spec, "test_token", config=config
@@ -280,7 +295,9 @@ class TestSendRequestWithRetry:
         assert result == {"value": []}
         assert len(stub_server.requests) == 2
 
-    def test_retries_on_rate_limit_error(self, stub_server: StubServer) -> None:
+    def test_retries_on_rate_limit_error(
+        self, stub_server: StubServer
+    ) -> None:
         stub_server.enqueue(
             StubResponse(
                 status=429,
@@ -291,7 +308,10 @@ class TestSendRequestWithRetry:
         stub_server.enqueue(StubResponse(status=200, body={"value": []}))
         spec = _make_spec(stub_server.base_url, "/rate-limit")
         config = http_client.RetryConfig(
-            max_attempts=3, min_wait_seconds=0, max_wait_seconds=0, jitter=False
+            max_attempts=3,
+            min_wait_seconds=0,
+            max_wait_seconds=0,
+            jitter=False,
         )
         result = http_client.send_request_with_retry(
             spec, "test_token", config=config
@@ -329,7 +349,10 @@ class TestSendRequestWithRetry:
         stub_server.enqueue(StubResponse(status=500, body="Server Error"))
         spec = _make_spec(stub_server.base_url, "/always-500")
         config = http_client.RetryConfig(
-            max_attempts=3, min_wait_seconds=0, max_wait_seconds=0, jitter=False
+            max_attempts=3,
+            min_wait_seconds=0,
+            max_wait_seconds=0,
+            jitter=False,
         )
         with pytest.raises(http_client.TransientError):
             http_client.send_request_with_retry(
@@ -341,7 +364,10 @@ class TestSendRequestWithRetry:
         stub_server.enqueue(StubResponse(status=500, body="Server Error"))
         spec = _make_spec(stub_server.base_url, "/one-shot")
         config = http_client.RetryConfig(
-            max_attempts=1, min_wait_seconds=0, max_wait_seconds=0, jitter=False
+            max_attempts=1,
+            min_wait_seconds=0,
+            max_wait_seconds=0,
+            jitter=False,
         )
         with pytest.raises(http_client.TransientError):
             http_client.send_request_with_retry(
@@ -350,11 +376,16 @@ class TestSendRequestWithRetry:
         assert len(stub_server.requests) == 1
 
     def test_retries_on_timeout(self, stub_server: StubServer) -> None:
-        stub_server.enqueue(StubResponse(status=200, body={"value": []}, delay=0.2))
+        stub_server.enqueue(
+            StubResponse(status=200, body={"value": []}, delay=0.2)
+        )
         stub_server.enqueue(StubResponse(status=200, body={"value": []}))
         spec = _make_spec(stub_server.base_url, "/slow")
         config = http_client.RetryConfig(
-            max_attempts=2, min_wait_seconds=0, max_wait_seconds=0, jitter=False
+            max_attempts=2,
+            min_wait_seconds=0,
+            max_wait_seconds=0,
+            jitter=False,
         )
         result = http_client.send_request_with_retry(
             spec, "test_token", config=config, timeout=0.02
@@ -368,7 +399,10 @@ class TestSendRequestWithRetry:
             method="GET", url=f"http://127.0.0.1:{unused_port}/test"
         )
         config = http_client.RetryConfig(
-            max_attempts=2, min_wait_seconds=0, max_wait_seconds=0, jitter=False
+            max_attempts=2,
+            min_wait_seconds=0,
+            max_wait_seconds=0,
+            jitter=False,
         )
         with pytest.raises(http_client.TransientError) as exc_info:
             http_client.send_request_with_retry(
@@ -378,7 +412,10 @@ class TestSendRequestWithRetry:
 
     def test_zero_attempts_raises_unexpected_error(self) -> None:
         config = http_client.RetryConfig(
-            max_attempts=0, min_wait_seconds=0, max_wait_seconds=0, jitter=False
+            max_attempts=0,
+            min_wait_seconds=0,
+            max_wait_seconds=0,
+            jitter=False,
         )
         spec = RequestSpec(method="GET", url="http://127.0.0.1:1/test")
         with pytest.raises(http_client.GraphAPIError) as exc_info:

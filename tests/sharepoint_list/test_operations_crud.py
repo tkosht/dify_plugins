@@ -8,7 +8,6 @@ import pytest
 
 from app.sharepoint_list.internal import operations, validators
 
-
 # Use GUID format to bypass resolve functions
 SITE_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 LIST_ID = "b2c3d4e5-f6a7-8901-bcde-f12345678901"
@@ -65,7 +64,9 @@ class TestCreateItem:
         assert result["id"] == "new-item-1"
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
-    def test_create_item_sends_fields_in_body(self, mock_request: Mock) -> None:
+    def test_create_item_sends_fields_in_body(
+        self, mock_request: Mock
+    ) -> None:
         """フィールドがリクエストボディに含まれる"""
         mock_resp = Mock()
         mock_resp.status_code = 201
@@ -196,7 +197,9 @@ class TestListItemsPagination:
         assert result["items"][0]["id"] == "item-1"
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
-    def test_list_items_pagination_token_extracted(self, mock_request: Mock) -> None:
+    def test_list_items_pagination_token_extracted(
+        self, mock_request: Mock
+    ) -> None:
         """next_page_token が @odata.nextLink から抽出される"""
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -218,7 +221,9 @@ class TestListItemsPagination:
         assert result["next_page_token"] == "abc123"
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
-    def test_list_items_no_pagination_returns_none(self, mock_request: Mock) -> None:
+    def test_list_items_no_pagination_returns_none(
+        self, mock_request: Mock
+    ) -> None:
         """ページネーションなしの場合 next_page_token は None"""
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -260,11 +265,15 @@ class TestListItemsPagination:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         assert params.get("$skiptoken") == "prev-token-123"
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
-    def test_list_items_page_size_capped_at_100(self, mock_request: Mock) -> None:
+    def test_list_items_page_size_capped_at_100(
+        self, mock_request: Mock
+    ) -> None:
         """page_size は 100 以下に制限される"""
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -285,7 +294,9 @@ class TestListItemsPagination:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         assert params.get("$top") == 100
 
 

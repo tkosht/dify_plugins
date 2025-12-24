@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Generator
 import json
+from collections.abc import Generator
 from typing import Any
 
 from dify_plugin import Tool
@@ -61,7 +61,10 @@ class ListItemsTool(Tool):
                 yield self.create_json_message(
                     {
                         "error": "deprecated_parameter",
-                        "message": "Use filters with createdDateTime instead of created_after/created_before.",
+                        "message": (
+                            "Use filters with createdDateTime instead of "
+                            "created_after/created_before."
+                        ),
                     }
                 )
                 yield self.create_text_message(

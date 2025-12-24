@@ -1,23 +1,19 @@
 services:
   serena:
     image: ghcr.io/oraios/serena:latest
-    container_name: serena-mcp-server
+    # container_name は指定しない（重要！）
+    
+    command: >
+      serena start-mcp-server
+      --transport streamable-http
+      --port 9121
+      --host 0.0.0.0
+      --enable-web-dashboard False
+      --project /workspaces/project
+    
     volumes:
       - ./.serena_home:/root/.serena
-      - ./.projects:/workspaces/serena/.serena
-    command: >
-      uv run serena start-mcp-server --transport sse --port 9121
-    tty: false
-    restart: unless-stopped
-    ports:
-      - "9122:9121"
-#     networks:
-#       base_net:
-#         aliases: [ "serena" ]
-# 
-# 
-# networks:
-#   base_net:
-#     external: true
-#     name: base_net
-
+      - .:/workspaces/project
+    
+    expose:
+      - "9121"

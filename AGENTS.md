@@ -47,12 +47,13 @@ ENFORCEMENT=(
 ### 1️⃣ MANDATORY RULES VERIFICATION (必須ルール検証絶対)
 ```bash
 # MANDATORY RULES CHECKLIST DISPLAY (必須ルール群チェックリスト表示)
-# 📋 QUICK ACCESS TOOLS AVAILABLE:
-#   • show_rules - Interactive mandatory rules checklist
-#   • full_rules - Complete mandatory rules documentation
-#   • rules_summary - Quick 10-point summary
-#   • new_task_checklist [name] - Create task-specific checklist
-# 📚 SETUP: source /home/devuser/workspace/scripts/mandatory_rules_quick_access.sh
+# 📋 QUICK ACCESS (scriptless):
+#   • memory-bank/00-core/mandatory_rules_checklist.md (FULL CHECKLIST)
+#   • memory-bank/00-core/knowledge_access_principles_mandatory.md
+#   • memory-bank/11-checklist-driven/checklist_driven_execution_framework.md
+#   • new_task_checklist [name] - Create task-specific checklist (if available)
+# 📚 SETUP: none (scripts/ 廃止)
+# 🔍 HEADINGS ONLY (probe-safe): rg -n '^#' memory-bank/00-core/mandatory_rules_checklist.md
 
 function display_mandatory_rules_checklist() {
     echo "🚨 MANDATORY RULES VERIFICATION CHECKLIST"
@@ -115,7 +116,7 @@ SPECULATION_BAN="事実ベース判断のみ - Speculation is FAILURE"
 PRE_EXECUTION_MANDATORY=(
     "0. MANDATORY RULES VERIFICATION: display_mandatory_rules_checklist()"
     "1. Date context initialization: date command"
-    "2. AI COMPLIANCE: Run pre_action_check.py --strict-mode"
+    "2. AI COMPLIANCE: Run available compliance check (uv run python / python3). If absent, mark N/A"
     "3. WORK MANAGEMENT: Verify on feature branch (verify_work_management)"
     "4. MICRO PROBE: 200ms以内の自動プローブ（必要時のみFastへ自動昇格）"
     "5. TMUX PROTOCOLS: For tmux activities, ensure Enter別送信 compliance"
@@ -307,7 +308,7 @@ SCRIPT_AUTOMATION_MINIMALISM=(
   "DEFAULT_OFF: 新規スクリプト/自動化は最後の手段（まずは手順簡素化/既存ターゲット活用）"
   "PREFER_EXISTING: 既存の Makefile/スクリプトの拡張を優先（重複/乱立を禁止）"
   "SIZE_LIMIT: 単機能・短命。~100行以内・外部依存追加禁止・副作用最小"
-  "PLACEMENT: 追加時は既存構造に従う（Makefile優先／scripts/ は最小限）"
+  "PLACEMENT: 追加時は既存構造に従う（Makefile優先／scripts/ は廃止）"
   "DOC_REQUIRED: 目的・利用手順・撤去基準を README か AGENTS.md に記載"
   "DELETE_PLAN: 不使用の自動化は定期的に整理・削除（No repository bloat）"
   "GATES: 追加前に Value Assessment(5-point) と Work Management を満たすこと"
@@ -326,7 +327,7 @@ SCRIPT_CHANGE_GATE="価値/保守/安全の実証なしに新規スクリプト�
 | **Memory Design** | Understand hierarchy | `mcp__serena__read_memory("memory_hierarchy_design_framework")` |
 | **Auto-Updates** | Event-driven framework | `mcp__serena__read_memory("ai_agent_event_driven_update_framework")` |
 | **Any Task** | Micro‑Probe auto | local `rg/fdfind/eza` only |
-| **Mandatory Rules** | Interactive checklist | `show_rules` or `memory-bank/00-core/mandatory_rules_checklist.md` |
+| **Mandatory Rules** | Checklist | `memory-bank/00-core/mandatory_rules_checklist.md` |
 | **Task Checklist** | Create from template | `new_task_checklist "task_name"` |
 | **Commands** | Essential reference | `memory-bank/09-meta/essential_commands_reference.md` |
 | **Cognee Ops** | Strategic hub | `memory-bank/01-cognee/cognee_strategic_operations_hub.md` |
@@ -450,7 +451,7 @@ echo "Follow-up    → codex_mcp-reply(sessionId=<ID>, prompt='追加の観測/�
 ```bash
 0. ✓ MCP SELECTION: Serena既定 / Cogneeは明示時のみ
 1. ✓ MICRO PROBE: 自動（<=200ms）; 必要時のみFast（<=800ms）
-2. ✓ AI COMPLIANCE: python scripts/pre_action_check.py --strict-mode
+2. ✓ AI COMPLIANCE: Run available compliance check (uv run python / python3). If absent, mark N/A
 3. ✓ WORK MANAGEMENT: Verify on task branch (not main/master)
 4. ✓ EXTERNAL: Cognee/WebSearch は明示依頼がある場合のみ
 5. ✓ CODEX_MCP: 難易度が高い/停滞時は協働相談を発火（セッション継続を厳守）
@@ -484,4 +485,3 @@ echo "Follow-up    → codex_mcp-reply(sessionId=<ID>, prompt='追加の観測/�
 - Persist until the task is fully handled end-to-end within the current turn whenever feasible: do not stop at analysis or partial fixes; carry changes through implementation, verification, and a clear explanation of outcomes unless the user explicitly pauses or redirects you.
 - Be extremely biased for action. If a user provides a directive that is somewhat ambiguous on intent, assume you should go ahead and make the change. If the user asks a question like "should we do x?" and your answer is "yes", you should also go ahead and perform the action. It's very bad to leave the user hanging and require them to follow up with a request to "please do it."
 </solution_persistence>
-

@@ -11,6 +11,8 @@ model_reasoning_effort = "high"
 
 # experimental_use_rmcp_client = true     # for codex cli mcp
 
+[features]
+skills = true
 
 [sandbox_workspace_write]
 network_access = true               # ★ネット許可
@@ -69,7 +71,7 @@ args = ["-y", "@modelcontextprotocol/server-sequential-thinking"]
 
 [mcp_servers.serena]
 command = "npx"
-args = ["-y", "mcp-remote@latest", "http://serena:9121/sse", "--allow-http", "--transport", "sse-only", "--context", "codex"]
+args = ["-y", "mcp-remote@latest", "http://serena:9121/mcp", "--allow-http", "--context", "codex"]
 
 [notice]
 hide_gpt5_1_migration_prompt = true

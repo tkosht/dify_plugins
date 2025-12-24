@@ -10,8 +10,8 @@
       "env": {}
     },
     "serena": {
-      "type": "sse",
-      "url": "http://serena:9121/sse"
+      "type": "http",
+      "url": "http://serena:9121/mcp"
     }
   }
 }
