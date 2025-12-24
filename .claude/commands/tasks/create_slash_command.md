@@ -142,7 +142,7 @@ $ARGUMENTS
     - [ ] **NAMING CONVENTION**: コマンド名は snake_case、英数字とアンダースコアのみ
     - [ ] **FILE PLACEMENT**: .claude/commands/tasks/ 配下に配置
     - [ ] **COMPLETENESS**: 全ての置換変数が適切に設定されている
-- [ ] **EFFICIENCY ENHANCEMENT**: cognee MCP ツールを活用して情報収集の効率化を図る
+- [ ] **EFFICIENCY ENHANCEMENT**: Serena または有効なMCPツールを活用して情報収集の効率化を図る
 - [ ] **CHECKLIST COMPLIANCE**: 本制約をチェックリスト化する
 </constraints>
 

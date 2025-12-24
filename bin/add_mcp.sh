@@ -16,6 +16,3 @@ claude mcp add codex-cli --env CODEX_HOME=$(pwd) -- npx -y codex-mcp-server
 claude mcp add serena -s project --transport http http://serena:9121/mcp
 
 
-# # custom script
-# claude mcp add cognee -s project -- sh bin/run_cognee.sh
-

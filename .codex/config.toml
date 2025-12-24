@@ -80,7 +80,3 @@ hide_gpt5_1_migration_prompt = true
 [notice.model_migrations]
 "gpt-5.1-codex-max" = "gpt-5.2-codex"
 
-# [mcp_servers.cognee]
-# command = "sh"
-# args = ["bin/run_cognee.sh"]
-

@@ -30,7 +30,7 @@ execution_model:
 
     Phase4: ナレッジの記録
     → チェックリストドリブン実行
-    → Phase1～3 で得られた知見を適切にserena, cognee に記録（/dag-debug-enhanced活用）
+    → Phase1～3 で得られた知見を適切にserena / 有効なMCP に記録（/dag-debug-enhanced活用）
     → 最終コミット・プッシュ
 
 phases:
@@ -108,7 +108,7 @@ phases:
         actions:
           - "*.mdファイルへの追記"
           - "mcp__serena__write_memoryでの記録"
-          - "cogneeへの知識追加"
+          - "有効なMCPへの知識追加（有効時のみ）"
           - "追加すべきルールの文書化"
       
       - name: "コミット＆プッシュ"
@@ -194,10 +194,10 @@ phases:
           - "mcp__serena__find_symbol での既存ナレッジとの関連付け"
           - "mcp__serena__get_symbols_overview での体系的整理"
       
-      - name: "Cognee知識ベース更新"
+      - name: "有効なMCP知識ベース更新"
         protocol: "/dag-debug-enhanced"
         actions:
-          - "cogneeへの構造化知識の追加"
+          - "有効なMCPへの構造化知識の追加（有効時のみ）"
             - "問題カテゴリと解決策のマッピング"
             - "アンチパターンの記録"
             - "推奨アプローチの文書化"
@@ -248,7 +248,7 @@ verification_requirements:
   
   phase4_checks:
     - "全フェーズの知見が適切に収集されているか"
-    - "ナレッジがSerenaとCogneeに記録されているか"
+    - "ナレッジがSerenaと有効なMCPに記録されているか"
     - "ドキュメントが生成・更新されているか"
     - "知識の品質と再現性が検証されているか"
     - "他プロジェクトへの適用可能性が評価されているか"
@@ -288,7 +288,7 @@ knowledge_update_locations:
     - "[タスク名]_optimization_techniques"
     - "[タスク名]_antipatterns"
   
-  cognee_entries:
+  mcp_entries:
     - "implementation_patterns"
     - "debug_solutions"
     - "ci_cd_learnings"
@@ -328,7 +328,7 @@ state_management:
         - collected_insights   # 収集した知見
         - pattern_catalog      # パターンカタログ
         - serena_records       # Serena記録内容
-        - cognee_entries       # Cognee登録内容
+        - mcp_entries          # MCP登録内容
         - documentation_paths  # 生成したドキュメントパス
     
     step_level:
@@ -398,7 +398,7 @@ progress_persistence:
           artifacts:
             collected_patterns: []
             serena_memories: []
-            cognee_entries: []
+            mcp_entries: []
             generated_docs: []
             verification_results: {}
             
@@ -570,7 +570,7 @@ output_format:
     knowledge_updates:
       markdown_files: []
       serena_memories: []
-      cognee_entries: []
+      mcp_entries: []
     next_actions: []
 
 checklist_integration:
@@ -621,7 +621,7 @@ success_criteria:
     
   phase4:
     - "全フェーズの知見の体系的収集"
-    - "SerenaとCogneeへの適切な記録"
+    - "Serenaと有効なMCPへの適切な記録"
     - "再利用可能なパターンの文書化"
     - "知識の品質と一貫性の確保"
     - "他プロジェクトへの適用性の確立"
