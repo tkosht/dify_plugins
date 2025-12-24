@@ -37,7 +37,13 @@ def validate_skill(skill_path):
     except yaml.YAMLError as e:
         return False, f"Invalid YAML in frontmatter: {e}"
 
-    allowed_properties = {"name", "description", "license", "allowed-tools", "metadata"}
+    allowed_properties = {
+        "name",
+        "description",
+        "license",
+        "allowed-tools",
+        "metadata",
+    }
 
     unexpected_keys = set(frontmatter.keys()) - allowed_properties
     if unexpected_keys:
@@ -77,7 +83,10 @@ def validate_skill(skill_path):
 
     description = frontmatter.get("description", "")
     if not isinstance(description, str):
-        return False, f"Description must be a string, got {type(description).__name__}"
+        return (
+            False,
+            f"Description must be a string, got {type(description).__name__}",
+        )
     description = description.strip()
     if description:
         if "<" in description or ">" in description:

@@ -28,18 +28,23 @@ import argparse
 import csv
 import json
 import sys
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any
 
 # ログディレクトリ
-LOG_DIR = Path(__file__).parent.parent.parent.parent.parent / "sessions" / "codex_exec"
+LOG_DIR = (
+    Path(__file__).parent.parent.parent.parent.parent
+    / "sessions"
+    / "codex_exec"
+)
 
 
 def iter_logs(
-    from_date: Optional[datetime] = None,
-    to_date: Optional[datetime] = None,
-) -> Iterator[Dict[str, Any]]:
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+) -> Iterator[dict[str, Any]]:
     """ログを順次読み込み"""
     if not LOG_DIR.exists():
         return
@@ -48,7 +53,7 @@ def iter_logs(
 
     for log_file in log_files:
         try:
-            with open(log_file, 'r', encoding='utf-8') as f:
+            with open(log_file, encoding="utf-8") as f:
                 for line in f:
                     log = json.loads(line)
 
@@ -56,8 +61,12 @@ def iter_logs(
                     if from_date or to_date:
                         ts_str = log.get("timestamp", "")
                         try:
-                            ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-                            ts = ts.replace(tzinfo=None)  # naive datetime に変換
+                            ts = datetime.fromisoformat(
+                                ts_str.replace("Z", "+00:00")
+                            )
+                            ts = ts.replace(
+                                tzinfo=None
+                            )  # naive datetime に変換
                             if from_date and ts < from_date:
                                 continue
                             if to_date and ts > to_date:
@@ -72,14 +81,14 @@ def iter_logs(
 
 
 def filter_logs(
-    logs: Iterator[Dict[str, Any]],
-    task_type: Optional[str] = None,
-    mode: Optional[str] = None,
-    min_score: Optional[float] = None,
-    max_score: Optional[float] = None,
-    has_human_feedback: Optional[bool] = None,
-    has_llm_eval: Optional[bool] = None,
-) -> Iterator[Dict[str, Any]]:
+    logs: Iterator[dict[str, Any]],
+    task_type: str | None = None,
+    mode: str | None = None,
+    min_score: float | None = None,
+    max_score: float | None = None,
+    has_human_feedback: bool | None = None,
+    has_llm_eval: bool | None = None,
+) -> Iterator[dict[str, Any]]:
     """ログをフィルタリング"""
     for log in logs:
         exec_data = log.get("execution", {})
@@ -92,7 +101,9 @@ def filter_logs(
             continue
 
         heuristic = eval_data.get("heuristic", {})
-        score = heuristic.get("combined_score", heuristic.get("average_score", 0))
+        score = heuristic.get(
+            "combined_score", heuristic.get("average_score", 0)
+        )
 
         if min_score is not None and score < min_score:
             continue
@@ -117,7 +128,7 @@ def filter_logs(
         yield log
 
 
-def format_log_row(log: Dict[str, Any]) -> Dict[str, Any]:
+def format_log_row(log: dict[str, Any]) -> dict[str, Any]:
     """ログをフラットな辞書に変換"""
     exec_data = log.get("execution", {})
     eval_data = log.get("evaluation", {})
@@ -135,20 +146,27 @@ def format_log_row(log: Dict[str, Any]) -> Dict[str, Any]:
         "prompt": exec_data.get("prompt", "")[:50],
         "success": first_result.get("success", False),
         "execution_time": first_result.get("execution_time", 0),
-        "heuristic_score": heuristic.get("combined_score", heuristic.get("average_score", 0)),
+        "heuristic_score": heuristic.get(
+            "combined_score",
+            heuristic.get("average_score", 0),
+        ),
         "human_score": human.get("score", ""),
         "llm_score": llm.get("correctness", "") if llm else "",
     }
 
 
-def print_table(logs: List[Dict[str, Any]], limit: int = 10) -> None:
+def print_table(logs: list[dict[str, Any]], limit: int = 10) -> None:
     """ログをテーブル形式で出力"""
     if not logs:
         print("No logs found.")
         return
 
     # ヘッダー
-    print(f"{'Run ID':<10} {'Timestamp':<25} {'Mode':<12} {'Task':<15} {'Score':<8} {'Human':<6} {'LLM':<6}")
+    header = (
+        f"{'Run ID':<10} {'Timestamp':<25} {'Mode':<12} "
+        f"{'Task':<15} {'Score':<8} {'Human':<6} {'LLM':<6}"
+    )
+    print(header)
     print("-" * 90)
 
     for i, log in enumerate(logs):
@@ -174,14 +192,22 @@ def print_table(logs: List[Dict[str, Any]], limit: int = 10) -> None:
         print(f"\n... and {total - limit} more (use --limit to show more)")
 
 
-def export_csv(logs: List[Dict[str, Any]], output=sys.stdout) -> None:
+def export_csv(logs: list[dict[str, Any]], output=sys.stdout) -> None:
     """CSV形式でエクスポート"""
     if not logs:
         return
 
     fieldnames = [
-        "run_id", "timestamp", "mode", "task_type", "prompt",
-        "success", "execution_time", "heuristic_score", "human_score", "llm_score"
+        "run_id",
+        "timestamp",
+        "mode",
+        "task_type",
+        "prompt",
+        "success",
+        "execution_time",
+        "heuristic_score",
+        "human_score",
+        "llm_score",
     ]
 
     writer = csv.DictWriter(output, fieldnames=fieldnames)
@@ -192,12 +218,12 @@ def export_csv(logs: List[Dict[str, Any]], output=sys.stdout) -> None:
         writer.writerow(row)
 
 
-def export_json(logs: List[Dict[str, Any]], output=sys.stdout) -> None:
+def export_json(logs: list[dict[str, Any]], output=sys.stdout) -> None:
     """JSON形式でエクスポート"""
     json.dump(logs, output, ensure_ascii=False, indent=2)
 
 
-def print_stats(logs: List[Dict[str, Any]]) -> None:
+def print_stats(logs: list[dict[str, Any]]) -> None:
     """統計サマリーを出力"""
     if not logs:
         print("No logs found.")
@@ -215,7 +241,9 @@ def print_stats(logs: List[Dict[str, Any]]) -> None:
         eval_data = log.get("evaluation", {})
         heuristic = eval_data.get("heuristic", {})
 
-        score = heuristic.get("combined_score", heuristic.get("average_score", 0))
+        score = heuristic.get(
+            "combined_score", heuristic.get("average_score", 0)
+        )
         if score:
             scores.append(score)
 
@@ -239,7 +267,7 @@ def print_stats(logs: List[Dict[str, Any]]) -> None:
     print(f"\nTotal Runs: {total}")
 
     if scores:
-        print(f"\nHeuristic Scores:")
+        print("\nHeuristic Scores:")
         print(f"  Average: {sum(scores) / len(scores):.2f}")
         print(f"  Min: {min(scores):.2f}")
         print(f"  Max: {max(scores):.2f}")
@@ -248,27 +276,25 @@ def print_stats(logs: List[Dict[str, Any]]) -> None:
         print(f"\nHuman Feedback ({len(human_scores)} entries):")
         print(f"  Average: {sum(human_scores) / len(human_scores):.2f}")
     else:
-        print(f"\nHuman Feedback: None")
+        print("\nHuman Feedback: None")
 
     if llm_scores:
         print(f"\nLLM Evaluations ({len(llm_scores)} entries):")
         print(f"  Average: {sum(llm_scores) / len(llm_scores):.2f}")
     else:
-        print(f"\nLLM Evaluations: None")
+        print("\nLLM Evaluations: None")
 
-    print(f"\nBy Mode:")
+    print("\nBy Mode:")
     for mode, count in sorted(modes.items(), key=lambda x: -x[1]):
         print(f"  {mode}: {count}")
 
-    print(f"\nBy Task Type:")
+    print("\nBy Task Type:")
     for task_type, count in sorted(task_types.items(), key=lambda x: -x[1]):
         print(f"  {task_type}: {count}")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="codex exec ログの検索・分析"
-    )
+    parser = argparse.ArgumentParser(description="codex exec ログの検索・分析")
 
     # 出力モード
     parser.add_argument(

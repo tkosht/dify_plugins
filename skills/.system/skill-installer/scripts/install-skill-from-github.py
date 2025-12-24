@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 import os
 import shutil
 import subprocess
@@ -13,8 +12,10 @@ import tempfile
 import urllib.error
 import urllib.parse
 import zipfile
+from dataclasses import dataclass
 
 from github_utils import github_request
+
 DEFAULT_REF = "main"
 
 
@@ -56,7 +57,9 @@ def _request(url: str) -> bytes:
     return github_request(url, "codex-skill-install")
 
 
-def _parse_github_url(url: str, default_ref: str) -> tuple[str, str, str, str | None]:
+def _parse_github_url(
+    url: str, default_ref: str
+) -> tuple[str, str, str, str | None]:
     parsed = urllib.parse.urlparse(url)
     if parsed.netloc != "github.com":
         raise InstallError("Only GitHub URLs are supported for download mode.")
@@ -88,7 +91,9 @@ def _download_repo_zip(owner: str, repo: str, ref: str, dest_dir: str) -> str:
         file_handle.write(payload)
     with zipfile.ZipFile(zip_path, "r") as zip_file:
         _safe_extract_zip(zip_file, dest_dir)
-        top_levels = {name.split("/")[0] for name in zip_file.namelist() if name}
+        top_levels = {
+            name.split("/")[0] for name in zip_file.namelist() if name
+        }
     if not top_levels:
         raise InstallError("Downloaded archive was empty.")
     if len(top_levels) != 1:
@@ -97,7 +102,7 @@ def _download_repo_zip(owner: str, repo: str, ref: str, dest_dir: str) -> str:
 
 
 def _run_git(args: list[str]) -> None:
-    result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    result = subprocess.run(args, capture_output=True, text=True)
     if result.returncode != 0:
         raise InstallError(result.stderr.strip() or "Git command failed.")
 
@@ -105,8 +110,12 @@ def _run_git(args: list[str]) -> None:
 def _safe_extract_zip(zip_file: zipfile.ZipFile, dest_dir: str) -> None:
     dest_root = os.path.realpath(dest_dir)
     for info in zip_file.infolist():
-        extracted_path = os.path.realpath(os.path.join(dest_dir, info.filename))
-        if extracted_path == dest_root or extracted_path.startswith(dest_root + os.sep):
+        extracted_path = os.path.realpath(
+            os.path.join(dest_dir, info.filename)
+        )
+        if extracted_path == dest_root or extracted_path.startswith(
+            dest_root + os.sep
+        ):
             continue
         raise InstallError("Archive contains files outside the destination.")
     zip_file.extractall(dest_dir)
@@ -114,7 +123,9 @@ def _safe_extract_zip(zip_file: zipfile.ZipFile, dest_dir: str) -> None:
 
 def _validate_relative_path(path: str) -> None:
     if os.path.isabs(path) or os.path.normpath(path).startswith(".."):
-        raise InstallError("Skill path must be a relative path inside the repo.")
+        raise InstallError(
+            "Skill path must be a relative path inside the repo."
+        )
 
 
 def _validate_skill_name(name: str) -> None:
@@ -125,7 +136,12 @@ def _validate_skill_name(name: str) -> None:
         raise InstallError("Invalid skill name.")
 
 
-def _git_sparse_checkout(repo_url: str, ref: str, paths: list[str], dest_dir: str) -> str:
+def _git_sparse_checkout(
+    repo_url: str,
+    ref: str,
+    paths: list[str],
+    dest_dir: str,
+) -> str:
     repo_dir = os.path.join(dest_dir, "repo")
     clone_cmd = [
         "git",
@@ -187,22 +203,34 @@ def _build_repo_ssh(owner: str, repo: str) -> str:
 def _prepare_repo(source: Source, method: str, tmp_dir: str) -> str:
     if method in ("download", "auto"):
         try:
-            return _download_repo_zip(source.owner, source.repo, source.ref, tmp_dir)
+            return _download_repo_zip(
+                source.owner, source.repo, source.ref, tmp_dir
+            )
         except InstallError as exc:
             if method == "download":
                 raise
             err_msg = str(exc)
-            if "HTTP 401" in err_msg or "HTTP 403" in err_msg or "HTTP 404" in err_msg:
+            if (
+                "HTTP 401" in err_msg
+                or "HTTP 403" in err_msg
+                or "HTTP 404" in err_msg
+            ):
                 pass
             else:
                 raise
     if method in ("git", "auto"):
-        repo_url = source.repo_url or _build_repo_url(source.owner, source.repo)
+        repo_url = source.repo_url or _build_repo_url(
+            source.owner, source.repo
+        )
         try:
-            return _git_sparse_checkout(repo_url, source.ref, source.paths, tmp_dir)
+            return _git_sparse_checkout(
+                repo_url, source.ref, source.paths, tmp_dir
+            )
         except InstallError:
             repo_url = _build_repo_ssh(source.owner, source.repo)
-            return _git_sparse_checkout(repo_url, source.ref, source.paths, tmp_dir)
+            return _git_sparse_checkout(
+                repo_url, source.ref, source.paths, tmp_dir
+            )
     raise InstallError("Unsupported method.")
 
 
@@ -245,9 +273,13 @@ def _default_dest() -> str:
 
 
 def _parse_args(argv: list[str]) -> Args:
-    parser = argparse.ArgumentParser(description="Install a skill from GitHub.")
+    parser = argparse.ArgumentParser(
+        description="Install a skill from GitHub."
+    )
     parser.add_argument("--repo", help="owner/repo")
-    parser.add_argument("--url", help="https://github.com/owner/repo[/tree/ref/path]")
+    parser.add_argument(
+        "--url", help="https://github.com/owner/repo[/tree/ref/path]"
+    )
     parser.add_argument(
         "--path",
         nargs="+",
@@ -288,7 +320,9 @@ def main(argv: list[str]) -> int:
                     raise InstallError("Unable to derive skill name.")
                 dest_dir = os.path.join(dest_root, skill_name)
                 if os.path.exists(dest_dir):
-                    raise InstallError(f"Destination already exists: {dest_dir}")
+                    raise InstallError(
+                        f"Destination already exists: {dest_dir}"
+                    )
                 skill_src = os.path.join(repo_root, path)
                 _validate_skill(skill_src)
                 _copy_skill(skill_src, dest_dir)

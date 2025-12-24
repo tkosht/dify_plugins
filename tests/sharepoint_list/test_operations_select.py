@@ -4,10 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import Mock, patch
 
-import pytest
-
 from app.sharepoint_list.internal import operations, validators
-
 
 # Use GUID format to bypass resolve functions
 SITE_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
@@ -75,7 +72,9 @@ class TestParseSelectFields:
 
     def test_parse_mixed_quotes(self) -> None:
         """混在したクォートを処理"""
-        result = operations.parse_select_fields("Title, \"Status\", 'Priority'")
+        result = operations.parse_select_fields(
+            "Title, \"Status\", 'Priority'"
+        )
         assert result == ["Title", "Status", "Priority"]
 
     def test_parse_empty_input_returns_none(self) -> None:
@@ -97,7 +96,9 @@ class TestMapFieldName:
         display_to_name = {"ステータス": "Status"}
         name_set = {"status", "title"}
 
-        result = operations._map_field_name("Status", display_to_name, name_set)
+        result = operations._map_field_name(
+            "Status", display_to_name, name_set
+        )
         assert result == "Status"
 
     def test_display_name_resolved_to_internal(self) -> None:
@@ -105,7 +106,9 @@ class TestMapFieldName:
         display_to_name = {"ステータス": "Status"}
         name_set = {"status", "title"}
 
-        result = operations._map_field_name("ステータス", display_to_name, name_set)
+        result = operations._map_field_name(
+            "ステータス", display_to_name, name_set
+        )
         assert result == "Status"
 
     def test_unknown_field_passed_through(self) -> None:
@@ -113,7 +116,9 @@ class TestMapFieldName:
         display_to_name = {"ステータス": "Status"}
         name_set = {"status", "title"}
 
-        result = operations._map_field_name("UnknownField", display_to_name, name_set)
+        result = operations._map_field_name(
+            "UnknownField", display_to_name, name_set
+        )
         assert result == "UnknownField"
 
     def test_case_insensitive_matching(self) -> None:
@@ -122,7 +127,9 @@ class TestMapFieldName:
         name_set = {"status", "title"}
 
         # lowercase input should match
-        result = operations._map_field_name("status", display_to_name, name_set)
+        result = operations._map_field_name(
+            "status", display_to_name, name_set
+        )
         assert result == "status"
 
 
@@ -248,7 +255,9 @@ class TestGetItemSelectFields:
 
         calls = mock_request.call_args_list
         item_call = calls[-1]
-        params = item_call.kwargs.get("params") or item_call[1].get("params", {})
+        params = item_call.kwargs.get("params") or item_call[1].get(
+            "params", {}
+        )
         expand = params.get("$expand", "")
         assert "fields($select=" in expand
         assert "Title" in expand
@@ -281,7 +290,9 @@ class TestGetItemSelectFields:
 
         calls = mock_request.call_args_list
         item_call = calls[-1]
-        params = item_call.kwargs.get("params") or item_call[1].get("params", {})
+        params = item_call.kwargs.get("params") or item_call[1].get(
+            "params", {}
+        )
         expand = params.get("$expand", "")
         # Should be resolved to internal name
         assert "Status" in expand
@@ -311,7 +322,9 @@ class TestGetItemSelectFields:
 
         calls = mock_request.call_args_list
         item_call = calls[-1]
-        params = item_call.kwargs.get("params") or item_call[1].get("params", {})
+        params = item_call.kwargs.get("params") or item_call[1].get(
+            "params", {}
+        )
         expand = params.get("$expand", "")
         # Should be just "fields" without $select
         assert expand == "fields"
@@ -345,7 +358,9 @@ class TestListItemsSelectFields:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         expand = params.get("$expand", "")
         assert "fields($select=" in expand
         assert "Title" in expand
@@ -377,14 +392,18 @@ class TestListItemsSelectFields:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         expand = params.get("$expand", "")
         # Should be resolved to internal names
         assert "Status" in expand
         assert "Priority" in expand
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
-    def test_quoted_select_fields_parsed_correctly(self, mock_request: Mock) -> None:
+    def test_quoted_select_fields_parsed_correctly(
+        self, mock_request: Mock
+    ) -> None:
         """クォートで囲まれたselect_fieldsが正しくパース"""
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -408,7 +427,9 @@ class TestListItemsSelectFields:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         expand = params.get("$expand", "")
         assert "Title" in expand
         assert "Status" in expand

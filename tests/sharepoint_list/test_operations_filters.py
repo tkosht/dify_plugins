@@ -8,7 +8,6 @@ import pytest
 
 from app.sharepoint_list.internal import operations, validators
 
-
 # Use GUID format to bypass resolve functions
 SITE_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 LIST_ID = "b2c3d4e5-f6a7-8901-bcde-f12345678901"
@@ -71,7 +70,9 @@ class TestListItemsFiltersContract:
         # Verify the filter was applied in request params
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         assert "$filter" in params
         assert "fields/Status" in params["$filter"]
 
@@ -102,12 +103,16 @@ class TestListItemsFiltersContract:
         assert "items" in result
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         assert "$filter" in params
         assert "fields/Status" in params["$filter"]
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
-    def test_filters_empty_string_returns_no_filter(self, mock_request: Mock) -> None:
+    def test_filters_empty_string_returns_no_filter(
+        self, mock_request: Mock
+    ) -> None:
         """空文字列はフィルタなしとして処理"""
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -132,7 +137,9 @@ class TestListItemsFiltersContract:
         assert "items" in result
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         assert "$filter" not in params or params.get("$filter") is None
 
     def test_filters_invalid_json_raises_error(self) -> None:
@@ -147,7 +154,9 @@ class TestListItemsFilterConstruction:
     """list_items のODataフィルタ構築をテスト"""
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
-    def test_created_datetime_is_top_level_field(self, mock_request: Mock) -> None:
+    def test_created_datetime_is_top_level_field(
+        self, mock_request: Mock
+    ) -> None:
         """createdDateTime はfields/プレフィックスなしで処理"""
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -171,7 +180,9 @@ class TestListItemsFilterConstruction:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         filter_expr = params.get("$filter", "")
         # Should NOT have fields/ prefix
         assert "createdDateTime ge" in filter_expr
@@ -202,12 +213,16 @@ class TestListItemsFilterConstruction:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         filter_expr = params.get("$filter", "")
         assert "fields/Status" in filter_expr
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
-    def test_display_name_resolved_to_internal_name(self, mock_request: Mock) -> None:
+    def test_display_name_resolved_to_internal_name(
+        self, mock_request: Mock
+    ) -> None:
         """日本語表示名が内部名に解決される"""
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -232,14 +247,18 @@ class TestListItemsFilterConstruction:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         filter_expr = params.get("$filter", "")
         # Should be resolved to internal name "Status"
         assert "fields/Status" in filter_expr
         assert "ステータス" not in filter_expr
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
-    def test_prefer_header_added_for_fields_filter(self, mock_request: Mock) -> None:
+    def test_prefer_header_added_for_fields_filter(
+        self, mock_request: Mock
+    ) -> None:
         """fields/を含むフィルタにPreferヘッダが付与"""
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -263,7 +282,9 @@ class TestListItemsFilterConstruction:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        headers = items_call.kwargs.get("headers") or items_call[1].get("headers", {})
+        headers = items_call.kwargs.get("headers") or items_call[1].get(
+            "headers", {}
+        )
         assert headers.get("Prefer") == "HonorNonIndexedQueriesWarning=true"
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
@@ -293,7 +314,9 @@ class TestListItemsFilterConstruction:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        headers = items_call.kwargs.get("headers") or items_call[1].get("headers", {})
+        headers = items_call.kwargs.get("headers") or items_call[1].get(
+            "headers", {}
+        )
         # Prefer header should NOT be present
         assert "Prefer" not in headers or headers.get("Prefer") is None
 
@@ -322,7 +345,9 @@ class TestListItemsFilterConstruction:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         filter_expr = params.get("$filter", "")
         assert "createdDateTime ge 2025-12-15T00:00:00Z" in filter_expr
 
@@ -351,12 +376,16 @@ class TestListItemsFilterConstruction:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         filter_expr = params.get("$filter", "")
         assert "createdDateTime le 2025-12-31T23:59:59Z" in filter_expr
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
-    def test_combined_filters_joined_with_and(self, mock_request: Mock) -> None:
+    def test_combined_filters_joined_with_and(
+        self, mock_request: Mock
+    ) -> None:
         """複数フィルタが and で結合される"""
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -380,7 +409,9 @@ class TestListItemsFilterConstruction:
 
         calls = mock_request.call_args_list
         items_call = calls[-1]
-        params = items_call.kwargs.get("params") or items_call[1].get("params", {})
+        params = items_call.kwargs.get("params") or items_call[1].get(
+            "params", {}
+        )
         filter_expr = params.get("$filter", "")
         assert " and " in filter_expr
         assert "createdDateTime ge" in filter_expr

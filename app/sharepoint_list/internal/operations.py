@@ -5,8 +5,6 @@ import os
 import urllib.parse
 from typing import Any
 
-import requests
-
 from . import filters, http_client, request_builders, validators
 
 LOG_PATH_DEFAULT = "/tmp/sharepoint_list.debug.ndjson"

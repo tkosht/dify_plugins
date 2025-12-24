@@ -8,7 +8,6 @@ import pytest
 
 from app.sharepoint_list.internal import operations
 
-
 # Use GUID format to bypass resolve functions
 SITE_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 LIST_ID = "b2c3d4e5-f6a7-8901-bcde-f12345678901"
@@ -28,7 +27,11 @@ def _mock_columns_with_choice() -> dict:
                     "defaultValue": "未着手",
                 },
             },
-            {"name": "Priority", "displayName": "優先度", "columnType": "number"},
+            {
+                "name": "Priority",
+                "displayName": "優先度",
+                "columnType": "number",
+            },
         ]
     }
 

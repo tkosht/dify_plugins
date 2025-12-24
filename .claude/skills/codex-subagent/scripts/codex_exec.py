@@ -15,7 +15,8 @@ codex_exec.py - Codex exec サブエージェント実行ラッパー
     python codex_exec.py --mode parallel --prompt "タスク" --count 3
 
     # コンペモード
-    python codex_exec.py --mode competition --prompt "コード生成" --count 3 --task-type code_gen
+    python codex_exec.py --mode competition --prompt "コード生成" --count 3
+        --task-type code_gen
 """
 
 from __future__ import annotations
@@ -23,25 +24,28 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import os
 import random
 import re
 import subprocess
 import sys
 import time
 import uuid
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 # ============================================================================
 # Logging Configuration
 # ============================================================================
 
-LOG_DIR = Path(__file__).parent.parent.parent.parent.parent / "sessions" / "codex_exec"
+LOG_DIR = (
+    Path(__file__).parent.parent.parent.parent.parent
+    / "sessions"
+    / "codex_exec"
+)
 MAX_OUTPUT_SIZE = 10 * 1024  # 10KB
 SCHEMA_VERSION = "1.0"
 LLM_EVAL_SAMPLE_RATE = 0.2  # 20% sampling for LLM evaluation
@@ -83,18 +87,20 @@ class MergeStrategy(str, Enum):
 @dataclass
 class CodexResult:
     """codex exec の実行結果"""
+
     agent_id: str
     output: str
     tokens_used: int = 0
     execution_time: float = 0.0
     success: bool = True
     error_message: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class EvaluationScore:
     """評価スコア"""
+
     correctness: float = 0.0  # 40%
     completeness: float = 0.0  # 25%
     quality: float = 0.0  # 20%
@@ -103,16 +109,17 @@ class EvaluationScore:
     @property
     def total(self) -> float:
         return (
-            self.correctness * 0.40 +
-            self.completeness * 0.25 +
-            self.quality * 0.20 +
-            self.efficiency * 0.15
+            self.correctness * 0.40
+            + self.completeness * 0.25
+            + self.quality * 0.20
+            + self.efficiency * 0.15
         )
 
 
 @dataclass
 class EvaluatedResult:
     """評価済み結果"""
+
     result: CodexResult
     score: EvaluationScore
     task_score: float = 0.0
@@ -122,6 +129,7 @@ class EvaluatedResult:
 @dataclass
 class MergeConfig:
     """マージ設定"""
+
     min_votes: int = 2
     min_ratio: float = 0.6
     priority_weight: float = 1.0
@@ -132,32 +140,40 @@ class MergeConfig:
 # Logging Data Structures
 # ============================================================================
 
+
 @dataclass
 class ExecutionLog:
     """実行ログ（JSONL形式で保存）"""
+
     schema_version: str = SCHEMA_VERSION
     run_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    execution: Dict[str, Any] = field(default_factory=dict)
-    results: List[Dict[str, Any]] = field(default_factory=list)
-    evaluation: Dict[str, Any] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(UTC).isoformat()
+    )
+    execution: dict[str, Any] = field(default_factory=dict)
+    results: list[dict[str, Any]] = field(default_factory=list)
+    evaluation: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
-def get_git_info() -> Dict[str, str]:
+def get_git_info() -> dict[str, str]:
     """Git情報を取得"""
     info = {}
     try:
         result = subprocess.run(
             ["git", "branch", "--show-current"],
-            capture_output=True, text=True, timeout=5
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.returncode == 0:
             info["git_branch"] = result.stdout.strip()
 
         result = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
-            capture_output=True, text=True, timeout=5
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.returncode == 0:
             info["git_commit"] = result.stdout.strip()
@@ -166,18 +182,20 @@ def get_git_info() -> Dict[str, str]:
     return info
 
 
-def write_log(log: ExecutionLog) -> Optional[Path]:
+def write_log(log: ExecutionLog) -> Path | None:
     """ログをJSONL形式で書き込み"""
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         log_dir = LOG_DIR / now.strftime("%Y/%m/%d")
         log_dir.mkdir(parents=True, exist_ok=True)
 
-        filename = f"run-{now.strftime('%Y%m%dT%H%M%S')}-{log.run_id[:8]}.jsonl"
+        filename = (
+            f"run-{now.strftime('%Y%m%dT%H%M%S')}-{log.run_id[:8]}.jsonl"
+        )
         log_path = log_dir / filename
 
-        with open(log_path, 'a', encoding='utf-8') as f:
-            f.write(json.dumps(asdict(log), ensure_ascii=False) + '\n')
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(asdict(log), ensure_ascii=False) + "\n")
 
         return log_path
     except Exception as e:
@@ -189,19 +207,22 @@ def truncate_output(output: str, max_size: int = MAX_OUTPUT_SIZE) -> str:
     """出力をトランケート"""
     if len(output) <= max_size:
         return output
-    return output[:max_size] + f"\n... (truncated, original {len(output)} chars)"
+    return (
+        output[:max_size] + f"\n... (truncated, original {len(output)} chars)"
+    )
 
 
 # ============================================================================
 # LLM-as-Judge (using codex exec)
 # ============================================================================
 
+
 async def evaluate_with_llm(
     output: str,
     prompt: str,
     task_type: TaskType,
     timeout: int = 60,
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """codex exec を使った LLM 評価"""
     eval_prompt = f"""You are an expert code evaluator. Evaluate the following output.
 
@@ -218,7 +239,15 @@ Rate this output on a 1-5 scale for each criterion:
 - EFFICIENCY: Is execution fast, tokens minimal?
 
 Respond in JSON format ONLY (no explanation):
-{{"correctness": N, "completeness": N, "quality": N, "efficiency": N, "rationale": "brief assessment", "strengths": ["..."], "weaknesses": ["..."]}}"""
+{{
+  "correctness": N,
+  "completeness": N,
+  "quality": N,
+  "efficiency": N,
+  "rationale": "brief assessment",
+  "strengths": ["..."],
+  "weaknesses": ["..."]
+}}"""
 
     try:
         result = await run_codex_exec_async(
@@ -230,7 +259,7 @@ Respond in JSON format ONLY (no explanation):
 
         if result.success and result.output:
             # JSON を抽出
-            json_match = re.search(r'\{[^{}]*\}', result.output, re.DOTALL)
+            json_match = re.search(r"\{[^{}]*\}", result.output, re.DOTALL)
             if json_match:
                 return json.loads(json_match.group())
     except Exception as e:
@@ -264,12 +293,13 @@ def should_run_llm_eval(
 # Core Execution Functions
 # ============================================================================
 
+
 def run_codex_exec(
     prompt: str,
     sandbox: SandboxMode = SandboxMode.READ_ONLY,
     timeout: int = 120,
     agent_id: str = "agent_0",
-    workdir: Optional[str] = None,
+    workdir: str | None = None,
 ) -> CodexResult:
     """単一の codex exec を実行"""
     start_time = time.time()
@@ -322,7 +352,7 @@ async def run_codex_exec_async(
     sandbox: SandboxMode = SandboxMode.READ_ONLY,
     timeout: int = 120,
     agent_id: str = "agent_0",
-    workdir: Optional[str] = None,
+    workdir: str | None = None,
 ) -> CodexResult:
     """非同期で codex exec を実行"""
     start_time = time.time()
@@ -353,9 +383,11 @@ async def run_codex_exec_async(
             tokens_used=tokens_used,
             execution_time=execution_time,
             success=process.returncode == 0,
-            error_message=stderr.decode("utf-8") if process.returncode != 0 else "",
+            error_message=(
+                stderr.decode("utf-8") if process.returncode != 0 else ""
+            ),
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return CodexResult(
             agent_id=agent_id,
             output="",
@@ -373,11 +405,11 @@ async def run_codex_exec_async(
 
 
 async def execute_parallel(
-    prompts: List[str],
+    prompts: list[str],
     sandbox: SandboxMode = SandboxMode.READ_ONLY,
     timeout: int = 120,
-    workdir: Optional[str] = None,
-) -> List[CodexResult]:
+    workdir: str | None = None,
+) -> list[CodexResult]:
     """複数のプロンプトを並列実行"""
     tasks = [
         run_codex_exec_async(
@@ -399,7 +431,7 @@ async def execute_competition(
     timeout: int = 120,
     task_type: TaskType = TaskType.CODE_GEN,
     strategy: SelectionStrategy = SelectionStrategy.BEST_SINGLE,
-    workdir: Optional[str] = None,
+    workdir: str | None = None,
 ) -> EvaluatedResult:
     """コンペモード: 複数実行 → 評価 → 最良選択"""
     # 同一プロンプトで複数回実行
@@ -411,11 +443,15 @@ async def execute_competition(
     if not successful:
         # 全て失敗した場合、最初の結果を返す
         return EvaluatedResult(
-            result=results[0] if results else CodexResult(
-                agent_id="none",
-                output="",
-                success=False,
-                error_message="No results",
+            result=(
+                results[0]
+                if results
+                else CodexResult(
+                    agent_id="none",
+                    output="",
+                    success=False,
+                    error_message="No results",
+                )
             ),
             score=EvaluationScore(),
         )
@@ -428,7 +464,9 @@ async def execute_competition(
     return best
 
 
-def evaluate_result(result: CodexResult, task_type: TaskType) -> EvaluatedResult:
+def evaluate_result(
+    result: CodexResult, task_type: TaskType
+) -> EvaluatedResult:
     """結果を評価してスコアを付与"""
     output = result.output
     score = EvaluationScore()
@@ -516,7 +554,9 @@ def evaluate_task_specific(result: CodexResult, task_type: TaskType) -> float:
         if re.search(r"(bug|issue|problem|concern)", output, re.IGNORECASE):
             score += 0.5
         # 改善提案
-        if re.search(r"(suggest|recommend|consider|should)", output, re.IGNORECASE):
+        if re.search(
+            r"(suggest|recommend|consider|should)", output, re.IGNORECASE
+        ):
             score += 0.5
         # 行番号参照
         if re.search(r"line\s*\d+", output, re.IGNORECASE):
@@ -550,7 +590,7 @@ def evaluate_task_specific(result: CodexResult, task_type: TaskType) -> float:
 
 
 def select_best(
-    evaluated: List[EvaluatedResult],
+    evaluated: list[EvaluatedResult],
     strategy: SelectionStrategy,
 ) -> EvaluatedResult:
     """選択戦略に基づいて最良の結果を選択"""
@@ -563,7 +603,7 @@ def select_best(
 
     elif strategy == SelectionStrategy.VOTING:
         # 平均スコアが高いもの（同一出力が複数あれば加点）
-        output_counts: Dict[str, int] = Counter(
+        output_counts: dict[str, int] = Counter(
             e.result.output for e in evaluated
         )
         for e in evaluated:
@@ -597,11 +637,14 @@ def _normalize(text: str) -> str:
 
 
 def merge_outputs(
-    results: List[CodexResult],
+    results: list[CodexResult],
     strategy: MergeStrategy,
-    config: MergeConfig = MergeConfig(),
+    config: MergeConfig | None = None,
 ) -> str:
     """複数の出力をマージ"""
+    if config is None:
+        config = MergeConfig()
+
     outputs = [r.output for r in results if r.success and r.output]
 
     if not outputs:
@@ -793,9 +836,9 @@ def main():
         # LLM 評価（条件付き）
         llm_eval = None
         if should_run_llm_eval(mode, evaluated.combined_score, args.llm_eval):
-            llm_eval = asyncio.run(evaluate_with_llm(
-                result.output, args.prompt, task_type
-            ))
+            llm_eval = asyncio.run(
+                evaluate_with_llm(result.output, args.prompt, task_type)
+            )
 
         # ログ出力
         if enable_logging:
@@ -807,13 +850,15 @@ def main():
                     "task_type": task_type.value,
                     "count": 1,
                 },
-                results=[{
-                    "agent_id": result.agent_id,
-                    "output": truncate_output(result.output),
-                    "tokens_used": result.tokens_used,
-                    "execution_time": result.execution_time,
-                    "success": result.success,
-                }],
+                results=[
+                    {
+                        "agent_id": result.agent_id,
+                        "output": truncate_output(result.output),
+                        "tokens_used": result.tokens_used,
+                        "execution_time": result.execution_time,
+                        "success": result.success,
+                    }
+                ],
                 evaluation={
                     "heuristic": heuristic_eval,
                     "human": None,
@@ -826,18 +871,24 @@ def main():
                 print(f"Log saved: {log_path}", file=sys.stderr)
 
         if args.json:
-            print(json.dumps({
-                "agent_id": result.agent_id,
-                "output": result.output,
-                "tokens_used": result.tokens_used,
-                "execution_time": result.execution_time,
-                "success": result.success,
-                "error_message": result.error_message,
-                "evaluation": {
-                    "heuristic": heuristic_eval,
-                    "llm": llm_eval,
-                },
-            }, ensure_ascii=False, indent=2))
+            print(
+                json.dumps(
+                    {
+                        "agent_id": result.agent_id,
+                        "output": result.output,
+                        "tokens_used": result.tokens_used,
+                        "execution_time": result.execution_time,
+                        "success": result.success,
+                        "error_message": result.error_message,
+                        "evaluation": {
+                            "heuristic": heuristic_eval,
+                            "llm": llm_eval,
+                        },
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
         else:
             if args.verbose:
                 print(f"Execution Time: {result.execution_time:.2f}s")
@@ -848,17 +899,26 @@ def main():
 
     elif mode == ExecutionMode.PARALLEL:
         prompts = [args.prompt] * args.count
-        results = asyncio.run(execute_parallel(
-            prompts=prompts,
-            sandbox=sandbox,
-            timeout=args.timeout,
-            workdir=args.workdir,
-        ))
+        results = asyncio.run(
+            execute_parallel(
+                prompts=prompts,
+                sandbox=sandbox,
+                timeout=args.timeout,
+                workdir=args.workdir,
+            )
+        )
         merged = merge_outputs(results, merge_strat)
 
         # 各結果の評価
-        evaluated_results = [evaluate_result(r, task_type) for r in results if r.success]
-        avg_score = sum(e.combined_score for e in evaluated_results) / len(evaluated_results) if evaluated_results else 0
+        evaluated_results = [
+            evaluate_result(r, task_type) for r in results if r.success
+        ]
+        avg_score = (
+            sum(e.combined_score for e in evaluated_results)
+            / len(evaluated_results)
+            if evaluated_results
+            else 0
+        )
 
         # ログ出力
         if enable_logging:
@@ -871,13 +931,16 @@ def main():
                     "count": args.count,
                     "merge_strategy": merge_strat.value,
                 },
-                results=[{
-                    "agent_id": r.agent_id,
-                    "output": truncate_output(r.output),
-                    "tokens_used": r.tokens_used,
-                    "execution_time": r.execution_time,
-                    "success": r.success,
-                } for r in results],
+                results=[
+                    {
+                        "agent_id": r.agent_id,
+                        "output": truncate_output(r.output),
+                        "tokens_used": r.tokens_used,
+                        "execution_time": r.execution_time,
+                        "success": r.success,
+                    }
+                    for r in results
+                ],
                 evaluation={
                     "heuristic": {"average_score": avg_score},
                     "human": None,
@@ -890,37 +953,48 @@ def main():
                 print(f"Log saved: {log_path}", file=sys.stderr)
 
         if args.json:
-            print(json.dumps({
-                "results": [
+            print(
+                json.dumps(
                     {
-                        "agent_id": r.agent_id,
-                        "output": r.output,
-                        "success": r.success,
-                        "execution_time": r.execution_time,
-                    }
-                    for r in results
-                ],
-                "merged_output": merged,
-                "evaluation": {"average_score": avg_score},
-            }, ensure_ascii=False, indent=2))
+                        "results": [
+                            {
+                                "agent_id": r.agent_id,
+                                "output": r.output,
+                                "success": r.success,
+                                "execution_time": r.execution_time,
+                            }
+                            for r in results
+                        ],
+                        "merged_output": merged,
+                        "evaluation": {"average_score": avg_score},
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
         else:
             if args.verbose:
                 for r in results:
-                    print(f"[{r.agent_id}] Time: {r.execution_time:.2f}s, Success: {r.success}")
+                    print(
+                        f"[{r.agent_id}] Time: {r.execution_time:.2f}s, "
+                        f"Success: {r.success}"
+                    )
                 print(f"Average Score: {avg_score:.2f}")
                 print("--- Merged Output ---")
             print(merged)
 
     elif mode == ExecutionMode.COMPETITION:
-        best = asyncio.run(execute_competition(
-            prompt=args.prompt,
-            count=args.count,
-            sandbox=sandbox,
-            timeout=args.timeout,
-            task_type=task_type,
-            strategy=strategy,
-            workdir=args.workdir,
-        ))
+        best = asyncio.run(
+            execute_competition(
+                prompt=args.prompt,
+                count=args.count,
+                sandbox=sandbox,
+                timeout=args.timeout,
+                task_type=task_type,
+                strategy=strategy,
+                workdir=args.workdir,
+            )
+        )
 
         heuristic_eval = {
             "correctness": best.score.correctness,
@@ -934,9 +1008,9 @@ def main():
         # LLM 評価（Competition モードは常に実行）
         llm_eval = None
         if should_run_llm_eval(mode, best.combined_score, args.llm_eval):
-            llm_eval = asyncio.run(evaluate_with_llm(
-                best.result.output, args.prompt, task_type
-            ))
+            llm_eval = asyncio.run(
+                evaluate_with_llm(best.result.output, args.prompt, task_type)
+            )
 
         # ログ出力
         if enable_logging:
@@ -949,14 +1023,16 @@ def main():
                     "count": args.count,
                     "strategy": strategy.value,
                 },
-                results=[{
-                    "agent_id": best.result.agent_id,
-                    "output": truncate_output(best.result.output),
-                    "tokens_used": best.result.tokens_used,
-                    "execution_time": best.result.execution_time,
-                    "success": best.result.success,
-                    "selected": True,
-                }],
+                results=[
+                    {
+                        "agent_id": best.result.agent_id,
+                        "output": truncate_output(best.result.output),
+                        "tokens_used": best.result.tokens_used,
+                        "execution_time": best.result.execution_time,
+                        "success": best.result.success,
+                        "selected": True,
+                    }
+                ],
                 evaluation={
                     "heuristic": heuristic_eval,
                     "human": None,
@@ -969,21 +1045,27 @@ def main():
                 print(f"Log saved: {log_path}", file=sys.stderr)
 
         if args.json:
-            print(json.dumps({
-                "agent_id": best.result.agent_id,
-                "output": best.result.output,
-                "combined_score": best.combined_score,
-                "scores": {
-                    "correctness": best.score.correctness,
-                    "completeness": best.score.completeness,
-                    "quality": best.score.quality,
-                    "efficiency": best.score.efficiency,
-                    "task_score": best.task_score,
-                },
-                "execution_time": best.result.execution_time,
-                "success": best.result.success,
-                "llm_evaluation": llm_eval,
-            }, ensure_ascii=False, indent=2))
+            print(
+                json.dumps(
+                    {
+                        "agent_id": best.result.agent_id,
+                        "output": best.result.output,
+                        "combined_score": best.combined_score,
+                        "scores": {
+                            "correctness": best.score.correctness,
+                            "completeness": best.score.completeness,
+                            "quality": best.score.quality,
+                            "efficiency": best.score.efficiency,
+                            "task_score": best.task_score,
+                        },
+                        "execution_time": best.result.execution_time,
+                        "success": best.result.success,
+                        "llm_evaluation": llm_eval,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
         else:
             print(format_output(best, verbose=args.verbose))
 

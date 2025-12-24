@@ -57,7 +57,9 @@ def _list_curated(repo: str, path: str, ref: str) -> list[str]:
                 "Curated skills path not found: "
                 f"https://github.com/{repo}/tree/{ref}/{path}"
             ) from exc
-        raise ListError(f"Failed to fetch curated skills: HTTP {exc.code}") from exc
+        raise ListError(
+            f"Failed to fetch curated skills: HTTP {exc.code}"
+        ) from exc
     data = json.loads(payload.decode("utf-8"))
     if not isinstance(data, list):
         raise ListError("Unexpected curated listing response.")
@@ -86,7 +88,8 @@ def main(argv: list[str]) -> int:
         installed = _installed_skills()
         if args.format == "json":
             payload = [
-                {"name": name, "installed": name in installed} for name in skills
+                {"name": name, "installed": name in installed}
+                for name in skills
             ]
             print(json.dumps(payload))
         else:

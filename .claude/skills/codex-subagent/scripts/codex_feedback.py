@@ -18,15 +18,18 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
 
 # ログディレクトリ
-LOG_DIR = Path(__file__).parent.parent.parent.parent.parent / "sessions" / "codex_exec"
+LOG_DIR = (
+    Path(__file__).parent.parent.parent.parent.parent
+    / "sessions"
+    / "codex_exec"
+)
 
 
-def find_latest_log() -> Optional[Path]:
+def find_latest_log() -> Path | None:
     """最新のログファイルを検索"""
     if not LOG_DIR.exists():
         return None
@@ -39,7 +42,7 @@ def find_latest_log() -> Optional[Path]:
     return max(log_files, key=lambda p: p.stat().st_mtime)
 
 
-def find_log_by_run_id(run_id: str) -> Optional[Path]:
+def find_log_by_run_id(run_id: str) -> Path | None:
     """run_id でログファイルを検索"""
     if not LOG_DIR.exists():
         return None
@@ -51,7 +54,7 @@ def find_log_by_run_id(run_id: str) -> Optional[Path]:
     # ファイル内容を検索
     for log_file in LOG_DIR.rglob("run-*.jsonl"):
         try:
-            with open(log_file, 'r', encoding='utf-8') as f:
+            with open(log_file, encoding="utf-8") as f:
                 for line in f:
                     data = json.loads(line)
                     if data.get("run_id", "").startswith(run_id):
@@ -66,13 +69,13 @@ def add_feedback(
     log_path: Path,
     score: float,
     notes: str = "",
-    tags: Optional[list] = None,
+    tags: list | None = None,
 ) -> bool:
     """ログファイルにフィードバックを追加"""
     try:
         # 既存のログを読み込み
         logs = []
-        with open(log_path, 'r', encoding='utf-8') as f:
+        with open(log_path, encoding="utf-8") as f:
             for line in f:
                 logs.append(json.loads(line))
 
@@ -86,13 +89,13 @@ def add_feedback(
             "score": score,
             "notes": notes,
             "tags": tags or [],
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         # ファイルを上書き
-        with open(log_path, 'w', encoding='utf-8') as f:
-            for l in logs:
-                f.write(json.dumps(l, ensure_ascii=False) + '\n')
+        with open(log_path, encoding="utf-8") as f:
+            for log_entry in logs:
+                f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
         return True
 
@@ -104,22 +107,24 @@ def add_feedback(
 def show_log_summary(log_path: Path) -> None:
     """ログの概要を表示"""
     try:
-        with open(log_path, 'r', encoding='utf-8') as f:
+        with open(log_path, encoding="utf-8") as f:
             for line in f:
                 log = json.loads(line)
                 print(f"Run ID: {log.get('run_id', 'N/A')[:8]}...")
                 print(f"Timestamp: {log.get('timestamp', 'N/A')}")
                 print(f"Mode: {log.get('execution', {}).get('mode', 'N/A')}")
-                prompt = log.get('execution', {}).get('prompt', 'N/A')
+                prompt = log.get("execution", {}).get("prompt", "N/A")
                 if len(prompt) > 100:
                     prompt = prompt[:100] + "..."
                 print(f"Prompt: {prompt}")
 
-                eval_data = log.get('evaluation', {})
-                heuristic = eval_data.get('heuristic', {})
-                print(f"Heuristic Score: {heuristic.get('combined_score', 'N/A')}")
+                eval_data = log.get("evaluation", {})
+                heuristic = eval_data.get("heuristic", {})
+                print(
+                    f"Heuristic Score: {heuristic.get('combined_score', 'N/A')}"
+                )
 
-                human = eval_data.get('human')
+                human = eval_data.get("human")
                 if human:
                     print(f"Human Score: {human.get('score', 'N/A')}")
                     print(f"Human Notes: {human.get('notes', '')}")
@@ -144,7 +149,7 @@ def interactive_mode() -> None:
 
     try:
         score_input = input("\nEnter score (1-5, or 'skip'): ").strip()
-        if score_input.lower() == 'skip':
+        if score_input.lower() == "skip":
             print("Skipped.")
             return
 
@@ -155,7 +160,11 @@ def interactive_mode() -> None:
 
         notes = input("Enter notes (optional): ").strip()
         tags_input = input("Enter tags (comma-separated, optional): ").strip()
-        tags = [t.strip() for t in tags_input.split(",") if t.strip()] if tags_input else []
+        tags = (
+            [t.strip() for t in tags_input.split(",") if t.strip()]
+            if tags_input
+            else []
+        )
 
         if add_feedback(log_path, score, notes, tags):
             print(f"✅ Feedback added to {log_path.name}")
@@ -229,14 +238,21 @@ def main():
         return
 
     if args.score is None:
-        print("Error: --score is required (or use --interactive)", file=sys.stderr)
+        print(
+            "Error: --score is required (or use --interactive)",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     if not 1 <= args.score <= 5:
         print("Error: score must be between 1 and 5", file=sys.stderr)
         sys.exit(1)
 
-    tags = [t.strip() for t in args.tags.split(",") if t.strip()] if args.tags else []
+    tags = (
+        [t.strip() for t in args.tags.split(",") if t.strip()]
+        if args.tags
+        else []
+    )
 
     if add_feedback(log_path, args.score, args.notes, tags):
         print(f"✅ Feedback added to {log_path.name}")

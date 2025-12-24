@@ -7,8 +7,6 @@ import os
 import tempfile
 from unittest.mock import Mock, patch
 
-import pytest
-
 from app.sharepoint_list.internal import operations
 
 
@@ -58,7 +56,9 @@ class TestLogDebug:
 
     def test_writes_ndjson_when_enabled(self) -> None:
         """有効時にNDJSON形式でログを書き込む"""
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ndjson") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ndjson"
+        ) as f:
             log_path = f.name
 
         try:
@@ -91,7 +91,9 @@ class TestLogDebug:
 
     def test_does_not_write_when_disabled(self) -> None:
         """無効時には書き込まない"""
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ndjson") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ndjson"
+        ) as f:
             log_path = f.name
 
         try:
@@ -120,7 +122,9 @@ class TestSendRequestDebugLogging:
     """_send_request でのデバッグログテスト"""
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
-    def test_authorization_header_excluded_from_log(self, mock_request: Mock) -> None:
+    def test_authorization_header_excluded_from_log(
+        self, mock_request: Mock
+    ) -> None:
         """Authorizationヘッダーがログから除外される"""
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -128,7 +132,9 @@ class TestSendRequestDebugLogging:
         mock_resp.json.return_value = {"id": "test-site"}
         mock_request.return_value = mock_resp
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ndjson") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ndjson"
+        ) as f:
             log_path = f.name
 
         try:
@@ -149,7 +155,10 @@ class TestSendRequestDebugLogging:
                 operations._send_request(
                     spec=spec,
                     access_token="secret-token-12345",
-                    extra_headers={"Authorization": "Bearer secret", "Prefer": "test"},
+                    extra_headers={
+                        "Authorization": "Bearer secret",
+                        "Prefer": "test",
+                    },
                 )
 
                 with open(log_path) as f:
@@ -179,7 +188,9 @@ class TestSendRequestDebugLogging:
         mock_resp.json.return_value = {"id": "test-site"}
         mock_request.return_value = mock_resp
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ndjson") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ndjson"
+        ) as f:
             log_path = f.name
 
         try:
@@ -217,11 +228,15 @@ class TestGetDebugLogPath:
         """デフォルトパス"""
         with patch.dict(os.environ, {}, clear=True):
             os.environ.pop("SHAREPOINT_LIST_DEBUG_LOG_PATH", None)
-            assert operations._get_debug_log_path() == "/tmp/sharepoint_list.debug.ndjson"
+            assert (
+                operations._get_debug_log_path()
+                == "/tmp/sharepoint_list.debug.ndjson"
+            )
 
     def test_custom_path(self) -> None:
         """カスタムパス"""
         with patch.dict(
-            os.environ, {"SHAREPOINT_LIST_DEBUG_LOG_PATH": "/custom/path.ndjson"}
+            os.environ,
+            {"SHAREPOINT_LIST_DEBUG_LOG_PATH": "/custom/path.ndjson"},
         ):
             assert operations._get_debug_log_path() == "/custom/path.ndjson"
