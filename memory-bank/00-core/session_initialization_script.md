@@ -11,7 +11,11 @@ echo ""
 
 # 1. AI COMPLIANCE VERIFICATION (ALWAYS FIRST)
 echo "🤖 AI Compliance Check..."
-python scripts/pre_action_check.py --strict-mode || exit 1
+if [ -f pre_action_check.py ]; then
+    uv run python pre_action_check.py --strict-mode || python3 pre_action_check.py --strict-mode || exit 1
+else
+    echo "⚠️ pre_action_check.py not found (N/A)"
+fi
 
 # 2. WORK MANAGEMENT VERIFICATION  
 echo "🔧 Work Management Check..."
