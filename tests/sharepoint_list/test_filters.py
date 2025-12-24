@@ -120,3 +120,11 @@ def test_parse_filters_non_json_input_raises() -> None:
         filters.parse_filters("field__eq=value")
     assert "JSON" in str(exc.value)
 
+
+
+
+
+
+
+
+
