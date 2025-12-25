@@ -47,7 +47,7 @@ alwaysApply: true
    - 特定したステップを一つずつ実行し、進捗を報告
    - 実装時はディレクトリ構造・命名規則・共通処理配置に注意 ([project.md](mdc:.cursor/rules/project.md) 参照)
    - **実行前チェックリスト:** アクションを実行する前に、[AGENTS.md PRE_EXECUTION_MANDATORY](AGENTS.md#CORE-OPERATING-PRINCIPLES-(基本動作原則)) および [AGENTS.md VALUE ASSESSMENT MANDATORY](AGENTS.md#VALUE-ASSESSMENT-MANDATORY-(価値評価必須)) に基づき、以下のような項目をセルフチェックする。
-     - AIコンプライアンス (`pre_action_check.py` 等)
+     - AIコンプライアンス（明示手順がある場合のみ）
      - 作業ブランチの妥当性 (main/masterでないこと)
      - テスト駆動開発の準備 (テストを先に書く)
      - 品質ゲートの意識 (コミット前のチェック項目)
@@ -177,7 +177,7 @@ alwaysApply: true
   - [memory-bank/06-project/progress/projectbrief.md](mdc:memory-bank/06-project/progress/projectbrief.md) で目的を明示的に確認
 - 次のタスクを計画
 - タスク実行（下記「7. 開発工程」に従う）
-- **コミット前最終確認:** `scripts/quality_gate_check.py` を実行し、全項目 (Flake8, Pytest, Coverage) が設定された基準をクリアしていることを確認する。結果を記録または報告する。
+- **コミット前最終確認:** 品質ゲートの明示手順（CI/Makefile/README 等）に従い、必要なチェックを実行し、結果を記録または報告する。
 - `git commit & push` でタスク結果をコミット
 - Memory Bank を更新 (`active_context.md`, `progress.md`)
 - **参照リンク確認:** ルールファイルの統合やリネーム等、ファイル構成変更後は、他のファイルからの参照リンク (`[...](mdc:...)` 等) が壊れていないか `grep` などで確認する。
@@ -318,7 +318,7 @@ alwaysApply: true
 
 ### 9.4 参照ドキュメント
 - [memory-bank/04-quality/quality_assurance_lessons.md](mdc:memory-bank/04-quality/quality_assurance_lessons.md) - 重要教訓と対策システム
-- `scripts/quality_gate_check.py` - 厳格品質保証システム v2.0
+- 品質ゲート: 明示された手順（CI/Makefile/README 等）に従う
 
 ## 🚨 **絶対的セキュリティ違反防止ルール** - **最優先**
 

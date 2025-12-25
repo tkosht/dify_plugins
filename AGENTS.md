@@ -115,7 +115,7 @@ SPECULATION_BAN="事実ベース判断のみ - Speculation is FAILURE"
 PRE_EXECUTION_MANDATORY=(
     "0. MANDATORY RULES VERIFICATION: display_mandatory_rules_checklist()"
     "1. Date context initialization: date command"
-    "2. AI COMPLIANCE: Run available compliance check (uv run python / python3). If absent, mark N/A"
+    "2. AI COMPLIANCE: なし（scripts/ 廃止。必要時は明示手順に従う）"
     "3. WORK MANAGEMENT: Verify on feature branch (verify_work_management)"
     "4. MICRO PROBE: 200ms以内の自動プローブ（必要時のみFastへ自動昇格）"
     "5. TMUX PROTOCOLS: For tmux activities, ensure Enter別送信 compliance"
@@ -449,7 +449,7 @@ echo "Follow-up    → codex_mcp-reply(sessionId=<ID>, prompt='追加の観測/�
 ```bash
 0. ✓ MCP SELECTION: Serena既定 / 有効なMCPは有効時のみ利用
 1. ✓ MICRO PROBE: 自動（<=200ms）; 必要時のみFast（<=800ms）
-2. ✓ AI COMPLIANCE: Run available compliance check (uv run python / python3). If absent, mark N/A
+2. ✓ AI COMPLIANCE: なし（scripts/ 廃止。必要時は明示手順に従う）
 3. ✓ WORK MANAGEMENT: Verify on task branch (not main/master)
 4. ✓ EXTERNAL: WebSearch は明示依頼がある場合のみ
 5. ✓ CODEX_MCP: 難易度が高い/停滞時は協働相談を発火（セッション継続を厳守）

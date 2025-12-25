@@ -124,7 +124,7 @@
 ## 🚀 EXECUTION CHECKLIST
 
 ### Pre-Execution Mandatory Steps
-1. [ ] AI COMPLIANCE: Run available compliance check (uv run python / python3). If absent, mark N/A
+1. [ ] AI COMPLIANCE: なし（scripts/ 廃止。必要時は明示手順に従う）
 2. [ ] Date context: Execute `date` command
 3. [ ] WORK MANAGEMENT: Verify on task branch (not main/master)
 4. [ ] KNOWLEDGE LOAD: Execute `smart_knowledge_load "domain"`
