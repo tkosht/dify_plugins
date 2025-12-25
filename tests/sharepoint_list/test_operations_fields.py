@@ -6,7 +6,9 @@ def test_map_fields_to_internal_resolves_display_name() -> None:
     name_set = {"title"}
     fields = {"ステータス": "処理中", "Title": "Hello"}
 
-    mapped = operations.map_fields_to_internal(fields, display_to_name, name_set)
+    mapped = operations.map_fields_to_internal(
+        fields, display_to_name, name_set
+    )
 
     assert mapped["StatusInternal"] == "処理中"
     # internal name (case-insensitive set) keeps the original key
@@ -18,7 +20,9 @@ def test_map_fields_to_internal_keeps_unknown() -> None:
     name_set: set[str] = set()
     fields = {"Unknown": 1}
 
-    mapped = operations.map_fields_to_internal(fields, display_to_name, name_set)
+    mapped = operations.map_fields_to_internal(
+        fields, display_to_name, name_set
+    )
 
     assert "Unknown" in mapped
     assert mapped["Unknown"] == 1

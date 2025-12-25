@@ -142,7 +142,9 @@ def create_item(
 ) -> dict[str, Any]:
     site_id = resolve_site_id(access_token, target.site_identifier)
     list_id = resolve_list_id(access_token, site_id, target.list_identifier)
-    display_to_name, name_set, _ = _get_column_maps(access_token, site_id, list_id)
+    display_to_name, name_set, _ = _get_column_maps(
+        access_token, site_id, list_id
+    )
     mapped_fields = map_fields_to_internal(fields, display_to_name, name_set)
     spec = request_builders.build_create_item_request(
         site_id=site_id, list_id=list_id, fields=mapped_fields
@@ -158,7 +160,9 @@ def update_item(
 ) -> dict[str, Any]:
     site_id = resolve_site_id(access_token, target.site_identifier)
     list_id = resolve_list_id(access_token, site_id, target.list_identifier)
-    display_to_name, name_set, _ = _get_column_maps(access_token, site_id, list_id)
+    display_to_name, name_set, _ = _get_column_maps(
+        access_token, site_id, list_id
+    )
     mapped_fields = map_fields_to_internal(fields, display_to_name, name_set)
     spec = request_builders.build_update_item_request(
         site_id=site_id, list_id=list_id, item_id=item_id, fields=mapped_fields
