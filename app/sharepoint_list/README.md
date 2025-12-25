@@ -10,16 +10,15 @@ Manage SharePoint list items (create/update/read) via Microsoft Graph using Dele
 2. Dify のプラグイン設定で `client_id` / `client_secret` を入力し **Save & Authorize**
 
 ## Tools
-- `sharepoint_list_create_item`: `site_identifier` + `list_identifier` + `fields_json` で新規作成
+- `sharepoint_list_create_item`: `list_url` + `fields_json` で新規作成
 - `sharepoint_list_update_item`: 上記 + `item_id` + `fields_json` で更新
 - `sharepoint_list_get_item`: 上記 + `item_id` (+ `select_fields` 任意) で参照
-- `sharepoint_list_list_items`: 一覧取得（`site_identifier`/`list_identifier` 必須、`select_fields`/`filters`（JSON配列）/`page_size`/`page_token`）
-- `sharepoint_list_get_choices`: choice 列の選択肢を取得（`site_identifier`/`list_identifier`/`field_identifier`）
+- `sharepoint_list_list_items`: 一覧取得（`list_url` 必須、`select_fields`/`filters`（JSON配列）/`page_size`/`page_token`）
+- `sharepoint_list_get_choices`: choice 列の選択肢を取得（`list_url`/`field_identifier`）
 
 ## 入力のコツ
-- `site_identifier`: サイトURLまたはサイトID（URL推奨）例: `https://contoso.sharepoint.com/sites/demo`
-- `list_identifier`: リストID（GUID）またはリスト表示名
-- `fields_json` は SharePoint **内部フィールド名**→値 の JSON オブジェクト。例: `{"Title": "Sample"}`
+- `list_url` は SharePoint のリストURL（例: `https://contoso.sharepoint.com/sites/demo/Lists/MyList/AllItems.aspx`）を指定
+- `fields_json` は SharePoint **内部フィールド名**→値 の JSON オブジェクト。表示名で指定しても内部名に解決されるので、表示名でも可。例: `{"Title": "Sample", "ステータス": "処理中"}`
 
 ## list_items: filters（JSON配列）
 ### 仕様

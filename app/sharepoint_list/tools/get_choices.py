@@ -36,9 +36,13 @@ class GetChoicesTool(Tool):
                 return
             access_token = access_token.strip()
 
+            list_url = tool_parameters.get("list_url")
+            site_identifier, list_identifier = validators.parse_list_url(
+                list_url=list_url
+            )
             target = validators.validate_target(
-                site_identifier=tool_parameters.get("site_identifier"),
-                list_identifier=tool_parameters.get("list_identifier"),
+                site_identifier=site_identifier,
+                list_identifier=list_identifier,
             )
             field_identifier = tool_parameters.get("field_identifier")
             if (

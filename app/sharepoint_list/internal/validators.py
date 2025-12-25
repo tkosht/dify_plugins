@@ -32,6 +32,42 @@ def validate_target(
     )
 
 
+def parse_list_url(list_url: str) -> tuple[str, str]:
+    """
+    Parse SharePoint list URL (AllItems.aspx) into (site_url, list_name_or_id).
+    Expected form: https://<host>/sites/<site>/Lists/<list>/AllItems.aspx
+    """
+    if not list_url or not list_url.strip():
+        raise ValueError("list_url is required")
+
+    from urllib.parse import urlparse
+
+    parsed = urlparse(list_url)
+    if not parsed.scheme or not parsed.netloc or not parsed.path:
+        raise ValueError("Invalid list_url")
+
+    if "sharepoint.com" not in parsed.netloc:
+        raise ValueError("list_url must point to a SharePoint host")
+
+    path_parts = parsed.path.strip("/").split("/")
+    # Expect .../sites/<site>/Lists/<list>/AllItems.aspx (list segment at index -2)
+    try:
+        lists_idx = path_parts.index("Lists")
+        list_segment = path_parts[lists_idx + 1]
+    except (ValueError, IndexError):
+        raise ValueError("list_url must include /Lists/<list>/") from None
+
+    list_name_or_id = list_segment
+    # site path is everything before "Lists/<list>"
+    site_path_parts = path_parts[:lists_idx]
+    if not site_path_parts:
+        raise ValueError("list_url must include site path before Lists/")
+    site_path = "/".join(site_path_parts)
+    site_url = f"{parsed.scheme}://{parsed.netloc}/{site_path}"
+
+    return site_url, list_name_or_id
+
+
 def parse_fields_json(fields_json: str | None) -> dict[str, Any]:
     """
     Parse fields JSON string into dict.

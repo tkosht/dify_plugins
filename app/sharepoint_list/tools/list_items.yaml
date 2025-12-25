@@ -10,27 +10,16 @@ description:
     ja_JP: フィルタやページネーションを指定して SharePoint リストのアイテムを一覧取得します
   llm: List SharePoint list items with optional filters and pagination
 parameters:
-  - name: site_identifier
+  - name: list_url
     type: string
     required: true
     label:
-      en_US: Site Identifier
-      ja_JP: サイト指定
+      en_US: List URL
+      ja_JP: リストURL
     human_description:
-      en_US: "Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo"
-      ja_JP: "サイトURLまたはサイトID。URL推奨。例: https://contoso.sharepoint.com/sites/demo"
-    llm_description: Site URL or site ID
-    form: llm
-  - name: list_identifier
-    type: string
-    required: true
-    label:
-      en_US: List Identifier
-      ja_JP: リスト指定
-    human_description:
-      en_US: "List ID (GUID) or list display name."
-      ja_JP: "リストID（GUID）またはリスト表示名。"
-    llm_description: List ID or display name
+      en_US: "SharePoint list URL (e.g., https://contoso.sharepoint.com/sites/demo/Lists/MyList/AllItems.aspx)"
+      ja_JP: "SharePoint リストの URL（例: https://contoso.sharepoint.com/sites/demo/Lists/MyList/AllItems.aspx）"
+    llm_description: "SharePoint list URL (AllItems.aspx)"
     form: llm
   - name: select_fields
     type: string
