@@ -9,13 +9,9 @@ echo "Project Timeline: $(date '+%Y年%m月 第%U週')"
 echo "Session Context Established"
 echo ""
 
-# 1. AI COMPLIANCE VERIFICATION (ALWAYS FIRST)
+# 1. AI COMPLIANCE VERIFICATION (N/A by default)
 echo "🤖 AI Compliance Check..."
-if [ -f pre_action_check.py ]; then
-    uv run python pre_action_check.py --strict-mode || python3 pre_action_check.py --strict-mode || exit 1
-else
-    echo "⚠️ pre_action_check.py not found (N/A)"
-fi
+echo "⚠️ N/A (scripts/ 廃止). If a project-specific compliance step is documented, run it explicitly with uv run python or python3."
 
 # 2. WORK MANAGEMENT VERIFICATION  
 echo "🔧 Work Management Check..."
