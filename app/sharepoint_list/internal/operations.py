@@ -142,8 +142,10 @@ def create_item(
 ) -> dict[str, Any]:
     site_id = resolve_site_id(access_token, target.site_identifier)
     list_id = resolve_list_id(access_token, site_id, target.list_identifier)
+    display_to_name, name_set, _ = _get_column_maps(access_token, site_id, list_id)
+    mapped_fields = map_fields_to_internal(fields, display_to_name, name_set)
     spec = request_builders.build_create_item_request(
-        site_id=site_id, list_id=list_id, fields=fields
+        site_id=site_id, list_id=list_id, fields=mapped_fields
     )
     return _send_request(spec, access_token)
 
@@ -156,8 +158,10 @@ def update_item(
 ) -> dict[str, Any]:
     site_id = resolve_site_id(access_token, target.site_identifier)
     list_id = resolve_list_id(access_token, site_id, target.list_identifier)
+    display_to_name, name_set, _ = _get_column_maps(access_token, site_id, list_id)
+    mapped_fields = map_fields_to_internal(fields, display_to_name, name_set)
     spec = request_builders.build_update_item_request(
-        site_id=site_id, list_id=list_id, item_id=item_id, fields=fields
+        site_id=site_id, list_id=list_id, item_id=item_id, fields=mapped_fields
     )
     return _send_request(spec, access_token)
 
@@ -234,6 +238,22 @@ def _map_field_name(
     if lowered in display_to_name:
         return display_to_name[lowered]
     return raw
+
+
+def map_fields_to_internal(
+    fields: dict[str, Any],
+    display_to_name: dict[str, str],
+    name_set: set[str],
+) -> dict[str, Any]:
+    """
+    Map field keys that may be given as displayName to internal column names.
+    Unknown keys are kept as-is.
+    """
+    mapped: dict[str, Any] = {}
+    for key, value in fields.items():
+        mapped_key = _map_field_name(str(key), display_to_name, name_set)
+        mapped[mapped_key] = value
+    return mapped
 
 
 def resolve_select_fields_for_list(

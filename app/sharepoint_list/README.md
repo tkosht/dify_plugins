@@ -66,6 +66,7 @@ Manage SharePoint list items (create/update/read) via Microsoft Graph using Dele
 - `field` に **表示名（日本語）**を渡した場合も、内部的に列定義を取得して **内部名へ解決**します。
 - 作成日時の条件も `filters` の `createdDateTime` で指定します（`type: "datetime"` を推奨）。
 - リスト列の日時（例: 登録日時）に `type: "datetime"` を指定した場合、`fields/<name>` の比較は文字列としてクォートされます。
+- 作成(create)/更新(update) でも `fields` のキーは表示名を内部名へ解決してから送信します。
 
 ## 互換性
 - `filter_field` / `filter_operator` / `filter_value` は廃止しました。フィルタは `filters`（JSON配列）で指定してください。
