@@ -91,8 +91,6 @@ def parse_filters(filters_raw: str) -> list[FilterCondition]:
             raise ValueError("each filter entry must be an object")
         field = str(item.get("field") or "").strip()
         op_raw = item.get("op")
-        if not op_raw:
-            op_raw = item.get("operator")
         op = str(op_raw or "").strip().lower()
         if not field or not op:
             raise ValueError("filter entry must include field and op")
