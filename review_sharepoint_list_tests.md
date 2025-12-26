@@ -12,10 +12,9 @@
 
 ## ドキュメントとテストの不整合
 1. `filters` 入力形式の記述差異
-   - README: JSON 配列に加え、単一 JSON オブジェクトを許容
-   - ツール定義: JSON 配列のみと記載
+   - README/ツール定義: JSON 配列/単一 JSON オブジェクトを許容
    - テスト: 単一 JSON オブジェクトを許容する実装前提
-   - 影響: ドキュメント上の契約が不統一で、UI/LLM 入力仕様が混乱する可能性
+   - 状態: 不整合は解消済み
    - 参照: `app/sharepoint_list/README.md` / `app/sharepoint_list/tools/list_items.yaml` / `tests/sharepoint_list/test_filters.py`
 
 ## テスト実装レビュー（正当性）

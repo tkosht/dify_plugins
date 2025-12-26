@@ -13,7 +13,7 @@ Manage SharePoint list items (create/update/read) via Microsoft Graph using Dele
 - `sharepoint_list_create_item`: `list_url` + `fields_json` で新規作成
 - `sharepoint_list_update_item`: 上記 + `item_id` + `fields_json` で更新
 - `sharepoint_list_get_item`: 上記 + `item_id` (+ `select_fields` 任意) で参照
-- `sharepoint_list_list_items`: 一覧取得（`list_url` 必須、`select_fields`/`filters`（JSON配列）/`page_size`/`page_token`）
+- `sharepoint_list_list_items`: 一覧取得（`list_url` 必須、`select_fields`/`filters`（JSON配列）/`page_size`/`page_token`、`createdDateTime desc` 固定）
 - `sharepoint_list_get_choices`: choice 列の選択肢を取得（`list_url`/`field_identifier`）
 
 ## 入力のコツ

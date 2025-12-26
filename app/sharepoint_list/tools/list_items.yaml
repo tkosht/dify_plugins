@@ -6,9 +6,9 @@ identity:
     ja_JP: リストアイテム一覧
 description:
   human:
-    en_US: List SharePoint list items with optional filters and pagination
-    ja_JP: フィルタやページネーションを指定して SharePoint リストのアイテムを一覧取得します
-  llm: List SharePoint list items with optional filters and pagination
+    en_US: List SharePoint list items with optional filters and pagination (ordered by createdDateTime desc).
+    ja_JP: フィルタやページネーションを指定して SharePoint リストのアイテムを一覧取得します（createdDateTime desc 固定）。
+  llm: List SharePoint list items with optional filters and pagination (createdDateTime desc).
 parameters:
   - name: list_url
     type: string
@@ -62,7 +62,8 @@ parameters:
       en_US: |
         Provide filters as a JSON array of objects or a single JSON object.
         Keys: field / op / value / type. Use "op" (not "operator").
-        field accepts display name or internal name (case-insensitive).
+        field accepts display name or internal name (case-insensitive for list fields).
+        Note: use exact "createdDateTime" casing for top-level filters.
         Example (array):
         [
           {"field": "Status", "op": "eq", "value": "InProgress"},
@@ -75,7 +76,8 @@ parameters:
       ja_JP: |
         フィルタ条件は JSON 配列または単一の JSON オブジェクトで指定できます。
         キーは field / op / value / type です（"operator" ではなく "op" を使用）。
-        field は表示名または内部名（大文字小文字は無視）を指定します。
+        field は表示名または内部名（リスト列は大文字小文字を無視）を指定します。
+        備考: トップレベルの createdDateTime は大文字小文字を含めて厳密一致です。
         例（配列）:
         [
           {"field": "ステータス", "op": "eq", "value": "処理中"},
@@ -87,7 +89,7 @@ parameters:
         備考: サーバーフィルタにはインデックス済み列を推奨（未インデックスだと 400 になる場合があります）。
     llm_description: |
       Filters JSON string (array or object). Each entry must have: field, op, value, optional type (string|number|bool|datetime).
-      field can be a display name or internal name (case-insensitive). Use "op" (not "operator").
+      field can be a display name or internal name (case-insensitive for list fields); use exact "createdDateTime" casing. Use "op" (not "operator").
       Note: For list date columns (fields/<name>), type=datetime is treated as a quoted string.
       Example:
       [{"field":"ステータス","op":"eq","value":"処理中"},{"field":"登録日時","op":"gt","value":"2025-12-16T15:00:00Z","type":"datetime"}]

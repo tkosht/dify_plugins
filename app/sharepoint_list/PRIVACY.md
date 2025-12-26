@@ -1,1 +1,2 @@
 This plugin does not log or persist user data beyond what is necessary for runtime execution. Access tokens are obtained via OAuth and kept within Dify's credential store; the plugin does not transmit secrets elsewhere.
+When `SHAREPOINT_LIST_DEBUG_LOG=1` is enabled, it writes local NDJSON debug logs (default path `/tmp/sharepoint_list.debug.ndjson`) that can include request metadata such as filter expressions, field names, and paging parameters. Authorization headers and tokens are not logged.

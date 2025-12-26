@@ -77,11 +77,11 @@ def test_parse_filters_json_single_object() -> None:
     assert result[0].op == "ne"
 
 
-def test_parse_filters_operator_alias() -> None:
+def test_parse_filters_operator_alias_rejected() -> None:
     raw = '[{"field": "Status", "operator": "eq", "value": "処理中"}]'
-    result = filters.parse_filters(raw)
-    assert len(result) == 1
-    assert result[0].op == "eq"
+    with pytest.raises(ValueError) as exc:
+        filters.parse_filters(raw)
+    assert "field and op" in str(exc.value)
 
 
 def test_parse_filters_empty_string_returns_empty() -> None:
