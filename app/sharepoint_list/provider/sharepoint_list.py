@@ -14,10 +14,6 @@ from werkzeug import Request
 
 
 class SharePointListProvider(ToolProvider):
-    _AUTH_URL = (
-        "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
-    )
-    _TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
     _API_BASE_URL = "https://graph.microsoft.com/v1.0"
     _SCOPES = "openid offline_access User.Read Sites.ReadWrite.All"
 
@@ -25,6 +21,21 @@ class SharePointListProvider(ToolProvider):
         # Optional: could call /me to validate, but keep lightweight here.
         if "access_token" not in credentials:
             raise ToolProviderCredentialValidationError("Missing access_token")
+
+    def _get_oauth_endpoints(
+        self, system_credentials: Mapping[str, Any]
+    ) -> dict[str, str]:
+        tenant_raw = system_credentials.get("tenant_id") or "common"
+        tenant = str(tenant_raw).strip() or "common"
+        base = (
+            f"https://login.microsoftonline.com/"
+            f"{urllib.parse.quote(tenant)}/oauth2/v2.0"
+        )
+        return {
+            "tenant": tenant,
+            "auth_url": f"{base}/authorize",
+            "token_url": f"{base}/token",
+        }
 
     def _oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
@@ -36,6 +47,7 @@ class SharePointListProvider(ToolProvider):
                 "client_id and client_secret are required"
             )
 
+        endpoints = self._get_oauth_endpoints(system_credentials)
         state = secrets.token_urlsafe(16)
         params = {
             "client_id": client_id,
@@ -45,7 +57,9 @@ class SharePointListProvider(ToolProvider):
             "state": state,
             "response_mode": "query",
         }
-        return f"{self._AUTH_URL}?{urllib.parse.urlencode(params)}"
+        auth_url = f"{endpoints['auth_url']}?{urllib.parse.urlencode(params)}"
+
+        return auth_url
 
     def _oauth_get_credentials(
         self,
@@ -54,6 +68,8 @@ class SharePointListProvider(ToolProvider):
         request: Request,
     ) -> ToolOAuthCredentials:
         code = request.args.get("code")
+        endpoints = self._get_oauth_endpoints(system_credentials)
+
         if not code:
             raise ToolProviderCredentialValidationError(
                 "Authorization code is missing"
@@ -80,7 +96,10 @@ class SharePointListProvider(ToolProvider):
         }
 
         response = requests.post(
-            self._TOKEN_URL, data=token_data, headers=headers, timeout=30
+                endpoints["token_url"],
+                data=token_data,
+                headers=headers,
+                timeout=30,
         )
         response.raise_for_status()
         payload = response.json()
@@ -140,6 +159,8 @@ class SharePointListProvider(ToolProvider):
                 "client_id and client_secret are required"
             )
 
+        endpoints = self._get_oauth_endpoints(system_credentials)
+
         token_data = {
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
@@ -153,7 +174,10 @@ class SharePointListProvider(ToolProvider):
         }
 
         response = requests.post(
-            self._TOKEN_URL, data=token_data, headers=headers, timeout=30
+            endpoints["token_url"],
+            data=token_data,
+            headers=headers,
+            timeout=30,
         )
         response.raise_for_status()
         payload = response.json()

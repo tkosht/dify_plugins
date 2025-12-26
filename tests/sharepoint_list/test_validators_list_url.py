@@ -29,3 +29,4 @@ class TestParseListUrl:
     def test_invalid_url_raises(self, bad_url: str) -> None:
         with pytest.raises(ValueError):
             validators.parse_list_url(bad_url)
+
