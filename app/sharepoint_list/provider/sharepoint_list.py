@@ -96,10 +96,10 @@ class SharePointListProvider(ToolProvider):
         }
 
         response = requests.post(
-                endpoints["token_url"],
-                data=token_data,
-                headers=headers,
-                timeout=30,
+            endpoints["token_url"],
+            data=token_data,
+            headers=headers,
+            timeout=30,
         )
         response.raise_for_status()
         payload = response.json()
