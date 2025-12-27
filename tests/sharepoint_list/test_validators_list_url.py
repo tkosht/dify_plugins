@@ -30,3 +30,4 @@ class TestParseListUrl:
         with pytest.raises(ValueError):
             validators.parse_list_url(bad_url)
 
+
