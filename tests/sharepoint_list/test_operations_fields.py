@@ -26,5 +26,3 @@ def test_map_fields_to_internal_keeps_unknown() -> None:
 
     assert "Unknown" in mapped
     assert mapped["Unknown"] == 1
-
-
