@@ -26,6 +26,7 @@ bkup/
 ex*.ipynb
 *.difypkg
 plugins/
+sessions/
 
 NotebookLM
 
