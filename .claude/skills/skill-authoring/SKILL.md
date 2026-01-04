@@ -43,6 +43,7 @@ description: "What the skill does and when to use it; include explicit triggers.
 
 ## References
 - Read `references/agent_skills_overview.md` for the current skill layout and existing system skills in this repo.
+- Use `references/subagent_skill_md_template.md` as a reusable template for subagent/orchestrator-style SKILL.md files.
 
 ## Guardrails
 - Keep SKILL.md concise; move details into `references/`.
