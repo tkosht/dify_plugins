@@ -16,17 +16,42 @@ codex_feedback.py - 人間フィードバック追加CLI
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+ROOT_DIR = Path(__file__).resolve().parents[4]
+LOG_ROOT_DIR = ROOT_DIR / ".codex" / "sessions" / "codex_exec"
+
+
+def resolve_log_dir(
+    log_dir: str | None = None,
+    scope: str | None = None,
+) -> Path:
+    if log_dir:
+        candidate = Path(log_dir)
+    else:
+        env_dir = os.environ.get("CODEX_SUBAGENT_LOG_DIR")
+        candidate = Path(env_dir) if env_dir else LOG_ROOT_DIR
+
+    # If the user already passed a scoped directory (e.g. ".../auto") and no
+    # explicit scope override exists, treat it as the scope.
+    if candidate.name in {"human", "auto"} and scope is None:
+        scope = candidate.name
+        candidate = candidate.parent
+
+    if scope in {"human", "auto"}:
+        candidate = candidate / scope
+
+    if not candidate.is_absolute():
+        candidate = ROOT_DIR / candidate
+    return candidate
+
+
 # ログディレクトリ
-LOG_DIR = (
-    Path(__file__).parent.parent.parent.parent.parent
-    / "sessions"
-    / "codex_exec"
-)
+LOG_DIR = resolve_log_dir()
 
 
 def find_latest_log() -> Path | None:
@@ -93,7 +118,7 @@ def add_feedback(
         }
 
         # ファイルを上書き
-        with open(log_path, encoding="utf-8") as f:
+        with open(log_path, "w", encoding="utf-8") as f:
             for log_entry in logs:
                 f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
@@ -214,8 +239,35 @@ def main():
         action="store_true",
         help="ログの概要を表示",
     )
+    parser.add_argument(
+        "--log-dir",
+        type=str,
+        default=None,
+        help="ログ保存先（既定: .codex/sessions/codex_exec）",
+    )
+    parser.add_argument(
+        "--scope",
+        "--log-scope",
+        choices=["all", "human", "auto"],
+        default=None,
+        help="ログ分類（既定: env CODEX_SUBAGENT_LOG_SCOPE / 未設定: human）",
+    )
 
     args = parser.parse_args()
+
+    env_scope = os.environ.get("CODEX_SUBAGENT_LOG_SCOPE")
+    if args.scope is None:
+        effective_scope = (
+            env_scope if env_scope in {"human", "auto"} else "human"
+        )
+    else:
+        effective_scope = args.scope
+
+    global LOG_DIR
+    LOG_DIR = resolve_log_dir(
+        args.log_dir,
+        None if effective_scope == "all" else effective_scope,
+    )
 
     if args.interactive:
         interactive_mode()
