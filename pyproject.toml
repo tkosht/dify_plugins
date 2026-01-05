@@ -125,7 +125,7 @@ combine-as-imports = true
 "app/web/assets.py" = ["E501"]
 "tests/**/*.py" = ["E501"]
 "bin/claude_slash_runner.py" = ["E501"]
-"skills/.system/skill-creator/scripts/*.py" = ["E501"]
+".codex/skills/.system/skill-creator/scripts/*.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -27,18 +27,43 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import sys
 from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+ROOT_DIR = Path(__file__).resolve().parents[4]
+LOG_ROOT_DIR = ROOT_DIR / ".codex" / "sessions" / "codex_exec"
+
+
+def resolve_log_dir(
+    log_dir: str | None = None,
+    scope: str | None = None,
+) -> Path:
+    if log_dir:
+        candidate = Path(log_dir)
+    else:
+        env_dir = os.environ.get("CODEX_SUBAGENT_LOG_DIR")
+        candidate = Path(env_dir) if env_dir else LOG_ROOT_DIR
+
+    # If the user already passed a scoped directory (e.g. ".../auto") and no
+    # explicit scope override exists, treat it as the scope.
+    if candidate.name in {"human", "auto"} and scope is None:
+        scope = candidate.name
+        candidate = candidate.parent
+
+    if scope in {"human", "auto"}:
+        candidate = candidate / scope
+
+    if not candidate.is_absolute():
+        candidate = ROOT_DIR / candidate
+    return candidate
+
+
 # ログディレクトリ
-LOG_DIR = (
-    Path(__file__).parent.parent.parent.parent.parent
-    / "sessions"
-    / "codex_exec"
-)
+LOG_DIR = resolve_log_dir()
 
 
 def iter_logs(
@@ -88,11 +113,14 @@ def filter_logs(
     max_score: float | None = None,
     has_human_feedback: bool | None = None,
     has_llm_eval: bool | None = None,
+    timed_out: bool | None = None,
 ) -> Iterator[dict[str, Any]]:
     """ログをフィルタリング"""
     for log in logs:
         exec_data = log.get("execution", {})
         eval_data = log.get("evaluation", {})
+        results = log.get("results", []) or []
+        any_timed_out = any(r.get("timed_out") for r in results)
 
         if task_type and exec_data.get("task_type") != task_type:
             continue
@@ -125,6 +153,9 @@ def filter_logs(
             if not has_llm_eval and llm:
                 continue
 
+        if timed_out is not None and any_timed_out != timed_out:
+            continue
+
         yield log
 
 
@@ -137,6 +168,7 @@ def format_log_row(log: dict[str, Any]) -> dict[str, Any]:
     llm = eval_data.get("llm", {}) or {}
     results = log.get("results", [{}])
     first_result = results[0] if results else {}
+    any_timed_out = any(r.get("timed_out") for r in (results or []))
 
     return {
         "run_id": log.get("run_id", "")[:8],
@@ -145,6 +177,7 @@ def format_log_row(log: dict[str, Any]) -> dict[str, Any]:
         "task_type": exec_data.get("task_type", ""),
         "prompt": exec_data.get("prompt", "")[:50],
         "success": first_result.get("success", False),
+        "timed_out": any_timed_out,
         "execution_time": first_result.get("execution_time", 0),
         "heuristic_score": heuristic.get(
             "combined_score",
@@ -164,7 +197,7 @@ def print_table(logs: list[dict[str, Any]], limit: int = 10) -> None:
     # ヘッダー
     header = (
         f"{'Run ID':<10} {'Timestamp':<25} {'Mode':<12} "
-        f"{'Task':<15} {'Score':<8} {'Human':<6} {'LLM':<6}"
+        f"{'Task':<15} {'TO':<3} {'Score':<8} {'Human':<6} {'LLM':<6}"
     )
     print(header)
     print("-" * 90)
@@ -176,12 +209,14 @@ def print_table(logs: list[dict[str, Any]], limit: int = 10) -> None:
         row = format_log_row(log)
         human_score = str(row["human_score"]) if row["human_score"] else "-"
         llm_score = str(row["llm_score"]) if row["llm_score"] else "-"
+        timed_out = "Y" if row.get("timed_out") else "-"
 
         print(
             f"{row['run_id']:<10} "
             f"{row['timestamp'][:23]:<25} "
             f"{row['mode']:<12} "
             f"{row['task_type']:<15} "
+            f"{timed_out:<3} "
             f"{row['heuristic_score']:<8.2f} "
             f"{human_score:<6} "
             f"{llm_score:<6}"
@@ -204,6 +239,7 @@ def export_csv(logs: list[dict[str, Any]], output=sys.stdout) -> None:
         "task_type",
         "prompt",
         "success",
+        "timed_out",
         "execution_time",
         "heuristic_score",
         "human_score",
@@ -359,13 +395,45 @@ def main():
         help="LLM評価あり",
     )
     parser.add_argument(
+        "--timed-out",
+        action="store_true",
+        help="タイムアウトあり（results 内に timed_out=true が存在）",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=10,
         help="表示件数（デフォルト: 10）",
     )
+    parser.add_argument(
+        "--log-dir",
+        type=str,
+        default=None,
+        help="ログ保存先（既定: .codex/sessions/codex_exec）",
+    )
+    parser.add_argument(
+        "--scope",
+        "--log-scope",
+        choices=["all", "human", "auto"],
+        default=None,
+        help="ログ分類（既定: env CODEX_SUBAGENT_LOG_SCOPE / 未設定: all）",
+    )
 
     args = parser.parse_args()
+
+    env_scope = os.environ.get("CODEX_SUBAGENT_LOG_SCOPE")
+    if args.scope is None:
+        effective_scope = (
+            env_scope if env_scope in {"human", "auto"} else "all"
+        )
+    else:
+        effective_scope = args.scope
+
+    global LOG_DIR
+    LOG_DIR = resolve_log_dir(
+        args.log_dir,
+        None if effective_scope == "all" else effective_scope,
+    )
 
     # 日付パース
     from_date = None
@@ -387,6 +455,7 @@ def main():
         max_score=args.max_score,
         has_human_feedback=args.has_human if args.has_human else None,
         has_llm_eval=args.has_llm if args.has_llm else None,
+        timed_out=True if args.timed_out else None,
     )
 
     # リストに変換

@@ -28,3 +28,9 @@ Need a precise picture of Agent Skills in this repository and a reusable skill f
 - `rg --files -uu -g 'SKILL.md'`
 - `eza -la .codex/skills`
 - `sed -n '1,200p' .codex/skills/.system/skill-creator/SKILL.md`
+
+## Update 2025-12-31
+- Repo root `skills/.system` was removed to keep top-level directory structure clean.
+- System skills are kept under `.codex/skills/.system` only.
+- `.claude/skills/codex-subagent/SKILL.md` was updated to describe the actual `codex exec` subagent orchestrator (single/parallel/competition).
+- The reusable “subagent SKILL.md template” was split out to `.claude/skills/skill-authoring/references/subagent_skill_md_template.md`.

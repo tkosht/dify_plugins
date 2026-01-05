@@ -91,6 +91,14 @@ uv run python .claude/skills/codex-subagent/scripts/codex_exec.py \
   --prompt "$PROMPT" \
   --sandbox read-only
 
+# Logs (default):
+# - Any TTY (stdin/stdout/stderr): .codex/sessions/codex_exec/human/...
+# - Non-TTY (captured):           .codex/sessions/codex_exec/auto/...
+# Override:
+# - --log-dir <dir> (log root; writes under <dir>/<human|auto>/...)
+# - --log-scope human|auto (classification)
+# - env: CODEX_SUBAGENT_LOG_DIR / CODEX_SUBAGENT_LOG_SCOPE
+
 # Competition mode
 uv run python .claude/skills/codex-subagent/scripts/codex_exec.py \
   --mode competition \
@@ -101,6 +109,12 @@ uv run python .claude/skills/codex-subagent/scripts/codex_exec.py \
   --sandbox read-only \
   --json
 ```
+
+補足:
+- タイムアウト時は `timed_out=true` / `success=false` / `error_message="Timeout after <N>s"` として扱う。`codex_exec.py` はプロセスグループを終了して残留を避け、`output`/`stderr` は取得できた範囲で保持し `output_is_partial=true` になる。
+- 非0終了時は stdout は保持され、stderr は `--json` 出力の `stderr`/`error_message` で確認できる。
+- 終了コード: `0=全成功`, `2=サブエージェント失敗`, `3=ラッパー内部エラー`。`parallel` は候補のいずれかが失敗した時点で `2`。
+- `--profile fast/very-fast` 指定時、`codex_exec.py` は警告を stderr に出し、ガードレール文をプロンプト先頭へ注入する（それでもタスク分割を優先）。
 
 4. **Post-process**:
    - Extract output from JSON
@@ -127,5 +141,6 @@ uv run python .claude/skills/codex-subagent/scripts/codex_exec.py \
 
 - Use `-s` for simple tasks (saves ~60% tokens)
 - Use `--sandbox read-only` (84x cheaper than full access)
+- Avoid `--profile fast/very-fast` by default (lower reasoning); if used, split tasks into micro-prompts
 - Limit count with `-n 2` for cost-sensitive tasks
 - Use `--json` for automated pipelines
