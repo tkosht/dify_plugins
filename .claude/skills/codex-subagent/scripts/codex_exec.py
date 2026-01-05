@@ -54,9 +54,7 @@ ROOT_DIR = Path(__file__).resolve().parents[4]
 LOG_ROOT_DIR = ROOT_DIR / ".codex" / "sessions" / "codex_exec"
 DEFAULT_HUMAN_LOG_DIR = LOG_ROOT_DIR / "human"
 DEFAULT_AUTO_LOG_DIR = LOG_ROOT_DIR / "auto"
-SCHEMA_DIR = (
-    ROOT_DIR / ".claude" / "skills" / "codex-subagent" / "schemas"
-)
+SCHEMA_DIR = ROOT_DIR / ".claude" / "skills" / "codex-subagent" / "schemas"
 FAST_PROFILES = {"fast", "very-fast"}
 FAST_PROFILE_GUARDRAILS = """\
 [注意] --profile fast/very-fast で実行中（推論強度が低い設定）。
@@ -80,7 +78,9 @@ def resolve_log_dir(
 ) -> Path:
     env_dir = os.environ.get("CODEX_SUBAGENT_LOG_DIR")
     base_dir = (
-        Path(log_dir) if log_dir else (Path(env_dir) if env_dir else LOG_ROOT_DIR)
+        Path(log_dir)
+        if log_dir
+        else (Path(env_dir) if env_dir else LOG_ROOT_DIR)
     )
 
     scope = log_scope or os.environ.get("CODEX_SUBAGENT_LOG_SCOPE")
@@ -595,7 +595,9 @@ def determine_pipeline_exit_code(
     return EXIT_SUCCESS if success else EXIT_SUBAGENT_FAILED
 
 
-def ensure_prompt_limit(prompt: str, max_total_prompt_chars: int | None) -> None:
+def ensure_prompt_limit(
+    prompt: str, max_total_prompt_chars: int | None
+) -> None:
     if max_total_prompt_chars is None:
         return
     if max_total_prompt_chars <= 0:
@@ -839,7 +841,9 @@ def apply_capsule_patch(
                     try:
                         index = int(key)
                     except ValueError as exc:
-                        raise ValueError("json patch index is invalid") from exc
+                        raise ValueError(
+                            "json patch index is invalid"
+                        ) from exc
                     if index < 0 or index > len(parent):
                         raise ValueError("json patch index out of range")
                     parent.insert(index, value)
@@ -907,10 +911,9 @@ def execute_pipeline(
     stage_runner,
     allow_dynamic: bool,
     max_stages: int = 10,
-    on_stage_complete: Callable[
-        [str, dict[str, Any], dict[str, Any], bool], None
-    ]
-    | None = None,
+    on_stage_complete: (
+        Callable[[str, dict[str, Any], dict[str, Any], bool], None] | None
+    ) = None,
     allowed_stage_ids: set[str] | None = None,
     dynamic_stage_specs: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], bool]:
@@ -951,9 +954,7 @@ def execute_pipeline(
                 ):
                     raise ValueError("next_stages stage id is not allowed")
                 if dynamic_stage_specs is not None:
-                    dynamic_stage_specs.setdefault(
-                        stage_id_value, dict(spec)
-                    )
+                    dynamic_stage_specs.setdefault(stage_id_value, dict(spec))
                 inserted.append(stage_id_value)
             for offset, stage_id_value in enumerate(inserted, start=1):
                 queue.insert(index + offset, stage_id_value)
@@ -967,10 +968,9 @@ def run_pipeline_with_runner(
     stage_runner,
     allow_dynamic: bool,
     max_stages: int,
-    on_stage_complete: Callable[
-        [str, dict[str, Any], dict[str, Any], bool], None
-    ]
-    | None = None,
+    on_stage_complete: (
+        Callable[[str, dict[str, Any], dict[str, Any], bool], None] | None
+    ) = None,
     allowed_stage_ids: set[str] | None = None,
     dynamic_stage_specs: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[int, dict[str, Any], list[dict[str, Any]], bool, str]:
@@ -1210,9 +1210,7 @@ def run_codex_exec(
             except Exception:
                 pass
 
-        execution_time = (
-            timeout if timed_out else (time.time() - start_time)
-        )
+        execution_time = timeout if timed_out else (time.time() - start_time)
 
         # トークン数を出力から抽出（概算）
         tokens_used = len(stdout_text.split()) * 2  # 概算
@@ -1299,9 +1297,7 @@ async def run_codex_exec_async(
         (stderr, stderr_truncated) = await stderr_task
         output_is_partial = timed_out or stdout_truncated or stderr_truncated
 
-        execution_time = (
-            timeout if timed_out else (time.time() - start_time)
-        )
+        execution_time = timeout if timed_out else (time.time() - start_time)
 
         output = _decode_text(stdout)
         stderr_text = _decode_text(stderr)
@@ -1956,9 +1952,7 @@ def main() -> int:
             if not result.success and result.error_message:
                 print(f"[error] {result.error_message}", file=sys.stderr)
             print(result.output)
-        exit_code = (
-            EXIT_SUCCESS if result.success else EXIT_SUBAGENT_FAILED
-        )
+        exit_code = EXIT_SUCCESS if result.success else EXIT_SUBAGENT_FAILED
 
     elif mode == ExecutionMode.PARALLEL:
         prompts = [args.prompt] * args.count
@@ -2059,7 +2053,9 @@ def main() -> int:
                     )
                 print(f"Average Score: {avg_score:.2f}")
                 print("--- Merged Output ---")
-            failures = [r for r in results if not r.success and r.error_message]
+            failures = [
+                r for r in results if not r.success and r.error_message
+            ]
             for r in failures:
                 print(
                     f"[error] [{r.agent_id}] {r.error_message}",
@@ -2067,9 +2063,7 @@ def main() -> int:
                 )
             print(merged)
         all_success = bool(results) and all(r.success for r in results)
-        exit_code = (
-            EXIT_SUCCESS if all_success else EXIT_SUBAGENT_FAILED
-        )
+        exit_code = EXIT_SUCCESS if all_success else EXIT_SUBAGENT_FAILED
 
     elif mode == ExecutionMode.COMPETITION:
         outcome = asyncio.run(
@@ -2101,9 +2095,7 @@ def main() -> int:
         if (
             best.result.success
             and best.result.output
-            and should_run_llm_eval(
-                mode, best.combined_score, args.llm_eval
-            )
+            and should_run_llm_eval(mode, best.combined_score, args.llm_eval)
         ):
             llm_eval = asyncio.run(
                 evaluate_with_llm(
@@ -2191,9 +2183,7 @@ def main() -> int:
                 print(f"[error] {best.result.error_message}", file=sys.stderr)
             print(format_output(best, verbose=args.verbose))
         exit_code = (
-            EXIT_SUCCESS
-            if best.result.success
-            else EXIT_SUBAGENT_FAILED
+            EXIT_SUCCESS if best.result.success else EXIT_SUBAGENT_FAILED
         )
 
     elif mode == ExecutionMode.PIPELINE:
@@ -2272,9 +2262,7 @@ def main() -> int:
             )
 
             if not result.success:
-                stage_result = stage_result_from_exec_failure(
-                    stage_id, result
-                )
+                stage_result = stage_result_from_exec_failure(stage_id, result)
                 stage_log = build_stage_log(
                     stage_id=stage_id,
                     pipeline_run_id=pipeline_run_id,

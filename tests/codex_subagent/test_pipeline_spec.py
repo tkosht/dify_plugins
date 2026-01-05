@@ -61,7 +61,11 @@ def test_stage_result_error_rejects_nonempty_patch():
 
 def test_patch_path_prefix_allows_children():
     ops = [
-        {"op": "add", "path": "/facts/-", "value": {"source": "x", "claim": "y"}},
+        {
+            "op": "add",
+            "path": "/facts/-",
+            "value": {"source": "x", "claim": "y"},
+        },
         {"op": "replace", "path": "/draft/content", "value": "ok"},
     ]
     codex_exec.validate_patch_ops(ops)
@@ -105,18 +109,14 @@ def test_capsule_hash_excludes_pipeline_run_id():
         "pipeline_run_id": "bbb",
         "facts": [{"source": "x", "claim": "y"}],
     }
-    assert codex_exec.compute_capsule_hash(capsule_a) == codex_exec.compute_capsule_hash(
-        capsule_b
-    )
+    assert codex_exec.compute_capsule_hash(
+        capsule_a
+    ) == codex_exec.compute_capsule_hash(capsule_b)
 
 
 def test_capsule_store_auto():
-    assert (
-        codex_exec.resolve_capsule_store("auto", 10_000, None) == "embed"
-    )
-    assert (
-        codex_exec.resolve_capsule_store("auto", 30_000, None) == "file"
-    )
+    assert codex_exec.resolve_capsule_store("auto", 10_000, None) == "embed"
+    assert codex_exec.resolve_capsule_store("auto", 30_000, None) == "file"
 
 
 def _capsule_with_exact_size(target_size: int):
@@ -133,15 +133,11 @@ def test_capsule_store_auto_boundary():
     capsule = _capsule_with_exact_size(20_000)
     size_bytes = codex_exec.capsule_size_bytes(capsule)
     assert (
-        codex_exec.resolve_capsule_store("auto", size_bytes, None)
-        == "embed"
+        codex_exec.resolve_capsule_store("auto", size_bytes, None) == "embed"
     )
     capsule["draft"]["content"] += "a"
     size_bytes = codex_exec.capsule_size_bytes(capsule)
-    assert (
-        codex_exec.resolve_capsule_store("auto", size_bytes, None)
-        == "file"
-    )
+    assert codex_exec.resolve_capsule_store("auto", size_bytes, None) == "file"
 
 
 def test_capsule_path_constraints():
@@ -195,21 +191,15 @@ def test_resolve_pipeline_stages_reject_unknown():
 
 def test_find_stage_spec_prefers_pipeline_spec():
     pipeline_spec = {
-        "stages": [
-            {"id": "draft", "instructions": "from pipeline spec"}
-        ]
+        "stages": [{"id": "draft", "instructions": "from pipeline spec"}]
     }
     dynamic_specs = {"draft": {"id": "draft", "instructions": "dynamic"}}
-    spec = codex_exec.find_stage_spec(
-        pipeline_spec, "draft", dynamic_specs
-    )
+    spec = codex_exec.find_stage_spec(pipeline_spec, "draft", dynamic_specs)
     assert spec["instructions"] == "from pipeline spec"
 
 
 def test_find_stage_spec_uses_dynamic_when_missing():
     pipeline_spec = {"stages": [{"id": "draft"}]}
     dynamic_specs = {"extra": {"id": "extra", "instructions": "dyn"}}
-    spec = codex_exec.find_stage_spec(
-        pipeline_spec, "extra", dynamic_specs
-    )
+    spec = codex_exec.find_stage_spec(pipeline_spec, "extra", dynamic_specs)
     assert spec["instructions"] == "dyn"

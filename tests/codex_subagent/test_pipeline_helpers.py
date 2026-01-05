@@ -21,9 +21,7 @@ def test_stage_result_from_exec_failure_timeout():
         timeout_seconds=30,
         output_is_partial=True,
     )
-    stage_result = codex_exec.stage_result_from_exec_failure(
-        "draft", result
-    )
+    stage_result = codex_exec.stage_result_from_exec_failure("draft", result)
     assert stage_result["status"] == "retryable_error"
     assert stage_result["output_is_partial"] is True
     assert stage_result["capsule_patch"] == []
@@ -39,9 +37,7 @@ def test_stage_result_from_exec_failure_non_timeout():
         timed_out=False,
         output_is_partial=False,
     )
-    stage_result = codex_exec.stage_result_from_exec_failure(
-        "draft", result
-    )
+    stage_result = codex_exec.stage_result_from_exec_failure("draft", result)
     assert stage_result["status"] == "fatal_error"
     assert stage_result["output_is_partial"] is False
     assert stage_result["capsule_patch"] == []

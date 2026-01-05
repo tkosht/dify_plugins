@@ -30,7 +30,7 @@ def test_build_stage_prompt_embed_includes_capsule_and_stage():
     )
     assert "draft" in prompt
     assert "Do the thing" in prompt
-    assert "\"pipeline_run_id\"" in prompt
+    assert '"pipeline_run_id"' in prompt
 
 
 def test_build_stage_prompt_file_includes_path():
@@ -50,7 +50,7 @@ def test_build_stage_prompt_file_includes_path():
         allow_dynamic=False,
     )
     assert str(path) in prompt
-    assert "\"pipeline_run_id\"" not in prompt
+    assert '"pipeline_run_id"' not in prompt
 
 
 def test_build_stage_prompt_allows_next_stages_when_dynamic():
@@ -68,7 +68,7 @@ def test_build_stage_prompt_allows_next_stages_when_dynamic():
         stage_spec=None,
         allow_dynamic=True,
     )
-    assert "\"next_stages\"" in prompt
+    assert '"next_stages"' in prompt
 
 
 def test_parse_stage_result_output_accepts_json():
@@ -86,9 +86,7 @@ def test_parse_stage_result_output_accepts_json():
             ),
         ]
     )
-    result = codex_exec.parse_stage_result_output(
-        output, allow_dynamic=False
-    )
+    result = codex_exec.parse_stage_result_output(output, allow_dynamic=False)
     assert result["stage_id"] == "draft"
 
 

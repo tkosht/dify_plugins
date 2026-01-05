@@ -33,9 +33,7 @@ def test_load_pipeline_spec_missing(tmp_path):
 
 def test_resolve_capsule_path_default(tmp_path):
     log_dir = tmp_path / "logs"
-    path = codex_exec.resolve_capsule_path(
-        "file", None, log_dir, "run-123"
-    )
+    path = codex_exec.resolve_capsule_path("file", None, log_dir, "run-123")
     assert path == log_dir / "artifacts" / "run-123" / "capsule.json"
 
 

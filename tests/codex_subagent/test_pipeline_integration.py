@@ -217,6 +217,7 @@ def test_pipeline_cli_smoke_success(tmp_path):
         ],
         "allow_dynamic_stages": False,
     }
+
     def _validate(payload: dict) -> None:
         assert payload["success"] is True
         _assert_payload_fields(payload)
@@ -242,6 +243,7 @@ def test_pipeline_cli_dynamic_stage(tmp_path):
         "allow_dynamic_stages": True,
         "allowed_stage_ids": ["draft", "extra", "revise"],
     }
+
     def _validate(payload: dict) -> None:
         assert payload["success"] is True
         _assert_payload_fields(payload)

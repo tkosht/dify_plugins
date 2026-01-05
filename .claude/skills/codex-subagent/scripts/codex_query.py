@@ -423,7 +423,9 @@ def main():
 
     env_scope = os.environ.get("CODEX_SUBAGENT_LOG_SCOPE")
     if args.scope is None:
-        effective_scope = env_scope if env_scope in {"human", "auto"} else "all"
+        effective_scope = (
+            env_scope if env_scope in {"human", "auto"} else "all"
+        )
     else:
         effective_scope = args.scope
 
