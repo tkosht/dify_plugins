@@ -1,0 +1,12 @@
+{
+  "allow_dynamic_stages": true,
+  "allowed_stage_ids": ["draft", "execute", "review", "revise", "verify", "release"],
+  "stages": [
+    { "id": "draft", "instructions": "開発案・差分方針を /draft に記録。根拠は /facts。" },
+    { "id": "execute", "instructions": "Executor が実ファイル変更とテスト実行。結果/ログを /facts に記録。" },
+    { "id": "review", "instructions": "Reviewer が指摘・リスクを /critique に記録。根拠必須。" },
+    { "id": "revise", "instructions": "Executor が修正反映。/revise にまとめ、未解決は /open_questions。" },
+    { "id": "verify", "instructions": "Verifier がテスト再実行。結果を /facts に追記。" },
+    { "id": "release", "instructions": "Releaser がコミット/PR 等の運用作業。必要時のみ。" }
+  ]
+}
