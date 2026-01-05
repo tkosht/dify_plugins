@@ -23,22 +23,23 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import os
+import hashlib
 import json
+import os
 import random
 import re
 import signal
-import hashlib
 import subprocess
 import sys
 import time
 import uuid
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 try:
     import jsonschema

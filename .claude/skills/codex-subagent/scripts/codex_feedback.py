@@ -16,8 +16,8 @@ codex_feedback.py - 人間フィードバック追加CLI
 from __future__ import annotations
 
 import argparse
-import os
 import json
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path

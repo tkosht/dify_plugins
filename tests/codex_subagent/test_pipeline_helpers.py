@@ -1,8 +1,6 @@
 import sys
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / ".claude" / "skills" / "codex-subagent" / "scripts"
 sys.path.append(str(SCRIPTS))
