@@ -246,3 +246,85 @@ class TestGetDebugLogPath:
             {"SHAREPOINT_LIST_DEBUG_LOG_PATH": "/custom/path.ndjson"},
         ):
             assert operations._get_debug_log_path() == "/custom/path.ndjson"
+
+
+class TestListItemsDebugLogging:
+    """list_items のデバッグログが出力されることを確認"""
+
+    @patch("app.sharepoint_list.internal.http_client.requests.request")
+    def test_list_items_emits_debug_entries(self, mock_request: Mock) -> None:
+        status_internal = "_x30b9__x30c6__x30fc__x30bf__x30"
+        detail_internal = "_x8a73__x7d30_"
+        category_internal = "_x30ab__x30c6__x30b4__x30ea_"
+
+        columns_response = {
+            "value": [
+                {"name": "Title", "displayName": "Title"},
+                {"name": "id", "displayName": "ID"},
+                {"name": status_internal, "displayName": "ステータス"},
+                {"name": detail_internal, "displayName": "詳細"},
+                {"name": category_internal, "displayName": "カテゴリ"},
+            ]
+        }
+        items_response = {
+            "value": [
+                {
+                    "id": "item-1",
+                    "fields": {
+                        "Title": "Item 1",
+                        "id": "1",
+                        status_internal: "処理中",
+                        # detail/category omitted by Graph when empty
+                    },
+                }
+            ],
+            "@odata.nextLink": "https://graph.microsoft.com/v1.0/sites/site/lists/list/items?$skiptoken=abc123",
+        }
+
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = "{}"
+        mock_resp.json.side_effect = [columns_response, items_response]
+        mock_request.return_value = mock_resp
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ndjson"
+        ) as f:
+            log_path = f.name
+
+        try:
+            with patch.dict(
+                os.environ,
+                {
+                    "SHAREPOINT_LIST_DEBUG_LOG": "1",
+                    "SHAREPOINT_LIST_DEBUG_LOG_PATH": log_path,
+                    "SHAREPOINT_LIST_DEBUG_RUN_ID": "test",
+                },
+            ):
+                from app.sharepoint_list.internal import validators
+
+                target = validators.TargetSpec(
+                    # GUIDs: bypass resolve_site_id/resolve_list_id extra calls
+                    site_identifier="a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    list_identifier="b2c3d4e5-f6a7-8901-bcde-f12345678901",
+                )
+                operations.list_items(
+                    access_token="test-token",
+                    target=target,
+                    select_fields="ID,Title,ステータス,詳細,カテゴリ",
+                    filters_raw='[{"field":"ステータス","op":"eq","value":"処理中"}]',
+                )
+
+                with open(log_path) as lf:
+                    lines = [ln for ln in lf.read().splitlines() if ln.strip()]
+
+                messages = {json.loads(ln).get("message") for ln in lines}
+                # High-signal events from list_items flow
+                assert "select_fields_mapping" in messages
+                assert "request_args" in messages
+                assert "response_fields_presence" in messages
+                assert "normalized_missing_fields" in messages
+                assert "response_fields_presence_normalized" in messages
+                assert "return_summary" in messages
+        finally:
+            os.unlink(log_path)

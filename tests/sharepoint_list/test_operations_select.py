@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import Mock, patch
 
+import pytest
+
 from app.sharepoint_list.internal import operations, validators
 
 # Use GUID format to bypass resolve functions
@@ -433,3 +435,217 @@ class TestListItemsSelectFields:
         expand = params.get("$expand", "")
         assert "Title" in expand
         assert "Status" in expand
+
+
+class TestListItemsSelectFieldsNormalization:
+    """list_items の返却 fields を正規化するテスト"""
+
+    @patch("app.sharepoint_list.internal.http_client.requests.request")
+    def test_fills_missing_selected_fields(self, mock_request: Mock) -> None:
+        """
+        Graph が空値のフィールドキーを省略するケースに備え、
+        選択されたフィールドが fields に存在しない場合は None として補完する。
+        また、典型的な別名（ID vs id / OData__ プレフィックス）も補完する。
+        """
+        status_internal = "_x30b9__x30c6__x30fc__x30bf__x30"
+        detail_internal = "_x8a73__x7d30_"
+        category_internal = "_x30ab__x30c6__x30b4__x30ea_"
+
+        columns_response = {
+            "value": [
+                {"name": "Title", "displayName": "Title"},
+                {"name": "id", "displayName": "ID"},
+                {"name": status_internal, "displayName": "ステータス"},
+                {"name": detail_internal, "displayName": "詳細"},
+                {"name": category_internal, "displayName": "カテゴリ"},
+            ]
+        }
+        items_response = {
+            "value": [
+                {
+                    "id": "item-1",
+                    "fields": {
+                        "@odata.etag": "etag",
+                        "Title": "Item 1",
+                        "id": "1",
+                        status_internal: "処理中",
+                        # Graph may return a variant key for some fields
+                        f"OData__{detail_internal.lstrip('_')}": "detail",
+                        # category_internal is intentionally missing
+                    },
+                }
+            ],
+            "@odata.nextLink": None,
+        }
+
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = "{}"
+        mock_resp.json.side_effect = [columns_response, items_response]
+        mock_request.return_value = mock_resp
+
+        target = validators.TargetSpec(
+            site_identifier=SITE_ID, list_identifier=LIST_ID
+        )
+        result = operations.list_items(
+            access_token="test-token",
+            target=target,
+            select_fields="ID,Title,ステータス,詳細,カテゴリ",
+        )
+
+        assert "items" in result
+        assert len(result["items"]) == 1
+        fields = result["items"][0]["fields"]
+        assert fields["ID"] == "1"
+        assert fields[detail_internal] == "detail"
+        assert fields[category_internal] is None
+
+
+class TestStrictSelectValidation:
+    """select_fields / filters で未知列を指定した場合のエラー検証"""
+
+    @patch("app.sharepoint_list.internal.http_client.requests.request")
+    def test_list_items_unknown_select_field_raises(
+        self, mock_request: Mock
+    ) -> None:
+        columns_response = {
+            "value": [
+                {"name": "Title", "displayName": "Title"},
+                {
+                    "name": "_x30b9__x30c6__x30fc__x30bf__x30",
+                    "displayName": "ステータス",
+                },
+            ]
+        }
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = "{}"
+        mock_resp.json.side_effect = [columns_response]
+        mock_request.return_value = mock_resp
+
+        target = validators.TargetSpec(
+            site_identifier=SITE_ID, list_identifier=LIST_ID
+        )
+
+        with pytest.raises(operations.GraphError):
+            operations.list_items(
+                access_token="test-token",
+                target=target,
+                select_fields="UnknownField",
+            )
+
+    @patch("app.sharepoint_list.internal.http_client.requests.request")
+    def test_list_items_unknown_filter_field_raises(
+        self, mock_request: Mock
+    ) -> None:
+        columns_response = {
+            "value": [
+                {"name": "Title", "displayName": "Title"},
+                {
+                    "name": "_x30b9__x30c6__x30fc__x30bf__x30",
+                    "displayName": "ステータス",
+                },
+            ]
+        }
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = "{}"
+        mock_resp.json.side_effect = [columns_response]
+        mock_request.return_value = mock_resp
+
+        target = validators.TargetSpec(
+            site_identifier=SITE_ID, list_identifier=LIST_ID
+        )
+
+        with pytest.raises(operations.GraphError):
+            operations.list_items(
+                access_token="test-token",
+                target=target,
+                select_fields=None,
+                filters_raw='[{"field":"UnknownField","op":"eq","value":"x"}]',
+            )
+
+    @patch("app.sharepoint_list.internal.http_client.requests.request")
+    def test_get_item_unknown_select_field_raises(
+        self, mock_request: Mock
+    ) -> None:
+        columns_response = {
+            "value": [
+                {"name": "Title", "displayName": "Title"},
+                {
+                    "name": "_x30b9__x30c6__x30fc__x30bf__x30",
+                    "displayName": "ステータス",
+                },
+            ]
+        }
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = "{}"
+        mock_resp.json.side_effect = [columns_response]
+        mock_request.return_value = mock_resp
+
+        target = validators.TargetSpec(
+            site_identifier=SITE_ID, list_identifier=LIST_ID
+        )
+
+        with pytest.raises(operations.GraphError):
+            operations.get_item(
+                access_token="test-token",
+                target=target,
+                item_id="item-1",
+                select_fields=["UnknownField"],
+            )
+
+
+class TestGetItemSelectFieldsNormalization:
+    """get_item で select_fields 指定時に欠落フィールドを None で補完する"""
+
+    @patch("app.sharepoint_list.internal.http_client.requests.request")
+    def test_get_item_fills_missing_selected_fields(
+        self, mock_request: Mock
+    ) -> None:
+        status_internal = "_x30b9__x30c6__x30fc__x30bf__x30"
+        detail_internal = "_x8a73__x7d30_"
+        category_internal = "_x30ab__x30c6__x30b4__x30ea_"
+
+        columns_response = {
+            "value": [
+                {"name": "Title", "displayName": "Title"},
+                {"name": "id", "displayName": "ID"},
+                {"name": status_internal, "displayName": "ステータス"},
+                {"name": detail_internal, "displayName": "詳細"},
+                {"name": category_internal, "displayName": "カテゴリ"},
+            ]
+        }
+        item_response = {
+            "id": "item-1",
+            "fields": {
+                "Title": "Item 1",
+                "id": "1",
+                status_internal: "処理中",
+                f"OData__{detail_internal.lstrip('_')}": "detail",
+                # category_internal is missing
+            },
+        }
+
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = "{}"
+        mock_resp.json.side_effect = [columns_response, item_response]
+        mock_request.return_value = mock_resp
+
+        target = validators.TargetSpec(
+            site_identifier=SITE_ID, list_identifier=LIST_ID
+        )
+
+        result = operations.get_item(
+            access_token="test-token",
+            target=target,
+            item_id="item-1",
+            select_fields=["ID", "Title", "ステータス", "詳細", "カテゴリ"],
+        )
+
+        fields = result["fields"]
+        assert fields["ID"] == "1"
+        assert fields[detail_internal] == "detail"
+        assert fields[category_internal] is None
