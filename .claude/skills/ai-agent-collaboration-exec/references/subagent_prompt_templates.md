@@ -12,7 +12,7 @@
 ## Reviewer
 - 役割: Reviewer（独立レビュー）
 - 実行: 読み取りのみ
-- 書き込み範囲: `memory-bank/06-project/` のみ
+- 書き込み範囲: <review_output_dir> のみ
 - 記録先: /critique
 - 要求: 指摘・リスク・未解決事項を根拠付きで列挙する
 
@@ -22,6 +22,13 @@
 - 書き込み範囲: 原則なし（必要時は /facts の追記のみ）
 - 記録先: /facts
 - 要求: 失敗時は原因と次の一手を明確化する
+
+## Releaser（任意）
+- 役割: Releaser（commit/PR などの運用作業）
+- 実行: git commit/push/PR 作成（必要時のみ）
+- 書き込み範囲: <review_output_dir>（運用記録）
+- 記録先: /facts
+- 要求: 実行コマンドと結果、PR/コミット情報を簡潔に記録する
 
 ## Timeout Policy
 - タスク難易度や要求水準を下げない。
