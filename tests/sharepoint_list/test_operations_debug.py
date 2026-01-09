@@ -81,7 +81,13 @@ class TestLogDebug:
                 lines = content.strip().split("\n")
                 assert len(lines) == 1
 
-                log_entry = json.loads(lines[0])
+                raw_line = lines[0].lstrip()
+                assert raw_line.startswith('{"ts":')
+                log_entry = json.loads(raw_line)
+                # Ensure key order (ts, timestamp first) for readability
+                assert list(log_entry.keys())[:2] == ["ts", "timestamp"]
+                assert isinstance(log_entry["ts"], int)
+                assert isinstance(log_entry["timestamp"], str)
                 assert log_entry["location"] == "test"
                 assert log_entry["message"] == "test message"
                 assert log_entry["data"] == {"key": "value"}
