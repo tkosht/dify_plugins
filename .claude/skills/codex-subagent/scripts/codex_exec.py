@@ -1166,7 +1166,7 @@ def should_run_llm_eval(
 def run_codex_exec(
     prompt: str,
     sandbox: SandboxMode = SandboxMode.READ_ONLY,
-    timeout: int = 120,
+    timeout: int = 360,
     agent_id: str = "agent_0",
     workdir: str | None = None,
     profile: str | None = None,
@@ -1258,7 +1258,7 @@ def run_codex_exec(
 async def run_codex_exec_async(
     prompt: str,
     sandbox: SandboxMode = SandboxMode.READ_ONLY,
-    timeout: int = 120,
+    timeout: int = 360,
     agent_id: str = "agent_0",
     workdir: str | None = None,
     profile: str | None = None,
@@ -1350,7 +1350,7 @@ async def run_codex_exec_async(
 async def execute_parallel(
     prompts: list[str],
     sandbox: SandboxMode = SandboxMode.READ_ONLY,
-    timeout: int = 120,
+    timeout: int = 360,
     workdir: str | None = None,
     profile: str | None = None,
 ) -> list[CodexResult]:
@@ -1373,7 +1373,7 @@ async def execute_competition(
     prompt: str,
     count: int = 3,
     sandbox: SandboxMode = SandboxMode.READ_ONLY,
-    timeout: int = 120,
+    timeout: int = 360,
     task_type: TaskType = TaskType.CODE_GEN,
     strategy: SelectionStrategy = SelectionStrategy.BEST_SINGLE,
     workdir: str | None = None,
@@ -1696,7 +1696,7 @@ def main() -> int:
     parser.add_argument(
         "--timeout",
         type=int,
-        default=120,
+        default=360,
         help="タイムアウト（秒）",
     )
     parser.add_argument(
@@ -1822,9 +1822,9 @@ def main() -> int:
         print(FAST_PROFILE_GUARDRAILS, file=sys.stderr)
 
         # 例: "1) ... 2) ..." や "A) ... B) ..." のような複数タスクを検出
-        multipart = len(re.findall(r"(?m)^\\s*\\d+\\)", args.prompt)) >= 2
+        multipart = len(re.findall(r"(?m)^\s*\d+\)", args.prompt)) >= 2
         multipart = multipart or (
-            len(re.findall(r"(?m)^\\s*[A-Z]\\)", args.prompt)) >= 2
+            len(re.findall(r"(?m)^\s*[A-Z]\)", args.prompt)) >= 2
         )
         if multipart:
             print(
