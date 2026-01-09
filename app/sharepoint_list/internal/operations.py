@@ -279,19 +279,68 @@ def get_item(
 ) -> dict[str, Any]:
     site_id = resolve_site_id(access_token, target.site_identifier)
     list_id = resolve_list_id(access_token, site_id, target.list_identifier)
-    select_fields = resolve_select_fields_for_list(
-        access_token=access_token,
-        site_id=site_id,
-        list_id=list_id,
-        select_fields=select_fields,
-    )
+    mapped_select: list[str] | None = None
+    columns_data: dict[str, Any] | None = None
+    display_to_name: dict[str, str] = {}
+    name_set: set[str] = set()
+    if select_fields:
+        display_to_name, name_set, columns_data = _get_column_maps(
+            access_token, site_id, list_id
+        )
+        _validate_requested_fields(
+            requested_fields=select_fields,
+            display_to_name=display_to_name,
+            name_set=name_set,
+            allow_special={"id"},
+        )
+        mapped_select = resolve_select_fields_for_list(
+            access_token=access_token,
+            site_id=site_id,
+            list_id=list_id,
+            select_fields=select_fields,
+            display_to_name=display_to_name,
+            name_set=name_set,
+            columns_data=columns_data,
+        )
+    else:
+        mapped_select = resolve_select_fields_for_list(
+            access_token=access_token,
+            site_id=site_id,
+            list_id=list_id,
+            select_fields=None,
+        )
+
     spec = request_builders.build_get_item_request(
         site_id=site_id,
         list_id=list_id,
         item_id=item_id,
-        select_fields=select_fields,
+        select_fields=mapped_select,
     )
-    return _send_request(spec, access_token)
+    data = _send_request(spec, access_token)
+
+    if mapped_select and isinstance(data, dict):
+        fields_obj = data.get("fields")
+        if isinstance(fields_obj, dict):
+            lower_key_map = {
+                k.lower(): k for k in fields_obj.keys() if isinstance(k, str)
+            }
+            for field_name in mapped_select:
+                if not isinstance(field_name, str) or not field_name:
+                    continue
+                if field_name in fields_obj:
+                    continue
+                existing = lower_key_map.get(field_name.lower())
+                if existing and existing in fields_obj:
+                    fields_obj[field_name] = fields_obj.get(existing)
+                    continue
+                if field_name.startswith("_"):
+                    alt = f"OData__{field_name.lstrip('_')}"
+                    if alt in fields_obj:
+                        fields_obj[field_name] = fields_obj.get(alt)
+                        continue
+                fields_obj[field_name] = None
+
+    return data
 
 
 def parse_select_fields(select_fields: str | None) -> list[str] | None:
@@ -332,6 +381,44 @@ def _get_column_maps(
         if isinstance(display, str) and isinstance(name, str):
             display_to_name[display.lower()] = name
     return display_to_name, name_set, columns_data
+
+
+def _validate_requested_fields(
+    requested_fields: list[str] | None,
+    display_to_name: dict[str, str],
+    name_set: set[str],
+    *,
+    allow_special: set[str] | None = None,
+) -> None:
+    """
+    Ensure all requested field identifiers exist in the list.
+    - requested_fields: list of raw names (internal or display).
+    - allow_special: lowercased names that are allowed even if not in columns
+      (e.g., id, createdDateTime).
+    Raises GraphError when any field is unknown.
+    """
+    if not requested_fields:
+        return
+
+    allow = {s.lower() for s in (allow_special or set())}
+    unknown: list[str] = []
+
+    for raw in requested_fields:
+        if not isinstance(raw, str) or not raw.strip():
+            unknown.append(str(raw))
+            continue
+        lowered = raw.lower()
+        if lowered in allow:
+            continue
+        if lowered in name_set:
+            continue
+        if lowered in display_to_name:
+            continue
+        unknown.append(raw)
+
+    if unknown:
+        joined = ", ".join(unknown)
+        raise GraphError(f"Field(s) not found in list: {joined}")
 
 
 def _map_field_name(
@@ -564,6 +651,13 @@ def list_items(
 
     # resolve select fields (displayName or internal)
     parsed_select = parse_select_fields(select_fields)
+    if need_columns:
+        _validate_requested_fields(
+            requested_fields=parsed_select,
+            display_to_name=display_to_name,
+            name_set=name_set,
+            allow_special={"id"},
+        )
     mapped_select = resolve_select_fields_for_list(
         access_token=access_token,
         site_id=site_id,
@@ -574,6 +668,90 @@ def list_items(
         columns_data=columns_data,
     )
 
+    if _is_debug_log_enabled():
+        # region agent log
+        try:
+            mapping: list[dict[str, Any]] = []
+            for raw in parsed_select or []:
+                lower = raw.lower()
+                if lower in (name_set or set()):
+                    mapped = raw
+                    source = "internal"
+                elif lower in (display_to_name or {}):
+                    mapped = (display_to_name or {})[lower]
+                    source = "display"
+                else:
+                    mapped = raw
+                    source = "unknown"
+                mapping.append(
+                    {"raw": raw, "mapped": mapped, "source": source}
+                )
+            with open(
+                "/home/devuser/workspace/.cursor/debug.log",
+                "a",
+                encoding="utf-8",
+            ) as _f:
+                _f.write(
+                    json.dumps(
+                        {
+                            "sessionId": "debug-session",
+                            "runId": os.getenv(
+                                "SHAREPOINT_LIST_DEBUG_RUN_ID", "run1"
+                            ),
+                            "hypothesisId": "H1",
+                            "location": "operations.py:list_items",
+                            "message": "select_fields_mapping",
+                            "data": {
+                                "select_fields_raw": select_fields,
+                                "parsed_select": parsed_select,
+                                "mapped_select": mapped_select,
+                                "mapping": mapping,
+                                "columns_count": (
+                                    len(columns_data.get("value", []))
+                                    if isinstance(columns_data, dict)
+                                    else None
+                                ),
+                            },
+                            "timestamp": int(__import__("time").time() * 1000),
+                        },
+                        ensure_ascii=False,
+                    )
+                    + "\n"
+                )
+        except Exception:
+            pass
+        # endregion
+
+    if _is_debug_log_enabled():
+        mapping: list[dict[str, Any]] = []
+        for raw in parsed_select or []:
+            lower = raw.lower()
+            if lower in (name_set or set()):
+                mapped = raw
+                source = "internal"
+            elif lower in (display_to_name or {}):
+                mapped = (display_to_name or {})[lower]
+                source = "display"
+            else:
+                mapped = raw
+                source = "unknown"
+            mapping.append({"raw": raw, "mapped": mapped, "source": source})
+        _log_debug(
+            location="operations.py:list_items",
+            message="select_fields_mapping",
+            data={
+                "select_fields_raw": select_fields,
+                "parsed_select": parsed_select,
+                "mapped_select": mapped_select,
+                "mapping": mapping,
+                "columns_count": (
+                    len(columns_data.get("value", []))
+                    if isinstance(columns_data, dict)
+                    else None
+                ),
+            },
+        )
+
     clauses: list[str] = []
 
     uses_fields_clause = False
@@ -581,6 +759,12 @@ def list_items(
     # multiple filters
     if filters_raw:
         parsed_filters = filters.parse_filters(filters_raw)
+        _validate_requested_fields(
+            requested_fields=[c.field for c in parsed_filters],
+            display_to_name=display_to_name,
+            name_set=name_set,
+            allow_special={"createddatetime"},
+        )
         for cond in parsed_filters:
             mapped = _map_field_name(cond.field, display_to_name, name_set)
             field_ref = mapped
@@ -628,6 +812,198 @@ def list_items(
 
     data = _send_request(req, access_token, extra_headers=extra_headers)
 
+    if _is_debug_log_enabled():
+        # region agent log
+        try:
+            items = data.get("value", []) if isinstance(data, dict) else []
+            first_item = (
+                items[0] if items and isinstance(items[0], dict) else None
+            )
+            fields_obj = (
+                first_item.get("fields")
+                if isinstance(first_item, dict)
+                else None
+            )
+            fields_key_set = (
+                {k for k in fields_obj.keys() if isinstance(k, str)}
+                if isinstance(fields_obj, dict)
+                else set()
+            )
+            requested = [
+                s for s in (mapped_select or []) if isinstance(s, str)
+            ]
+            requested_presence = {s: (s in fields_key_set) for s in requested}
+            missing_requested = [
+                s for s, ok in requested_presence.items() if not ok
+            ]
+            with open(
+                "/home/devuser/workspace/.cursor/debug.log",
+                "a",
+                encoding="utf-8",
+            ) as _f:
+                _f.write(
+                    json.dumps(
+                        {
+                            "sessionId": "debug-session",
+                            "runId": os.getenv(
+                                "SHAREPOINT_LIST_DEBUG_RUN_ID", "run1"
+                            ),
+                            "hypothesisId": "H2",
+                            "location": "operations.py:list_items",
+                            "message": "response_fields_presence",
+                            "data": {
+                                "items_count": len(items),
+                                "first_item_has_fields": isinstance(
+                                    fields_obj, dict
+                                ),
+                                "first_item_fields_keys_count": (
+                                    len(fields_key_set)
+                                    if isinstance(fields_obj, dict)
+                                    else None
+                                ),
+                                "requested_presence": requested_presence,
+                                "missing_requested": missing_requested,
+                            },
+                            "timestamp": int(__import__("time").time() * 1000),
+                        },
+                        ensure_ascii=False,
+                    )
+                    + "\n"
+                )
+        except Exception:
+            pass
+        # endregion
+
+    if _is_debug_log_enabled():
+        items = data.get("value", []) if isinstance(data, dict) else []
+        first_item = items[0] if items and isinstance(items[0], dict) else None
+        fields_obj = (
+            first_item.get("fields") if isinstance(first_item, dict) else None
+        )
+        fields_keys = (
+            sorted([k for k in fields_obj.keys() if isinstance(k, str)])
+            if isinstance(fields_obj, dict)
+            else []
+        )
+        requested = [s for s in (mapped_select or []) if isinstance(s, str)]
+        requested_presence = {s: (s in set(fields_keys)) for s in requested}
+        missing_requested = [
+            s for s, ok in requested_presence.items() if not ok
+        ]
+        _log_debug(
+            location="operations.py:list_items",
+            message="response_fields_presence",
+            data={
+                "items_count": len(items),
+                "first_item_has_fields": isinstance(fields_obj, dict),
+                "first_item_fields_keys_count": (
+                    len(fields_keys) if isinstance(fields_obj, dict) else None
+                ),
+                "first_item_fields_keys_sample": fields_keys[:50],
+                "requested_presence": requested_presence,
+                "missing_requested": missing_requested,
+            },
+        )
+
+    # Normalize: ensure requested select fields exist in each item's fields.
+    # Graph may omit field keys when values are empty, which can be confusing for
+    # downstream consumers (including Agents). Add missing keys with None, and
+    # try to recover from common key variants (case differences / OData__ prefix).
+    if mapped_select and isinstance(data, dict):
+        items = data.get("value", []) or []
+        filled_none_by_field: dict[str, int] = {}
+        filled_alias_by_field: dict[str, int] = {}
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            fields_obj = item.get("fields")
+            if not isinstance(fields_obj, dict):
+                continue
+            lower_key_map = {
+                k.lower(): k for k in fields_obj.keys() if isinstance(k, str)
+            }
+            for field_name in mapped_select:
+                if not isinstance(field_name, str) or not field_name:
+                    continue
+                if field_name in fields_obj:
+                    continue
+                # 1) case-insensitive match (e.g., ID vs id)
+                existing = lower_key_map.get(field_name.lower())
+                if existing and existing in fields_obj:
+                    fields_obj[field_name] = fields_obj.get(existing)
+                    filled_alias_by_field[field_name] = (
+                        filled_alias_by_field.get(field_name, 0) + 1
+                    )
+                    continue
+                # 2) SharePoint OData__ prefix variant (e.g., OData__x30... vs _x30...)
+                if field_name.startswith("_"):
+                    alt = f"OData__{field_name.lstrip('_')}"
+                    if alt in fields_obj:
+                        fields_obj[field_name] = fields_obj.get(alt)
+                        filled_alias_by_field[field_name] = (
+                            filled_alias_by_field.get(field_name, 0) + 1
+                        )
+                        continue
+                # 3) default: explicitly include missing key
+                fields_obj[field_name] = None
+                filled_none_by_field[field_name] = (
+                    filled_none_by_field.get(field_name, 0) + 1
+                )
+
+        if _is_debug_log_enabled():
+            _log_debug(
+                location="operations.py:list_items",
+                message="normalized_missing_fields",
+                data={
+                    "items_count": (
+                        len(items) if isinstance(items, list) else None
+                    ),
+                    "requested_fields": mapped_select,
+                    "filled_none_by_field": filled_none_by_field,
+                    "filled_alias_by_field": filled_alias_by_field,
+                },
+            )
+
+        if _is_debug_log_enabled():
+            # Check presence again after normalization (sample first item only).
+            first_item = (
+                items[0] if items and isinstance(items[0], dict) else None
+            )
+            fields_obj = (
+                first_item.get("fields")
+                if isinstance(first_item, dict)
+                else None
+            )
+            fields_keys = (
+                sorted([k for k in fields_obj.keys() if isinstance(k, str)])
+                if isinstance(fields_obj, dict)
+                else []
+            )
+            requested = [
+                s for s in (mapped_select or []) if isinstance(s, str)
+            ]
+            requested_presence = {
+                s: (s in set(fields_keys)) for s in requested
+            }
+            missing_requested = [
+                s for s, ok in requested_presence.items() if not ok
+            ]
+            _log_debug(
+                location="operations.py:list_items",
+                message="response_fields_presence_normalized",
+                data={
+                    "first_item_has_fields": isinstance(fields_obj, dict),
+                    "first_item_fields_keys_count": (
+                        len(fields_keys)
+                        if isinstance(fields_obj, dict)
+                        else None
+                    ),
+                    "first_item_fields_keys_sample": fields_keys[:50],
+                    "requested_presence": requested_presence,
+                    "missing_requested": missing_requested,
+                },
+            )
+
     next_token = None
     next_link = data.get("@odata.nextLink") if isinstance(data, dict) else None
     if isinstance(next_link, str):
@@ -637,7 +1013,52 @@ def list_items(
         if tokens:
             next_token = tokens[0]
 
+    if _is_debug_log_enabled():
+        # region agent log
+        try:
+            items = data.get("value", []) if isinstance(data, dict) else []
+            with open(
+                "/home/devuser/workspace/.cursor/debug.log",
+                "a",
+                encoding="utf-8",
+            ) as _f:
+                _f.write(
+                    json.dumps(
+                        {
+                            "sessionId": "debug-session",
+                            "runId": os.getenv(
+                                "SHAREPOINT_LIST_DEBUG_RUN_ID", "run1"
+                            ),
+                            "hypothesisId": "H3",
+                            "location": "operations.py:list_items",
+                            "message": "return_summary",
+                            "data": {
+                                "returned_items_count": len(items),
+                                "next_page_token_present": bool(next_token),
+                            },
+                            "timestamp": int(__import__("time").time() * 1000),
+                        },
+                        ensure_ascii=False,
+                    )
+                    + "\n"
+                )
+        except Exception:
+            pass
+        # endregion
+
+    if _is_debug_log_enabled():
+        items = data.get("value", []) if isinstance(data, dict) else []
+        _log_debug(
+            location="operations.py:list_items",
+            message="return_summary",
+            data={
+                "returned_items_count": len(items),
+                "next_page_token_present": bool(next_token),
+            },
+        )
+
+    items = data.get("value", []) if isinstance(data, dict) else []
     return {
-        "items": data.get("value", []) if isinstance(data, dict) else [],
+        "items": items,
         "next_page_token": next_token,
     }

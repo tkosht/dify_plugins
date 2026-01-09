@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+import os
+import tempfile
 from unittest.mock import Mock, patch
 
 import pytest
@@ -135,3 +138,42 @@ class TestGetChoiceFieldInfo:
 
         assert result["allowMultipleSelections"] is False
         assert result["defaultValue"] == "未着手"
+
+    @patch("app.sharepoint_list.internal.http_client.requests.request")
+    def test_emits_debug_logs_when_enabled(self, mock_request: Mock) -> None:
+        """デバッグ有効時に get_choice_field_info のログが書かれる"""
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = "{}"
+        mock_resp.json.return_value = _mock_columns_with_choice()
+        mock_request.return_value = mock_resp
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ndjson"
+        ) as f:
+            log_path = f.name
+
+        try:
+            with patch.dict(
+                os.environ,
+                {
+                    "SHAREPOINT_LIST_DEBUG_LOG": "1",
+                    "SHAREPOINT_LIST_DEBUG_LOG_PATH": log_path,
+                },
+            ):
+                operations.get_choice_field_info(
+                    access_token="test-token",
+                    site_identifier=SITE_ID,
+                    list_identifier=LIST_ID,
+                    field_identifier="Status",
+                )
+
+                with open(log_path) as lf:
+                    lines = [ln for ln in lf.read().splitlines() if ln.strip()]
+
+                # debug NDJSON should include at least one entry from get_choice_field_info
+                parsed = [json.loads(ln) for ln in lines]
+                locations = {e.get("location") for e in parsed}
+                assert "operations.py:get_choice_field_info" in locations
+        finally:
+            os.unlink(log_path)
