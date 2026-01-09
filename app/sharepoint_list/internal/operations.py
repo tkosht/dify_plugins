@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import urllib.parse
+from datetime import UTC, datetime
 from typing import Any
 
 from . import filters, http_client, request_builders, validators
@@ -70,13 +71,19 @@ def _log_debug(location: str, message: str, data: dict[str, Any]) -> None:
     if not _is_debug_log_enabled():
         return
     try:
+        now = datetime.now(UTC)
+        ts = int(now.timestamp() * 1000)
+        timestamp = now.isoformat(timespec="milliseconds").replace(
+            "+00:00", "Z"
+        )
         log_payload = {
+            "ts": ts,
+            "timestamp": timestamp,
             "sessionId": "debug-session",
             "runId": os.getenv("SHAREPOINT_LIST_DEBUG_RUN_ID", "run1"),
             "location": location,
             "message": message,
             "data": data,
-            "timestamp": int(__import__("time").time() * 1000),
         }
         with open(_get_debug_log_path(), "a") as f:
             f.write(json.dumps(log_payload, ensure_ascii=False) + "\n")
@@ -111,6 +118,17 @@ def resolve_site_id(access_token: str, site_identifier: str) -> str:
 def resolve_list_id(
     access_token: str, site_id: str, list_identifier: str
 ) -> str:
+    _log_debug(
+        location="operations.py:resolve_list_id",
+        message="entry",
+        data={
+            "list_identifier_len": len(str(list_identifier)),
+            "list_identifier_is_guid": validators.is_guid(list_identifier),
+            "list_identifier_is_ascii": str(list_identifier).isascii(),
+            "site_id_comma_count": str(site_id).count(","),
+        },
+    )
+
     if validators.is_guid(list_identifier):
         return list_identifier
 
@@ -120,6 +138,13 @@ def resolve_list_id(
     )
     filter_data = _send_request(filter_req, access_token)
     values = filter_data.get("value") or []
+
+    _log_debug(
+        location="operations.py:resolve_list_id",
+        message="displayName_filter_result",
+        data={"filtered_count": len(values)},
+    )
+
     if len(values) == 1:
         found_id = values[0].get("id")
         if found_id:
@@ -127,12 +152,88 @@ def resolve_list_id(
 
     # Fallback enumerate
     enum_req = request_builders.build_list_enumerate_request(site_id=site_id)
+    # include webUrl for diagnostics/matching
+    enum_req.params = {"$select": "id,displayName,webUrl"}
     enum_data = _send_request(enum_req, access_token)
-    for item in enum_data.get("value", []):
+    enum_values = enum_data.get("value", []) or []
+    raw_identifier = str(list_identifier).strip()
+    decoded_identifier = urllib.parse.unquote(raw_identifier)
+    expected_path_fragments = {
+        f"/lists/{raw_identifier}".lower(),
+        f"/lists/{decoded_identifier}".lower(),
+    }
+    weburl_match_count = 0
+    weburl_match_id: str | None = None
+    first_weburl_match: dict[str, Any] | None = None
+    for item in enum_values:
         if item.get("displayName") == list_identifier:
             found_id = item.get("id")
             if found_id:
                 return found_id
+        web_url = item.get("webUrl")
+        if isinstance(web_url, str) and web_url:
+            try:
+                web_path = urllib.parse.urlparse(web_url).path or ""
+            except Exception:
+                web_path = ""
+            web_path_decoded = urllib.parse.unquote(web_path)
+            web_path_lower = web_path.lower()
+            web_path_decoded_lower = web_path_decoded.lower()
+            if any(
+                frag in web_path_lower or frag in web_path_decoded_lower
+                for frag in expected_path_fragments
+            ):
+                weburl_match_count += 1
+                if first_weburl_match is None:
+                    display_name = item.get("displayName")
+                    display_name_str = (
+                        display_name if isinstance(display_name, str) else ""
+                    )
+                    first_weburl_match = {
+                        "webUrl_path": web_path,
+                        "webUrl_path_decoded": web_path_decoded,
+                        "displayName_equals_identifier": (
+                            display_name_str == list_identifier
+                        ),
+                        "displayName_is_ascii": display_name_str.isascii(),
+                        "displayName_len": len(display_name_str),
+                        "id_present": bool(item.get("id")),
+                    }
+                if weburl_match_id is None and isinstance(item.get("id"), str):
+                    weburl_match_id = item.get("id")
+
+    _log_debug(
+        location="operations.py:resolve_list_id",
+        message="enumerate_result",
+        data={
+            "enumerated_count": len(enum_values),
+            "expected_path_fragments": sorted(expected_path_fragments),
+            "webUrl_match_count": weburl_match_count,
+            "first_webUrl_match": first_weburl_match,
+        },
+    )
+
+    if weburl_match_count == 1 and weburl_match_id:
+        _log_debug(
+            location="operations.py:resolve_list_id",
+            message="resolved_via_webUrl",
+            data={
+                "resolved_list_id_present": True,
+                "webUrl_match_count": weburl_match_count,
+            },
+        )
+        return weburl_match_id
+
+    if weburl_match_count > 1:
+        _log_debug(
+            location="operations.py:resolve_list_id",
+            message="webUrl_match_ambiguous",
+            data={"webUrl_match_count": weburl_match_count},
+        )
+        raise GraphError(
+            "List identifier is ambiguous by webUrl. "
+            "Please use list GUID in list_url."
+        )
 
     raise GraphError(f"List '{list_identifier}' not found in site '{site_id}'")
 

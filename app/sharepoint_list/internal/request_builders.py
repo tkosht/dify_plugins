@@ -39,7 +39,8 @@ def build_list_filter_request(site_id: str, list_name: str) -> RequestSpec:
         raise ValueError("list_name is required")
 
     url = f"{GRAPH_BASE}/sites/{site_id}/lists"
-    params = {"$filter": f"displayName eq '{list_name}'"}
+    safe_name = list_name.replace("'", "''")
+    params = {"$filter": f"displayName eq '{safe_name}'"}
     return RequestSpec(method="GET", url=url, params=params)
 
 
