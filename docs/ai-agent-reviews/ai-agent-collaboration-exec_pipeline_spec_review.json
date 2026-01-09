@@ -1,0 +1,18 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": ["review-1", "revise-1", "verify-1"],
+  "stages": [
+    {
+      "id": "review-1",
+      "instructions": "Phase: review. Perform independent review. Write/Update docs/ai-agent-reviews/ai-agent-collaboration-exec_review_2026-01-05_round1.md with evidence. Record a brief summary in /critique only."
+    },
+    {
+      "id": "revise-1",
+      "instructions": "Phase: revise. Apply fixes to artifacts based on review findings. Update final evaluation summary and verdict in /revise (short)."
+    },
+    {
+      "id": "verify-1",
+      "instructions": "Phase: verify. Verify all required artifacts exist and contract output items are covered. Update /facts with minimal verification entries."
+    }
+  ]
+}

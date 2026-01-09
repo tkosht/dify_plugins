@@ -1,0 +1,54 @@
+ROLE: Parent agent orchestration for ai-agent-collaboration-exec evaluation
+DATE: 2026-01-08
+
+OBJECTIVE
+- Evaluate the practical usability of .claude/skills/ai-agent-collaboration-exec/SKILL.md by running the collaboration pipeline.
+- Execute all phases (draft/execute/review/revise/verify) at full quality; do not skip tasks.
+
+SCOPE
+- Target repo: /home/devuser/workspace
+- Target paths:
+  - .claude/skills/ai-agent-collaboration-exec/SKILL.md
+  - .claude/skills/ai-agent-collaboration-exec/references/*
+
+CONSTRAINTS
+- No MCP tools.
+- No external web access.
+- No secrets or credentials.
+- Avoid destructive commands.
+- Allowed writes: docs/ai-agent-reviews/ and .codex/sessions/ only.
+
+QUALITY REQUIREMENTS
+- Do NOT reduce quality or omit steps.
+- If output is long, write it to files under docs/ai-agent-reviews and only summarize in the capsule.
+- Keep /facts minimal: include only file paths and key verification points (avoid large command lists).
+
+REQUIRED OUTPUTS (FULL QUALITY)
+1) Capsule content with sections:
+   /draft /critique /revise /facts /open_questions /assumptions
+2) Test plan file with rationale:
+   docs/ai-agent-reviews/ai-agent-collaboration-exec_test_plan_2026-01-05.md
+3) Review file (independent review):
+   docs/ai-agent-reviews/ai-agent-collaboration-exec_review_2026-01-05_round1.md
+4) Contract output file:
+   docs/ai-agent-reviews/ai-agent-collaboration-exec_contract_output_2026-01-08.md
+5) Subagent prompts file:
+   docs/ai-agent-reviews/ai-agent-collaboration-exec_subagent_prompts_2026-01-08.md
+6) Pipeline spec file (if needed):
+   docs/ai-agent-reviews/ai-agent-collaboration-exec_pipeline_spec_2026-01-08.json
+7) Final evaluation summary and practicality verdict in /revise.
+
+CAPSULE PATCH RULES (IMPORTANT)
+- Return JSON stage_result with JSON Patch ops only.
+- /facts is an array of OBJECTS, not strings.
+- /draft, /critique, /revise are OBJECTS; add keys inside them.
+- Example patch:
+  {"op":"add","path":"/facts/-","value":{"type":"artifacts","items":["docs/ai-agent-reviews/..."],"evidence":"file exists"}}
+
+TEST DESIGN REQUIREMENT
+- Derive tests from the skill spec and references.
+- Explain intent and coverage rationale.
+- Mark any unknowns as "Unknown".
+
+NOTES
+- Keep all statements fact-based.

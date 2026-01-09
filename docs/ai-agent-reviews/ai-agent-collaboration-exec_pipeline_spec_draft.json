@@ -1,0 +1,14 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": ["draft-1", "draft-2"],
+  "stages": [
+    {
+      "id": "draft-1",
+      "instructions": "Phase: draft. Read SKILL.md and references (as needed). Extract requirements, constraints, roles, inputs/outputs, and evaluation criteria. Record concise summaries in /draft and evidence in /facts."
+    },
+    {
+      "id": "draft-2",
+      "instructions": "Phase: draft. Produce or update a detailed test plan with rationale in docs/ai-agent-reviews/ai-agent-collaboration-exec_test_plan_2026-01-05.md. Keep /draft updated with a short summary and file path only."
+    }
+  ]
+}

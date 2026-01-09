@@ -1,0 +1,14 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": ["execute-1", "execute-2"],
+  "stages": [
+    {
+      "id": "execute-1",
+      "instructions": "Phase: execute. Produce or update the contract output file (changed files list, commands, test results, failure causes/next actions) in docs/ai-agent-reviews/ai-agent-collaboration-exec_contract_output_2026-01-08.md. Keep /facts minimal with file pointers."
+    },
+    {
+      "id": "execute-2",
+      "instructions": "Phase: execute. Generate subagent prompt set (Executor/Reviewer/Verifier) and pipeline spec (if needed) into docs/ai-agent-reviews/ai-agent-collaboration-exec_subagent_prompts_2026-01-08.md and docs/ai-agent-reviews/ai-agent-collaboration-exec_pipeline_spec_2026-01-08.json. Summarize paths in /facts only."
+    }
+  ]
+}

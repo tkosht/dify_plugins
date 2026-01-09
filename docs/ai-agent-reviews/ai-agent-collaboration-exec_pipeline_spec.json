@@ -1,0 +1,10 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": ["draft", "execute", "review", "revise"],
+  "stages": [
+    { "id": "draft", "instructions": "Define evaluation criteria and test design from the skill spec. Record in /draft and cite evidence in /facts." },
+    { "id": "execute", "instructions": "Read the skill spec and references. Produce evaluation artifacts and a test plan. No code changes. Record outputs in /facts and /revise." },
+    { "id": "review", "instructions": "Independent review of practicality and gaps. Record findings with evidence in /critique." },
+    { "id": "revise", "instructions": "Address review findings, include verification against required outputs, and summarize final evaluation in /revise and /open_questions." }
+  ]
+}

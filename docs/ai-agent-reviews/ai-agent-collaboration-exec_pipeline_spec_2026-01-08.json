@@ -1,0 +1,26 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": ["draft", "execute", "review", "revise", "verify"],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "評価方針、範囲、制約、成果物一覧、役割分担、テスト方針を /draft に記録。根拠は /facts、未確定は /open_questions。/facts はパスと検証ポイント中心。/facts はオブジェクト配列（文字列禁止）。/draft /critique /revise はオブジェクトのまま。JSON Patch は add/replace/remove のみ。再実行上限は2回、timeout は 360-420s を目安とする。"
+    },
+    {
+      "id": "execute",
+      "instructions": "Executor が SKILL.md と references を根拠に成果物を作成し、必要なローカル検証を実施。書き込みは docs/ai-agent-reviews/ と .codex/sessions/ のみ。結果は /facts、変更まとめは /revise。MCP/外部Web/機密/破壊的操作は禁止。"
+    },
+    {
+      "id": "review",
+      "instructions": "Reviewer が独立レビューを実施し、根拠付きで /critique に記録。レビュー .md は docs/ai-agent-reviews/ に保存。MCP/外部Web/破壊的操作は禁止。"
+    },
+    {
+      "id": "revise",
+      "instructions": "Executor が指摘反映と最終評価まとめを /revise に記録。未解決は /open_questions。/facts と整合を確認。"
+    },
+    {
+      "id": "verify",
+      "instructions": "Verifier が docs/ai-agent-reviews/ai-agent-collaboration-exec_test_plan_2026-01-05.md に基づく再検証を実施し、結果を /facts に追記。再実行上限は2回。失敗時は原因と次の一手を明記。"
+    }
+  ]
+}
