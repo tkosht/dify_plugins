@@ -8,7 +8,14 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT = ROOT / ".claude" / "skills" / "codex-subagent" / "scripts" / "codex_exec.py"
+SCRIPT = (
+    ROOT
+    / ".claude"
+    / "skills"
+    / "codex-subagent"
+    / "scripts"
+    / "codex_exec.py"
+)
 
 RUN_INTEGRATION = os.environ.get("CODEX_INTEGRATION") == "1"
 HAS_CODEX = shutil.which("codex") is not None
@@ -36,8 +43,8 @@ def _build_prompt() -> str:
         "Output JSON only with these keys:",
         "review_title, skill_role_section_title, framework_title,",
         "pipeline_stage_ids, prompt_template_title, contract_title, result.",
-        "Set result to \"ok\".",
-        "If you cannot extract a value, set it to \"UNKNOWN\".",
+        'Set result to "ok".',
+        'If you cannot extract a value, set it to "UNKNOWN".',
         "",
         "Files:",
     ]
@@ -65,8 +72,8 @@ def _build_tool_load_prompt() -> tuple[str, list[str]]:
         "Do not use any other tools.",
         "Output JSON only with these keys: files_read, result.",
         "Set files_read to the list of paths in the same order as provided.",
-        "Set result to \"ok\".",
-        "If you cannot read a file, set result to \"error\".",
+        'Set result to "ok".',
+        'If you cannot read a file, set result to "error".',
         "",
         "Files:",
     ]
