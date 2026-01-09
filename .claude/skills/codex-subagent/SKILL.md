@@ -70,6 +70,11 @@ uv run python .claude/skills/codex-subagent/scripts/codex_exec.py \
 - 終了コード: `0=全成功`, `2=サブエージェント失敗`, `3=ラッパー内部エラー`。`parallel` は候補のいずれかが失敗した時点で `2`。
 - ログ保存時は `prompt` と `output` を一定長でトランケートする（ログ肥大化回避）。本体の stdout はトランケートしない。
 
+## Timeout Guidance
+- 既定 `--timeout` は 360 秒。
+- read_file などツール使用が多い場合は 360 秒以上を明示する。
+- 外側の `timeout_ms` は `--timeout` より大きく設定する（外側タイムアウトで run-*.jsonl が残らないことを確認済み）。
+
 ## Guardrails
 - 機密情報や認証情報を扱わない
 - 破壊的コマンドは避ける

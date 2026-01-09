@@ -1,0 +1,56 @@
+ROLE: Parent agent orchestration for ai-agent-collaboration-exec evaluation
+DATE: 2026-01-05
+
+OBJECTIVE
+- Evaluate the practical usability of .claude/skills/ai-agent-collaboration-exec/SKILL.md by running the collaboration pipeline.
+- Design test cases from the specification and justify the test design intent.
+
+SCOPE
+- Target repo: /home/devuser/workspace
+- Target paths:
+  - .claude/skills/ai-agent-collaboration-exec/SKILL.md
+  - .claude/skills/ai-agent-collaboration-exec/references/*
+
+CONSTRAINTS
+- No MCP tools.
+- No external web access.
+- No secrets or credentials.
+- Avoid destructive commands.
+- No code changes. Read-only analysis.
+- Allowed writes: docs/ai-agent-reviews/ and .codex/sessions/ only.
+
+EFFICIENCY RULES (IMPORTANT)
+- Do NOT read large files fully. Use headings only (rg -n '^#') or limited slices (first 120 lines).
+- Do NOT rewrite existing artifacts; just verify they exist.
+- Prefer ls/rg over sed for large files.
+
+REQUIRED OUTPUTS
+1) Capsule content with sections:
+   /draft /critique /revise /facts /open_questions /assumptions
+2) Test plan file with rationale (already exists; verify only):
+   docs/ai-agent-reviews/ai-agent-collaboration-exec_test_plan_2026-01-05.md
+3) Review file (independent review, already exists; verify only):
+   docs/ai-agent-reviews/ai-agent-collaboration-exec_review_2026-01-05_round1.md
+4) Final evaluation summary and practicality verdict in /revise.
+5) Contract output checklist in /facts:
+   - changed files list (should be none)
+   - commands executed
+   - test results (design-only)
+   - failure causes and next actions (if any)
+
+CAPSULE PATCH RULES (IMPORTANT)
+- You must return a JSON stage_result with JSON Patch ops.
+- /facts is an array of OBJECTS, not strings.
+- /draft, /critique, /revise are OBJECTS; add keys inside them, do not replace with strings.
+- Example patch entry:
+  {"op":"add","path":"/facts/-","value":{"type":"commands","items":["cmd1","cmd2"],"evidence":"shell history"}}
+- Example patch entry:
+  {"op":"add","path":"/draft/plan","value":{"summary":"...","criteria":["..."]}}
+
+TEST DESIGN REQUIREMENT
+- Derive tests from the skill spec and references.
+- Explain intent and coverage rationale.
+- Mark any unknowns as "Unknown".
+
+NOTES
+- Keep all statements fact-based.

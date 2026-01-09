@@ -1,0 +1,42 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": [
+    "draft-1",
+    "draft-2",
+    "execute-1",
+    "execute-2",
+    "review-1",
+    "revise-1",
+    "verify-1"
+  ],
+  "stages": [
+    {
+      "id": "draft-1",
+      "instructions": "Phase: draft. Read SKILL.md and references (as needed). Extract requirements, constraints, roles, inputs/outputs, and evaluation criteria. Record concise summaries in /draft and evidence in /facts."
+    },
+    {
+      "id": "draft-2",
+      "instructions": "Phase: draft. Produce or update a detailed test plan with rationale in docs/ai-agent-reviews/ai-agent-collaboration-exec_test_plan_2026-01-05.md. Keep /draft updated with a short summary and file path only."
+    },
+    {
+      "id": "execute-1",
+      "instructions": "Phase: execute. Produce or update the contract output file (changed files list, commands, test results, failure causes/next actions) in docs/ai-agent-reviews/ai-agent-collaboration-exec_contract_output_2026-01-08.md. Keep /facts minimal with file pointers." 
+    },
+    {
+      "id": "execute-2",
+      "instructions": "Phase: execute. Generate subagent prompt set (Executor/Reviewer/Verifier) and pipeline spec (if needed) into docs/ai-agent-reviews/ai-agent-collaboration-exec_subagent_prompts_2026-01-08.md and docs/ai-agent-reviews/ai-agent-collaboration-exec_pipeline_spec_2026-01-08.json. Summarize paths in /facts only."
+    },
+    {
+      "id": "review-1",
+      "instructions": "Phase: review. Perform independent review. Write/Update docs/ai-agent-reviews/ai-agent-collaboration-exec_review_2026-01-05_round1.md with evidence. Record a brief summary in /critique only."
+    },
+    {
+      "id": "revise-1",
+      "instructions": "Phase: revise. Apply fixes to artifacts based on review findings. Update final evaluation summary and verdict in /revise (short)."
+    },
+    {
+      "id": "verify-1",
+      "instructions": "Phase: verify. Verify all required artifacts exist and contract output items are covered. Update /facts with minimal verification entries."
+    }
+  ]
+}

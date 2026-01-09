@@ -1,0 +1,9 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": ["draft", "review", "revise"],
+  "stages": [
+    { "id": "draft", "instructions": "Use headings-only probes to derive evaluation criteria and test design. Do not read full files." },
+    { "id": "review", "instructions": "Independent review of practicality using evidence from headings and existing artifacts. Do not rewrite files." },
+    { "id": "revise", "instructions": "Summarize final evaluation, note unknowns, and verify contract output items (design-only)." }
+  ]
+}
