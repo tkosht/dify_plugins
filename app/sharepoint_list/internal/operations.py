@@ -187,9 +187,7 @@ def resolve_list_id(
                 if first_weburl_match is None:
                     display_name = item.get("displayName")
                     display_name_str = (
-                        display_name
-                        if isinstance(display_name, str)
-                        else ""
+                        display_name if isinstance(display_name, str) else ""
                     )
                     first_weburl_match = {
                         "webUrl_path": web_path,
