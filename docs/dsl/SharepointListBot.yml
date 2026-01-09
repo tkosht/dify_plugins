@@ -1,0 +1,1395 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#D5F5F6'
+  mode: advanced-chat
+  name: SharepointListBot
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: package
+  value:
+    plugin_unique_identifier: tkosht/sharepoint_list:0.0.5@c450f33baf3ea24d01d8ac5adb51d8bb1e35905eee65d83e9d1d8079c3459087
+    version: null
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai:0.2.8@aae2be0913b8c6f0b80cff58e08d7a8b4c214569b41778413fcaea204561ff16
+    version: null
+kind: app
+version: 0.5.0
+workflow:
+  conversation_variables:
+  - description: ''
+    id: 92147325-585e-442c-b5f4-76f9a6c8d387
+    name: url_site
+    selector:
+    - conversation
+    - url_site
+    value: https://ageninnoventoria.sharepoint.com/sites/testsite
+    value_type: string
+  environment_variables:
+  - description: ''
+    id: ce3a7a48-b4d2-4e25-b042-ddeddd4d70db
+    name: SHAREPOINT_LIST_DEBUG_LOG
+    selector:
+    - env
+    - SHAREPOINT_LIST_DEBUG_LOG
+    value: '1'
+    value_type: string
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1765783364729-source-answer-target
+      source: '1765783364729'
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1765783484908-source-1765783364729-target
+      source: '1765783484908'
+      sourceHandle: source
+      target: '1765783364729'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 17657835820130-source-1765783364729-target
+      source: '17657835820130'
+      sourceHandle: source
+      target: '1765783364729'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 17657836121050-source-1765783364729-target
+      source: '17657836121050'
+      sourceHandle: source
+      target: '1765783364729'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 17657836364470-source-1765783364729-target
+      source: '17657836364470'
+      sourceHandle: source
+      target: '1765783364729'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: tool
+      id: 1765518801230-source-1765853916355-target
+      source: '1765518801230'
+      sourceHandle: source
+      target: '1765853916355'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: tool
+      id: 1765518801230-source-1765853937994-target
+      source: '1765518801230'
+      sourceHandle: source
+      target: '1765853937994'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: tool
+      id: 1765518801230-source-1765853947353-target
+      source: '1765518801230'
+      sourceHandle: source
+      target: '1765853947353'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: tool
+      id: 1765518801230-source-1765853960220-target
+      source: '1765518801230'
+      sourceHandle: source
+      target: '1765853960220'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: 1765853916355-source-1765783484908-target
+      source: '1765853916355'
+      sourceHandle: source
+      target: '1765783484908'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: 1765853937994-source-17657835820130-target
+      source: '1765853937994'
+      sourceHandle: source
+      target: '17657835820130'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: 1765853947353-source-17657836121050-target
+      source: '1765853947353'
+      sourceHandle: source
+      target: '17657836121050'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: 1765853960220-source-17657836364470-target
+      source: '1765853960220'
+      sourceHandle: source
+      target: '17657836364470'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: tool
+      id: 1765518801230-source-1765934742684-target
+      source: '1765518801230'
+      sourceHandle: source
+      target: '1765934742684'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: 1765934742684-source-17659347700330-target
+      source: '1765934742684'
+      sourceHandle: source
+      target: '17659347700330'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 17659347700330-source-1765783364729-target
+      source: '17659347700330'
+      sourceHandle: source
+      target: '1765783364729'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: User Input
+        type: start
+        variables: []
+      height: 72
+      id: '1765518801230'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: '{{#1765783364729.text#}}
+
+          '
+        selected: false
+        title: Answer
+        type: answer
+        variables: []
+      height: 101
+      id: answer
+      position:
+        x: 1524
+        y: 282
+      positionAbsolute:
+        x: 1524
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        is_team_authorization: true
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+            ja_JP: 'サイトURLまたはサイトID。URL推奨。例: https://contoso.sharepoint.com/sites/demo'
+            pt_BR: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+            zh_Hans: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+          label:
+            en_US: Site Identifier
+            ja_JP: サイト指定
+            pt_BR: Site Identifier
+            zh_Hans: Site Identifier
+          llm_description: Site URL or site ID
+          max: null
+          min: null
+          name: site_identifier
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: List ID (GUID) or list display name.
+            ja_JP: リストID（GUID）またはリスト表示名。
+            pt_BR: List ID (GUID) or list display name.
+            zh_Hans: List ID (GUID) or list display name.
+          label:
+            en_US: List Identifier
+            ja_JP: リスト指定
+            pt_BR: List Identifier
+            zh_Hans: List Identifier
+          llm_description: List ID or display name
+          max: null
+          min: null
+          name: list_identifier
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 'JSON object of field internal names to values. Example: {"Title":
+              "Sample"}'
+            ja_JP: 'フィールド内部名と値のJSON。例: {"Title": "Sample"}'
+            pt_BR: 'JSON object of field internal names to values. Example: {"Title":
+              "Sample"}'
+            zh_Hans: 'JSON object of field internal names to values. Example: {"Title":
+              "Sample"}'
+          label:
+            en_US: Fields (JSON)
+            ja_JP: フィールド（JSON）
+            pt_BR: Fields (JSON)
+            zh_Hans: Fields (JSON)
+          llm_description: JSON object mapping SharePoint internal field names to
+            values
+          max: null
+          min: null
+          name: fields_json
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        params:
+          fields_json: ''
+          list_identifier: ''
+          site_identifier: ''
+        plugin_id: tkosht/sharepoint_list
+        plugin_unique_identifier: tkosht/sharepoint_list:0.0.1@ecec2715c23f684edd386613da65c3f878ed5ff1402b29019ae71fd3fe06a252
+        provider_icon: https://aurora.taild1827.ts.net/console/api/workspaces/current/plugin/icon?tenant_id=b9a067ba-01fd-41a0-ab15-e4ae52e79a64&filename=89a62c3e5e8e384996ce4fa18bc028dccc5ee66e6c6949b8b09b6f1eca717935.svg
+        provider_id: tkosht/sharepoint_list/sharepoint_list
+        provider_name: tkosht/sharepoint_list/sharepoint_list
+        provider_type: builtin
+        selected: false
+        title: リストアイテム作成
+        tool_configurations: {}
+        tool_description: SharePoint リストに新しいアイテムを作成します
+        tool_label: リストアイテム作成
+        tool_name: sharepoint_list_create_item
+        tool_node_version: '2'
+        tool_parameters:
+          fields_json:
+            type: mixed
+            value: '{"Title": "Sample てすと", "ステータス": "処理中"}'
+          list_identifier:
+            type: mixed
+            value: testlist2
+          list_url:
+            type: mixed
+            value: https://ageninnoventoria.sharepoint.com/sites/testsite/Lists/testlist/AllItems.aspx
+          site_identifier:
+            type: mixed
+            value: '{{#conversation.url_site#}}'
+        type: tool
+      height: 51
+      id: '1765853916355'
+      position:
+        x: 382
+        y: 282
+      positionAbsolute:
+        x: 382
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        is_team_authorization: true
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+            ja_JP: 'サイトURLまたはサイトID。URL推奨。例: https://contoso.sharepoint.com/sites/demo'
+            pt_BR: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+            zh_Hans: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+          label:
+            en_US: Site Identifier
+            ja_JP: サイト指定
+            pt_BR: Site Identifier
+            zh_Hans: Site Identifier
+          llm_description: Site URL or site ID
+          max: null
+          min: null
+          name: site_identifier
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: List ID (GUID) or list display name.
+            ja_JP: リストID（GUID）またはリスト表示名。
+            pt_BR: List ID (GUID) or list display name.
+            zh_Hans: List ID (GUID) or list display name.
+          label:
+            en_US: List Identifier
+            ja_JP: リスト指定
+            pt_BR: List Identifier
+            zh_Hans: List Identifier
+          llm_description: List ID or display name
+          max: null
+          min: null
+          name: list_identifier
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: ID of the item to update
+            ja_JP: 更新するアイテムのID
+            pt_BR: ID of the item to update
+            zh_Hans: ID of the item to update
+          label:
+            en_US: Item ID
+            ja_JP: アイテムID
+            pt_BR: Item ID
+            zh_Hans: Item ID
+          llm_description: ''
+          max: null
+          min: null
+          name: item_id
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 'JSON object of field internal names to values. Example: {"Title":
+              "Updated"}'
+            ja_JP: 'フィールド内部名と値のJSON。例: {"Title": "Updated"}'
+            pt_BR: 'JSON object of field internal names to values. Example: {"Title":
+              "Updated"}'
+            zh_Hans: 'JSON object of field internal names to values. Example: {"Title":
+              "Updated"}'
+          label:
+            en_US: Fields (JSON)
+            ja_JP: フィールド（JSON）
+            pt_BR: Fields (JSON)
+            zh_Hans: Fields (JSON)
+          llm_description: JSON object mapping SharePoint internal field names to
+            updated values
+          max: null
+          min: null
+          name: fields_json
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        params:
+          fields_json: ''
+          item_id: ''
+          list_identifier: ''
+          site_identifier: ''
+        plugin_id: tkosht/sharepoint_list
+        plugin_unique_identifier: tkosht/sharepoint_list:0.0.1@ecec2715c23f684edd386613da65c3f878ed5ff1402b29019ae71fd3fe06a252
+        provider_icon: https://aurora.taild1827.ts.net/console/api/workspaces/current/plugin/icon?tenant_id=b9a067ba-01fd-41a0-ab15-e4ae52e79a64&filename=89a62c3e5e8e384996ce4fa18bc028dccc5ee66e6c6949b8b09b6f1eca717935.svg
+        provider_id: tkosht/sharepoint_list/sharepoint_list
+        provider_name: tkosht/sharepoint_list/sharepoint_list
+        provider_type: builtin
+        selected: false
+        title: リストアイテム更新
+        tool_configurations: {}
+        tool_description: SharePoint リストの既存アイテムを更新します
+        tool_label: リストアイテム更新
+        tool_name: sharepoint_list_update_item
+        tool_node_version: '2'
+        tool_parameters:
+          fields_json:
+            type: mixed
+            value: '{"Title": "更新したよ！", "ステータス": "完了"}'
+          item_id:
+            type: mixed
+            value: '1'
+          list_identifier:
+            type: mixed
+            value: testlist2
+          list_url:
+            type: mixed
+            value: https://ageninnoventoria.sharepoint.com/sites/testsite/Lists/testlist/AllItems.aspx
+          site_identifier:
+            type: mixed
+            value: '{{#conversation.url_site#}}'
+        type: tool
+      height: 51
+      id: '1765853937994'
+      position:
+        x: 382
+        y: 372
+      positionAbsolute:
+        x: 382
+        y: 372
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        is_team_authorization: true
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+            ja_JP: 'サイトURLまたはサイトID。URL推奨。例: https://contoso.sharepoint.com/sites/demo'
+            pt_BR: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+            zh_Hans: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+          label:
+            en_US: Site Identifier
+            ja_JP: サイト指定
+            pt_BR: Site Identifier
+            zh_Hans: Site Identifier
+          llm_description: Site URL or site ID
+          max: null
+          min: null
+          name: site_identifier
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: List ID (GUID) or list display name.
+            ja_JP: リストID（GUID）またはリスト表示名。
+            pt_BR: List ID (GUID) or list display name.
+            zh_Hans: List ID (GUID) or list display name.
+          label:
+            en_US: List Identifier
+            ja_JP: リスト指定
+            pt_BR: List Identifier
+            zh_Hans: List Identifier
+          llm_description: List ID or display name
+          max: null
+          min: null
+          name: list_identifier
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: ID of the item to retrieve
+            ja_JP: 取得するアイテムのID
+            pt_BR: ID of the item to retrieve
+            zh_Hans: ID of the item to retrieve
+          label:
+            en_US: Item ID
+            ja_JP: アイテムID
+            pt_BR: Item ID
+            zh_Hans: Item ID
+          llm_description: ''
+          max: null
+          min: null
+          name: item_id
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Optional. Comma separated internal field names to return.
+            ja_JP: 任意。返したい内部フィールド名をカンマ区切りで指定。
+            pt_BR: Optional. Comma separated internal field names to return.
+            zh_Hans: Optional. Comma separated internal field names to return.
+          label:
+            en_US: Select Fields (comma separated)
+            ja_JP: 取得するフィールド（カンマ区切り）
+            pt_BR: Select Fields (comma separated)
+            zh_Hans: Select Fields (comma separated)
+          llm_description: Comma separated internal field names to return
+          max: null
+          min: null
+          name: select_fields
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        params:
+          item_id: ''
+          list_identifier: ''
+          select_fields: ''
+          site_identifier: ''
+        plugin_id: tkosht/sharepoint_list
+        plugin_unique_identifier: tkosht/sharepoint_list:0.0.1@ecec2715c23f684edd386613da65c3f878ed5ff1402b29019ae71fd3fe06a252
+        provider_icon: https://aurora.taild1827.ts.net/console/api/workspaces/current/plugin/icon?tenant_id=b9a067ba-01fd-41a0-ab15-e4ae52e79a64&filename=89a62c3e5e8e384996ce4fa18bc028dccc5ee66e6c6949b8b09b6f1eca717935.svg
+        provider_id: tkosht/sharepoint_list/sharepoint_list
+        provider_name: tkosht/sharepoint_list/sharepoint_list
+        provider_type: builtin
+        selected: false
+        title: リストアイテム取得
+        tool_configurations: {}
+        tool_description: SharePoint リストのアイテムを取得します
+        tool_label: リストアイテム取得
+        tool_name: sharepoint_list_get_item
+        tool_node_version: '2'
+        tool_parameters:
+          item_id:
+            type: mixed
+            value: '1'
+          list_identifier:
+            type: mixed
+            value: testlist2
+          list_url:
+            type: mixed
+            value: https://ageninnoventoria.sharepoint.com/sites/testsite/Lists/testlist/AllItems.aspx
+          select_fields:
+            type: mixed
+            value: ID,Title,ステータス
+          site_identifier:
+            type: mixed
+            value: '{{#conversation.url_site#}}'
+        type: tool
+      height: 51
+      id: '1765853947353'
+      position:
+        x: 382
+        y: 462
+      positionAbsolute:
+        x: 382
+        y: 462
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        is_team_authorization: true
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+            ja_JP: 'サイトURLまたはサイトID。URL推奨。例: https://contoso.sharepoint.com/sites/demo'
+            pt_BR: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+            zh_Hans: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+          label:
+            en_US: Site Identifier
+            ja_JP: サイト指定
+            pt_BR: Site Identifier
+            zh_Hans: Site Identifier
+          llm_description: Site URL or site ID
+          max: null
+          min: null
+          name: site_identifier
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: List ID (GUID) or list display name.
+            ja_JP: リストID（GUID）またはリスト表示名。
+            pt_BR: List ID (GUID) or list display name.
+            zh_Hans: List ID (GUID) or list display name.
+          label:
+            en_US: List Identifier
+            ja_JP: リスト指定
+            pt_BR: List Identifier
+            zh_Hans: List Identifier
+          llm_description: List ID or display name
+          max: null
+          min: null
+          name: list_identifier
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 'Comma separated field internal names or display names to return.
+              Example: Title,Status'
+            ja_JP: '返したいフィールドの内部名または表示名をカンマ区切りで指定。例: Title,ステータス'
+            pt_BR: 'Comma separated field internal names or display names to return.
+              Example: Title,Status'
+            zh_Hans: 'Comma separated field internal names or display names to return.
+              Example: Title,Status'
+          label:
+            en_US: Select Fields (comma separated)
+            ja_JP: 取得フィールド（カンマ区切り）
+            pt_BR: Select Fields (comma separated)
+            zh_Hans: Select Fields (comma separated)
+          llm_description: Comma separated internal or display names of fields to
+            return
+          max: null
+          min: null
+          name: select_fields
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Number of items per page (default 20, max 100).
+            ja_JP: 1ページあたり件数（デフォルト20、最大100）。
+            pt_BR: Number of items per page (default 20, max 100).
+            zh_Hans: Number of items per page (default 20, max 100).
+          label:
+            en_US: Page Size
+            ja_JP: 1ページ件数
+            pt_BR: Page Size
+            zh_Hans: Page Size
+          llm_description: ''
+          max: null
+          min: null
+          name: page_size
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: number
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Use the token from previous response to fetch next page.
+            ja_JP: 前回レスポンスで返されたトークンで次ページを取得します。
+            pt_BR: Use the token from previous response to fetch next page.
+            zh_Hans: Use the token from previous response to fetch next page.
+          label:
+            en_US: Page Token
+            ja_JP: ページトークン
+            pt_BR: Page Token
+            zh_Hans: Page Token
+          llm_description: ''
+          max: null
+          min: null
+          name: page_token
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Filter items created at or after this timestamp (e.g., 2025-12-15T00:00:00Z)
+            ja_JP: 'この日時以降に作成されたアイテムに絞り込み（例: 2025-12-15T00:00:00Z）'
+            pt_BR: Filter items created at or after this timestamp (e.g., 2025-12-15T00:00:00Z)
+            zh_Hans: Filter items created at or after this timestamp (e.g., 2025-12-15T00:00:00Z)
+          label:
+            en_US: Created After (ISO8601)
+            ja_JP: 作成日時以降 (ISO8601)
+            pt_BR: Created After (ISO8601)
+            zh_Hans: Created After (ISO8601)
+          llm_description: ''
+          max: null
+          min: null
+          name: created_after
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Filter items created at or before this timestamp.
+            ja_JP: この日時以前に作成されたアイテムに絞り込み。
+            pt_BR: Filter items created at or before this timestamp.
+            zh_Hans: Filter items created at or before this timestamp.
+          label:
+            en_US: Created Before (ISO8601)
+            ja_JP: 作成日時以前 (ISO8601)
+            pt_BR: Created Before (ISO8601)
+            zh_Hans: Created Before (ISO8601)
+          llm_description: ''
+          max: null
+          min: null
+          name: created_before
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Field internal name or display name to filter on (equals).
+            ja_JP: 等価一致でフィルタするフィールドの内部名または表示名。
+            pt_BR: Field internal name or display name to filter on (equals).
+            zh_Hans: Field internal name or display name to filter on (equals).
+          label:
+            en_US: Filter Field
+            ja_JP: フィルタ対象フィールド
+            pt_BR: Filter Field
+            zh_Hans: Filter Field
+          llm_description: ''
+          max: null
+          min: null
+          name: filter_field
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Value to match (equals).
+            ja_JP: 等価一致させる値。
+            pt_BR: Value to match (equals).
+            zh_Hans: Value to match (equals).
+          label:
+            en_US: Filter Value
+            ja_JP: フィルタ値
+            pt_BR: Filter Value
+            zh_Hans: Filter Value
+          llm_description: ''
+          max: null
+          min: null
+          name: filter_value
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        params:
+          created_after: ''
+          created_before: ''
+          filter_field: ''
+          filter_value: ''
+          list_identifier: ''
+          page_size: ''
+          page_token: ''
+          select_fields: ''
+          site_identifier: ''
+        plugin_id: tkosht/sharepoint_list
+        plugin_unique_identifier: tkosht/sharepoint_list:0.0.1@ecec2715c23f684edd386613da65c3f878ed5ff1402b29019ae71fd3fe06a252
+        provider_icon: https://aurora.taild1827.ts.net/console/api/workspaces/current/plugin/icon?tenant_id=b9a067ba-01fd-41a0-ab15-e4ae52e79a64&filename=89a62c3e5e8e384996ce4fa18bc028dccc5ee66e6c6949b8b09b6f1eca717935.svg
+        provider_id: tkosht/sharepoint_list/sharepoint_list
+        provider_name: tkosht/sharepoint_list/sharepoint_list
+        provider_type: builtin
+        selected: false
+        title: リストアイテム一覧
+        tool_configurations: {}
+        tool_description: フィルタやページネーションを指定して SharePoint リストのアイテムを一覧取得します
+        tool_label: リストアイテム一覧
+        tool_name: sharepoint_list_list_items
+        tool_node_version: '2'
+        tool_parameters:
+          created_after:
+            type: mixed
+            value: '2025-12-17'
+          created_before:
+            type: mixed
+            value: null
+          filter_field:
+            type: mixed
+            value: ステータス
+          filter_operator:
+            type: mixed
+            value: 承認済
+          filter_value:
+            type: mixed
+            value: 処理中
+          filters:
+            type: mixed
+            value: '[{"field": "ステータス", "op": "eq", "value": "処理中"},{"field": "登録日時",
+              "op": "gt", "value": "2025-12-17"}]'
+          list_identifier:
+            type: mixed
+            value: testlist2
+          list_url:
+            type: mixed
+            value: https://ageninnoventoria.sharepoint.com/sites/testsite/Lists/testlist/AllItems.aspx
+          page_size:
+            type: constant
+            value: 20
+          page_token:
+            type: mixed
+            value: ''
+          select_fields:
+            type: mixed
+            value: ID,Title,ステータス
+          site_identifier:
+            type: mixed
+            value: '{{#conversation.url_site#}}'
+        type: tool
+      height: 51
+      id: '1765853960220'
+      position:
+        x: 382
+        y: 552
+      positionAbsolute:
+        x: 382
+        y: 552
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            max_tokens: 128000
+            reasoning_effort: low
+            temperature: 0.7
+          mode: chat
+          name: gpt-5.1
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: 15258093-842e-4d51-916d-4c7ce2f02adc
+          role: system
+          text: '<要件>
+
+            <処理結果/> をユーザ向けにmarkdown として正しく表示できるように、整形・整理してください
+
+            - 一覧は、ID でソート
+
+            ※ トリプルクオートは不可
+
+            </要件>
+
+
+
+
+
+            '
+        - id: ffd0631f-f59a-4312-9915-0ef9dcb99305
+          role: user
+          text: '<処理結果>
+
+            <リストアイテム作成>
+
+            {{#1765783484908.result#}}
+
+            </リストアイテム作成>
+
+
+            <リストアイテム更新>
+
+            {{#17657835820130.result#}}
+
+            </リストアイテム更新>
+
+
+            <リストアイテム取得>
+
+            {{#17657836121050.result#}}
+
+            </リストアイテム取得>
+
+
+            <リストアイテム一覧>
+
+            {{#17657836364470.result#}}
+
+            </リストアイテム一覧>
+
+
+            <選択肢一覧取得>
+
+            {{#17659347700330.result#}}
+
+            <選択肢一覧取得>
+
+            </処理結果>'
+        selected: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: '1765783364729'
+      position:
+        x: 1130
+        y: 282
+      positionAbsolute:
+        x: 1130
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        code: "import json\n\n\ndef main(json_text_list: list[dict]):\n    return\
+          \ {\n        \"result\": json.dumps(json_text_list),\n    }\n"
+        code_language: python3
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 'JSON化: 作成'
+        type: code
+        variables:
+        - value_selector:
+          - '1765853916355'
+          - json
+          value_type: array[object]
+          variable: json_text_list
+      height: 51
+      id: '1765783484908'
+      position:
+        x: 714
+        y: 282
+      positionAbsolute:
+        x: 714
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        code: "import json\n\n\ndef main(json_text_list: list[dict]):\n    return\
+          \ {\n        \"result\": json.dumps(json_text_list),\n    }\n"
+        code_language: python3
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 'JSON化: 更新'
+        type: code
+        variables:
+        - value_selector:
+          - '1765853937994'
+          - json
+          value_type: array[object]
+          variable: json_text_list
+      height: 51
+      id: '17657835820130'
+      position:
+        x: 714
+        y: 372
+      positionAbsolute:
+        x: 714
+        y: 372
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        code: "import json\n\n\ndef main(json_text_list: list[dict]):\n    return\
+          \ {\n        \"result\": json.dumps(json_text_list),\n    }\n"
+        code_language: python3
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 'JSON化: 取得'
+        type: code
+        variables:
+        - value_selector:
+          - '1765853947353'
+          - json
+          value_type: array[object]
+          variable: json_text_list
+      height: 51
+      id: '17657836121050'
+      position:
+        x: 714
+        y: 462
+      positionAbsolute:
+        x: 714
+        y: 462
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        code: "import json\n\n\ndef main(json_text_list: list[dict]):\n    return\
+          \ {\n        \"result\": json.dumps(json_text_list),\n    }\n"
+        code_language: python3
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 'JSON化: 一覧'
+        type: code
+        variables:
+        - value_selector:
+          - '1765853960220'
+          - json
+          value_type: array[object]
+          variable: json_text_list
+      height: 51
+      id: '17657836364470'
+      position:
+        x: 714
+        y: 552
+      positionAbsolute:
+        x: 714
+        y: 552
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        is_team_authorization: true
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+            ja_JP: 'サイトURLまたはサイトID。URL推奨。例: https://contoso.sharepoint.com/sites/demo'
+            pt_BR: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+            zh_Hans: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+          label:
+            en_US: Site Identifier
+            ja_JP: サイト指定
+            pt_BR: Site Identifier
+            zh_Hans: Site Identifier
+          llm_description: Site URL or site ID
+          max: null
+          min: null
+          name: site_identifier
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: List ID (GUID) or list display name.
+            ja_JP: リストID（GUID）またはリスト表示名。
+            pt_BR: List ID (GUID) or list display name.
+            zh_Hans: List ID (GUID) or list display name.
+          label:
+            en_US: List Identifier
+            ja_JP: リスト指定
+            pt_BR: List Identifier
+            zh_Hans: List Identifier
+          llm_description: List ID or display name
+          max: null
+          min: null
+          name: list_identifier
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Field internal name or display name of the choice column.
+            ja_JP: 選択肢列の内部名または表示名。
+            pt_BR: Field internal name or display name of the choice column.
+            zh_Hans: Field internal name or display name of the choice column.
+          label:
+            en_US: Field Identifier
+            ja_JP: フィールド指定
+            pt_BR: Field Identifier
+            zh_Hans: Field Identifier
+          llm_description: Field internal name or display name
+          max: null
+          min: null
+          name: field_identifier
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        params:
+          field_identifier: ''
+          list_identifier: ''
+          site_identifier: ''
+        plugin_id: tkosht/sharepoint_list
+        plugin_unique_identifier: tkosht/sharepoint_list:0.0.1@ecec2715c23f684edd386613da65c3f878ed5ff1402b29019ae71fd3fe06a252
+        provider_icon: https://aurora.taild1827.ts.net/console/api/workspaces/current/plugin/icon?tenant_id=b9a067ba-01fd-41a0-ab15-e4ae52e79a64&filename=89a62c3e5e8e384996ce4fa18bc028dccc5ee66e6c6949b8b09b6f1eca717935.svg
+        provider_id: tkosht/sharepoint_list/sharepoint_list
+        provider_name: tkosht/sharepoint_list/sharepoint_list
+        provider_type: builtin
+        selected: true
+        title: 選択肢一覧取得
+        tool_configurations: {}
+        tool_description: SharePoint リストの指定フィールドの選択肢を取得します。
+        tool_label: 選択肢一覧取得
+        tool_name: sharepoint_list_get_choices
+        tool_node_version: '2'
+        tool_parameters:
+          field_identifier:
+            type: mixed
+            value: ステータス
+          list_identifier:
+            type: mixed
+            value: testlist2
+          list_url:
+            type: mixed
+            value: https://ageninnoventoria.sharepoint.com/sites/testsite/Lists/testlist/AllItems.aspx
+          site_identifier:
+            type: mixed
+            value: '{{#conversation.url_site#}}'
+        type: tool
+      height: 51
+      id: '1765934742684'
+      position:
+        x: 382
+        y: 642
+      positionAbsolute:
+        x: 382
+        y: 642
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        code: "import json\n\n\ndef main(json_text_list: list[dict]):\n    return\
+          \ {\n        \"result\": json.dumps(json_text_list),\n    }\n"
+        code_language: python3
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 'JSON化: 選択肢'
+        type: code
+        variables:
+        - value_selector:
+          - '1765934742684'
+          - json
+          value_type: array[object]
+          variable: json_text_list
+      height: 51
+      id: '17659347700330'
+      position:
+        x: 714
+        y: 642
+      positionAbsolute:
+        x: 714
+        y: 642
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    viewport:
+      x: 34.62997055874729
+      y: -50.74264809316901
+      zoom: 0.7135117235884784
+  rag_pipeline_variables: []

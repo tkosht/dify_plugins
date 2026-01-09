@@ -1,0 +1,1102 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#D3F8DF'
+  mode: advanced-chat
+  name: SharepointAgent
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.5.0
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - description: ''
+    id: 1f65f9a9-658e-4f5c-88fd-8b3fb160a864
+    name: SHAREPOINT_LIST_DEBUG_LOG
+    selector:
+    - env
+    - SHAREPOINT_LIST_DEBUG_LOG
+    value: '1'
+    value_type: string
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: agent
+      id: 1765784200651-source-1765785001606-target
+      source: '1765784200651'
+      sourceHandle: source
+      target: '1765785001606'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: agent
+        targetType: answer
+      id: 1765785001606-source-answer-target
+      source: '1765785001606'
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: ユーザー入力
+        type: start
+        variables: []
+      height: 72
+      id: '1765784200651'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        agent_parameters:
+          instruction:
+            type: constant
+            value: '<要件>
+
+              <ユーザ要求/> に答えるために、以下の<ツール/>を必ず用いてSharepoint の情報を参照したり、追加、更新をして事実のみを方向してください。
+
+
+              <ツール>
+
+              - sharepoint_list_list_items
+
+              - sharepoint_list_create_item
+
+              - sharepoint_list_update_item
+
+              - sharepoint_list_get_item
+
+              - sharepoint_list_get_choices
+
+              </ツール>
+
+
+              </要件>'
+          maximum_iterations:
+            type: constant
+            value: 11
+          model:
+            type: constant
+            value:
+              completion_params:
+                temperature: 0
+                thinking_budget: 10000
+              mode: chat
+              model: claude-sonnet-4-5
+              model_type: llm
+              provider: langgenius/anthropic/anthropic
+              type: model-selector
+          query:
+            type: constant
+            value: '<ユーザ要求>
+
+              {{#sys.query#}}
+
+              </ユーザ要求>'
+          tools:
+            type: constant
+            value:
+            - enabled: true
+              extra:
+                description: SharePoint リストに新しいアイテムを作成します
+              parameters:
+                fields_json:
+                  auto: 1
+                  value: null
+                list_identifier:
+                  auto: 1
+                  value: null
+                site_identifier:
+                  auto: 1
+                  value: null
+              provider_name: tkosht/sharepoint_list/sharepoint_list
+              provider_show_name: tkosht/sharepoint_list/sharepoint_list
+              schemas:
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                  ja_JP: 'サイトURLまたはサイトID。URL推奨。例: https://contoso.sharepoint.com/sites/demo'
+                  pt_BR: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                  zh_Hans: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                label:
+                  en_US: Site Identifier
+                  ja_JP: サイト指定
+                  pt_BR: Site Identifier
+                  zh_Hans: Site Identifier
+                llm_description: Site URL or site ID
+                max: null
+                min: null
+                name: site_identifier
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: List ID (GUID) or list display name.
+                  ja_JP: リストID（GUID）またはリスト表示名。
+                  pt_BR: List ID (GUID) or list display name.
+                  zh_Hans: List ID (GUID) or list display name.
+                label:
+                  en_US: List Identifier
+                  ja_JP: リスト指定
+                  pt_BR: List Identifier
+                  zh_Hans: List Identifier
+                llm_description: List ID or display name
+                max: null
+                min: null
+                name: list_identifier
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: 'JSON object of field internal names to values. Example:
+                    {"Title": "Sample"}'
+                  ja_JP: 'フィールド内部名と値のJSON。例: {"Title": "Sample"}'
+                  pt_BR: 'JSON object of field internal names to values. Example:
+                    {"Title": "Sample"}'
+                  zh_Hans: 'JSON object of field internal names to values. Example:
+                    {"Title": "Sample"}'
+                label:
+                  en_US: Fields (JSON)
+                  ja_JP: フィールド（JSON）
+                  pt_BR: Fields (JSON)
+                  zh_Hans: Fields (JSON)
+                llm_description: JSON object mapping SharePoint internal field names
+                  to values
+                max: null
+                min: null
+                name: fields_json
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              settings: {}
+              tool_description: SharePoint リストに新しいアイテムを作成します
+              tool_label: リストアイテム作成
+              tool_name: sharepoint_list_create_item
+              type: builtin
+            - enabled: true
+              extra:
+                description: SharePoint リストの既存アイテムを更新します
+              parameters:
+                fields_json:
+                  auto: 1
+                  value: null
+                item_id:
+                  auto: 1
+                  value: null
+                list_identifier:
+                  auto: 1
+                  value: null
+                site_identifier:
+                  auto: 1
+                  value: null
+              provider_name: tkosht/sharepoint_list/sharepoint_list
+              provider_show_name: tkosht/sharepoint_list/sharepoint_list
+              schemas:
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                  ja_JP: 'サイトURLまたはサイトID。URL推奨。例: https://contoso.sharepoint.com/sites/demo'
+                  pt_BR: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                  zh_Hans: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                label:
+                  en_US: Site Identifier
+                  ja_JP: サイト指定
+                  pt_BR: Site Identifier
+                  zh_Hans: Site Identifier
+                llm_description: Site URL or site ID
+                max: null
+                min: null
+                name: site_identifier
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: List ID (GUID) or list display name.
+                  ja_JP: リストID（GUID）またはリスト表示名。
+                  pt_BR: List ID (GUID) or list display name.
+                  zh_Hans: List ID (GUID) or list display name.
+                label:
+                  en_US: List Identifier
+                  ja_JP: リスト指定
+                  pt_BR: List Identifier
+                  zh_Hans: List Identifier
+                llm_description: List ID or display name
+                max: null
+                min: null
+                name: list_identifier
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: ID of the item to update
+                  ja_JP: 更新するアイテムのID
+                  pt_BR: ID of the item to update
+                  zh_Hans: ID of the item to update
+                label:
+                  en_US: Item ID
+                  ja_JP: アイテムID
+                  pt_BR: Item ID
+                  zh_Hans: Item ID
+                llm_description: ''
+                max: null
+                min: null
+                name: item_id
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: 'JSON object of field internal names to values. Example:
+                    {"Title": "Updated"}'
+                  ja_JP: 'フィールド内部名と値のJSON。例: {"Title": "Updated"}'
+                  pt_BR: 'JSON object of field internal names to values. Example:
+                    {"Title": "Updated"}'
+                  zh_Hans: 'JSON object of field internal names to values. Example:
+                    {"Title": "Updated"}'
+                label:
+                  en_US: Fields (JSON)
+                  ja_JP: フィールド（JSON）
+                  pt_BR: Fields (JSON)
+                  zh_Hans: Fields (JSON)
+                llm_description: JSON object mapping SharePoint internal field names
+                  to updated values
+                max: null
+                min: null
+                name: fields_json
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              settings: {}
+              tool_description: SharePoint リストの既存アイテムを更新します
+              tool_label: リストアイテム更新
+              tool_name: sharepoint_list_update_item
+              type: builtin
+            - enabled: true
+              extra:
+                description: SharePoint リストのアイテムを取得します
+              parameters:
+                item_id:
+                  auto: 1
+                  value: null
+                list_identifier:
+                  auto: 1
+                  value: null
+                select_fields:
+                  auto: 1
+                  value: null
+                site_identifier:
+                  auto: 1
+                  value: null
+              provider_name: tkosht/sharepoint_list/sharepoint_list
+              provider_show_name: tkosht/sharepoint_list/sharepoint_list
+              schemas:
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                  ja_JP: 'サイトURLまたはサイトID。URL推奨。例: https://contoso.sharepoint.com/sites/demo'
+                  pt_BR: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                  zh_Hans: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                label:
+                  en_US: Site Identifier
+                  ja_JP: サイト指定
+                  pt_BR: Site Identifier
+                  zh_Hans: Site Identifier
+                llm_description: Site URL or site ID
+                max: null
+                min: null
+                name: site_identifier
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: List ID (GUID) or list display name.
+                  ja_JP: リストID（GUID）またはリスト表示名。
+                  pt_BR: List ID (GUID) or list display name.
+                  zh_Hans: List ID (GUID) or list display name.
+                label:
+                  en_US: List Identifier
+                  ja_JP: リスト指定
+                  pt_BR: List Identifier
+                  zh_Hans: List Identifier
+                llm_description: List ID or display name
+                max: null
+                min: null
+                name: list_identifier
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: ID of the item to retrieve
+                  ja_JP: 取得するアイテムのID
+                  pt_BR: ID of the item to retrieve
+                  zh_Hans: ID of the item to retrieve
+                label:
+                  en_US: Item ID
+                  ja_JP: アイテムID
+                  pt_BR: Item ID
+                  zh_Hans: Item ID
+                llm_description: ''
+                max: null
+                min: null
+                name: item_id
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: Optional. Comma separated internal field names to return.
+                  ja_JP: 任意。返したい内部フィールド名をカンマ区切りで指定。
+                  pt_BR: Optional. Comma separated internal field names to return.
+                  zh_Hans: Optional. Comma separated internal field names to return.
+                label:
+                  en_US: Select Fields (comma separated)
+                  ja_JP: 取得するフィールド（カンマ区切り）
+                  pt_BR: Select Fields (comma separated)
+                  zh_Hans: Select Fields (comma separated)
+                llm_description: Comma separated internal field names to return
+                max: null
+                min: null
+                name: select_fields
+                options: []
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: string
+              settings: {}
+              tool_description: SharePoint リストのアイテムを取得します
+              tool_label: リストアイテム取得
+              tool_name: sharepoint_list_get_item
+              type: builtin
+            - enabled: true
+              extra:
+                description: フィルタやページネーションを指定して SharePoint リストのアイテムを一覧取得します
+              parameters:
+                created_after:
+                  auto: 1
+                  value: null
+                created_before:
+                  auto: 1
+                  value: null
+                filter_field:
+                  auto: 1
+                  value: null
+                filter_value:
+                  auto: 1
+                  value: null
+                list_identifier:
+                  auto: 1
+                  value: null
+                page_size:
+                  auto: 1
+                  value: null
+                page_token:
+                  auto: 1
+                  value: null
+                select_fields:
+                  auto: 1
+                  value: null
+                site_identifier:
+                  auto: 1
+                  value: null
+              provider_name: tkosht/sharepoint_list/sharepoint_list
+              provider_show_name: tkosht/sharepoint_list/sharepoint_list
+              schemas:
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                  ja_JP: 'サイトURLまたはサイトID。URL推奨。例: https://contoso.sharepoint.com/sites/demo'
+                  pt_BR: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                  zh_Hans: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                label:
+                  en_US: Site Identifier
+                  ja_JP: サイト指定
+                  pt_BR: Site Identifier
+                  zh_Hans: Site Identifier
+                llm_description: Site URL or site ID
+                max: null
+                min: null
+                name: site_identifier
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: List ID (GUID) or list display name.
+                  ja_JP: リストID（GUID）またはリスト表示名。
+                  pt_BR: List ID (GUID) or list display name.
+                  zh_Hans: List ID (GUID) or list display name.
+                label:
+                  en_US: List Identifier
+                  ja_JP: リスト指定
+                  pt_BR: List Identifier
+                  zh_Hans: List Identifier
+                llm_description: List ID or display name
+                max: null
+                min: null
+                name: list_identifier
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: 'Comma separated field internal names or display names to
+                    return. Example: Title,Status'
+                  ja_JP: '返したいフィールドの内部名または表示名をカンマ区切りで指定。例: Title,ステータス'
+                  pt_BR: 'Comma separated field internal names or display names to
+                    return. Example: Title,Status'
+                  zh_Hans: 'Comma separated field internal names or display names
+                    to return. Example: Title,Status'
+                label:
+                  en_US: Select Fields (comma separated)
+                  ja_JP: 取得フィールド（カンマ区切り）
+                  pt_BR: Select Fields (comma separated)
+                  zh_Hans: Select Fields (comma separated)
+                llm_description: Comma separated internal or display names of fields
+                  to return
+                max: null
+                min: null
+                name: select_fields
+                options: []
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: Number of items per page (default 20, max 100).
+                  ja_JP: 1ページあたり件数（デフォルト20、最大100）。
+                  pt_BR: Number of items per page (default 20, max 100).
+                  zh_Hans: Number of items per page (default 20, max 100).
+                label:
+                  en_US: Page Size
+                  ja_JP: 1ページ件数
+                  pt_BR: Page Size
+                  zh_Hans: Page Size
+                llm_description: ''
+                max: null
+                min: null
+                name: page_size
+                options: []
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: number
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: Use the token from previous response to fetch next page.
+                  ja_JP: 前回レスポンスで返されたトークンで次ページを取得します。
+                  pt_BR: Use the token from previous response to fetch next page.
+                  zh_Hans: Use the token from previous response to fetch next page.
+                label:
+                  en_US: Page Token
+                  ja_JP: ページトークン
+                  pt_BR: Page Token
+                  zh_Hans: Page Token
+                llm_description: ''
+                max: null
+                min: null
+                name: page_token
+                options: []
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: Filter items created at or after this timestamp (e.g., 2025-12-15T00:00:00Z)
+                  ja_JP: 'この日時以降に作成されたアイテムに絞り込み（例: 2025-12-15T00:00:00Z）'
+                  pt_BR: Filter items created at or after this timestamp (e.g., 2025-12-15T00:00:00Z)
+                  zh_Hans: Filter items created at or after this timestamp (e.g.,
+                    2025-12-15T00:00:00Z)
+                label:
+                  en_US: Created After (ISO8601)
+                  ja_JP: 作成日時以降 (ISO8601)
+                  pt_BR: Created After (ISO8601)
+                  zh_Hans: Created After (ISO8601)
+                llm_description: ''
+                max: null
+                min: null
+                name: created_after
+                options: []
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: Filter items created at or before this timestamp.
+                  ja_JP: この日時以前に作成されたアイテムに絞り込み。
+                  pt_BR: Filter items created at or before this timestamp.
+                  zh_Hans: Filter items created at or before this timestamp.
+                label:
+                  en_US: Created Before (ISO8601)
+                  ja_JP: 作成日時以前 (ISO8601)
+                  pt_BR: Created Before (ISO8601)
+                  zh_Hans: Created Before (ISO8601)
+                llm_description: ''
+                max: null
+                min: null
+                name: created_before
+                options: []
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: Field internal name or display name to filter on (equals).
+                  ja_JP: 等価一致でフィルタするフィールドの内部名または表示名。
+                  pt_BR: Field internal name or display name to filter on (equals).
+                  zh_Hans: Field internal name or display name to filter on (equals).
+                label:
+                  en_US: Filter Field
+                  ja_JP: フィルタ対象フィールド
+                  pt_BR: Filter Field
+                  zh_Hans: Filter Field
+                llm_description: ''
+                max: null
+                min: null
+                name: filter_field
+                options: []
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: Value to match (equals).
+                  ja_JP: 等価一致させる値。
+                  pt_BR: Value to match (equals).
+                  zh_Hans: Value to match (equals).
+                label:
+                  en_US: Filter Value
+                  ja_JP: フィルタ値
+                  pt_BR: Filter Value
+                  zh_Hans: Filter Value
+                llm_description: ''
+                max: null
+                min: null
+                name: filter_value
+                options: []
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: string
+              settings: {}
+              tool_description: フィルタやページネーションを指定して SharePoint リストのアイテムを一覧取得します
+              tool_label: リストアイテム一覧
+              tool_name: sharepoint_list_list_items
+              type: builtin
+            - enabled: true
+              extra:
+                description: SharePoint リストの指定フィールドの選択肢を取得します。
+              parameters:
+                field_identifier:
+                  auto: 1
+                  value: null
+                list_identifier:
+                  auto: 1
+                  value: null
+                site_identifier:
+                  auto: 1
+                  value: null
+              provider_name: tkosht/sharepoint_list/sharepoint_list
+              provider_show_name: tkosht/sharepoint_list/sharepoint_list
+              schemas:
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                  ja_JP: 'サイトURLまたはサイトID。URL推奨。例: https://contoso.sharepoint.com/sites/demo'
+                  pt_BR: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                  zh_Hans: 'Site URL or site ID. URL is recommended. Example: https://contoso.sharepoint.com/sites/demo'
+                label:
+                  en_US: Site Identifier
+                  ja_JP: サイト指定
+                  pt_BR: Site Identifier
+                  zh_Hans: Site Identifier
+                llm_description: Site URL or site ID
+                max: null
+                min: null
+                name: site_identifier
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: List ID (GUID) or list display name.
+                  ja_JP: リストID（GUID）またはリスト表示名。
+                  pt_BR: List ID (GUID) or list display name.
+                  zh_Hans: List ID (GUID) or list display name.
+                label:
+                  en_US: List Identifier
+                  ja_JP: リスト指定
+                  pt_BR: List Identifier
+                  zh_Hans: List Identifier
+                llm_description: List ID or display name
+                max: null
+                min: null
+                name: list_identifier
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: Field internal name or display name of the choice column.
+                  ja_JP: 選択肢列の内部名または表示名。
+                  pt_BR: Field internal name or display name of the choice column.
+                  zh_Hans: Field internal name or display name of the choice column.
+                label:
+                  en_US: Field Identifier
+                  ja_JP: フィールド指定
+                  pt_BR: Field Identifier
+                  zh_Hans: Field Identifier
+                llm_description: Field internal name or display name
+                max: null
+                min: null
+                name: field_identifier
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              settings: {}
+              tool_description: SharePoint リストの指定フィールドの選択肢を取得します。
+              tool_label: 選択肢一覧取得
+              tool_name: sharepoint_list_get_choices
+              type: builtin
+            - enabled: true
+              extra:
+                description: A tool for getting the current time.
+              parameters: {}
+              provider_name: time
+              provider_show_name: time
+              schemas:
+              - auto_generate: null
+                default: '%Y-%m-%d %H:%M:%S'
+                form: form
+                human_description:
+                  en_US: Time format in strftime standard.
+                  ja_JP: Time format in strftime standard.
+                  pt_BR: Time format in strftime standard.
+                  zh_Hans: strftime 标准的时间格式。
+                label:
+                  en_US: Format
+                  ja_JP: Format
+                  pt_BR: Format
+                  zh_Hans: 格式
+                llm_description: null
+                max: null
+                min: null
+                name: format
+                options: []
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: UTC
+                form: form
+                human_description:
+                  en_US: Timezone
+                  ja_JP: Timezone
+                  pt_BR: Timezone
+                  zh_Hans: 时区
+                label:
+                  en_US: Timezone
+                  ja_JP: Timezone
+                  pt_BR: Timezone
+                  zh_Hans: 时区
+                llm_description: null
+                max: null
+                min: null
+                name: timezone
+                options:
+                - icon: null
+                  label:
+                    en_US: UTC
+                    ja_JP: UTC
+                    pt_BR: UTC
+                    zh_Hans: UTC
+                  value: UTC
+                - icon: null
+                  label:
+                    en_US: America/New_York
+                    ja_JP: America/New_York
+                    pt_BR: America/New_York
+                    zh_Hans: 美洲/纽约
+                  value: America/New_York
+                - icon: null
+                  label:
+                    en_US: America/Los_Angeles
+                    ja_JP: America/Los_Angeles
+                    pt_BR: America/Los_Angeles
+                    zh_Hans: 美洲/洛杉矶
+                  value: America/Los_Angeles
+                - icon: null
+                  label:
+                    en_US: America/Chicago
+                    ja_JP: America/Chicago
+                    pt_BR: America/Chicago
+                    zh_Hans: 美洲/芝加哥
+                  value: America/Chicago
+                - icon: null
+                  label:
+                    en_US: America/Sao_Paulo
+                    ja_JP: America/Sao_Paulo
+                    pt_BR: América/São Paulo
+                    zh_Hans: 美洲/圣保罗
+                  value: America/Sao_Paulo
+                - icon: null
+                  label:
+                    en_US: Asia/Shanghai
+                    ja_JP: Asia/Shanghai
+                    pt_BR: Asia/Shanghai
+                    zh_Hans: 亚洲/上海
+                  value: Asia/Shanghai
+                - icon: null
+                  label:
+                    en_US: Asia/Ho_Chi_Minh
+                    ja_JP: Asia/Ho_Chi_Minh
+                    pt_BR: Ásia/Ho Chi Minh
+                    zh_Hans: 亚洲/胡志明市
+                  value: Asia/Ho_Chi_Minh
+                - icon: null
+                  label:
+                    en_US: Asia/Tokyo
+                    ja_JP: Asia/Tokyo
+                    pt_BR: Asia/Tokyo
+                    zh_Hans: 亚洲/东京
+                  value: Asia/Tokyo
+                - icon: null
+                  label:
+                    en_US: Asia/Dubai
+                    ja_JP: Asia/Dubai
+                    pt_BR: Asia/Dubai
+                    zh_Hans: 亚洲/迪拜
+                  value: Asia/Dubai
+                - icon: null
+                  label:
+                    en_US: Asia/Kolkata
+                    ja_JP: Asia/Kolkata
+                    pt_BR: Asia/Kolkata
+                    zh_Hans: 亚洲/加尔各答
+                  value: Asia/Kolkata
+                - icon: null
+                  label:
+                    en_US: Asia/Seoul
+                    ja_JP: Asia/Seoul
+                    pt_BR: Asia/Seoul
+                    zh_Hans: 亚洲/首尔
+                  value: Asia/Seoul
+                - icon: null
+                  label:
+                    en_US: Asia/Singapore
+                    ja_JP: Asia/Singapore
+                    pt_BR: Asia/Singapore
+                    zh_Hans: 亚洲/新加坡
+                  value: Asia/Singapore
+                - icon: null
+                  label:
+                    en_US: Europe/London
+                    ja_JP: Europe/London
+                    pt_BR: Europe/London
+                    zh_Hans: 欧洲/伦敦
+                  value: Europe/London
+                - icon: null
+                  label:
+                    en_US: Europe/Berlin
+                    ja_JP: Europe/Berlin
+                    pt_BR: Europe/Berlin
+                    zh_Hans: 欧洲/柏林
+                  value: Europe/Berlin
+                - icon: null
+                  label:
+                    en_US: Europe/Moscow
+                    ja_JP: Europe/Moscow
+                    pt_BR: Europe/Moscow
+                    zh_Hans: 欧洲/莫斯科
+                  value: Europe/Moscow
+                - icon: null
+                  label:
+                    en_US: Australia/Sydney
+                    ja_JP: Australia/Sydney
+                    pt_BR: Australia/Sydney
+                    zh_Hans: 澳大利亚/悉尼
+                  value: Australia/Sydney
+                - icon: null
+                  label:
+                    en_US: Pacific/Auckland
+                    ja_JP: Pacific/Auckland
+                    pt_BR: Pacific/Auckland
+                    zh_Hans: 太平洋/奥克兰
+                  value: Pacific/Auckland
+                - icon: null
+                  label:
+                    en_US: Africa/Cairo
+                    ja_JP: Africa/Cairo
+                    pt_BR: Africa/Cairo
+                    zh_Hans: 非洲/开罗
+                  value: Africa/Cairo
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: select
+              settings:
+                format:
+                  value:
+                    type: mixed
+                    value: '%Y-%m-%d %H:%M:%S'
+                timezone:
+                  value:
+                    type: constant
+                    value: Asia/Tokyo
+              tool_description: A tool for getting the current time.
+              tool_label: Current Time
+              tool_name: current_time
+              type: builtin
+        agent_strategy_label: ReAct
+        agent_strategy_name: ReAct
+        agent_strategy_provider_name: langgenius/agent/agent
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          window:
+            enabled: false
+            size: 50
+        meta:
+          minimum_dify_version: 1.7.0
+          version: 0.0.2
+        output_schema: {}
+        plugin_unique_identifier: langgenius/agent:0.0.25@3507a9a417ea8d76e5de6b2803953ca891851b6b336fafe1315471782711730f
+        selected: true
+        title: エージェント
+        tool_node_version: '2'
+        type: agent
+      height: 187
+      id: '1765785001606'
+      position:
+        x: 380
+        y: 282
+      positionAbsolute:
+        x: 380
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        answer: '{{#1765785001606.text#}}'
+        selected: false
+        title: 回答
+        type: answer
+        variables: []
+      height: 101
+      id: answer
+      position:
+        x: 680
+        y: 282
+      positionAbsolute:
+        x: 680
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    viewport:
+      x: 394.2305310176139
+      y: -102.78900491773061
+      zoom: 0.9903428719330245
+  rag_pipeline_variables: []
