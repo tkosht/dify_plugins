@@ -17,8 +17,23 @@ Manage SharePoint list items (create/update/read) via Microsoft Graph using Dele
 - `sharepoint_list_get_choices`: choice 列の選択肢を取得（`list_url`/`field_identifier`）
 
 ## 入力のコツ
-- `list_url` は SharePoint のリストURL（例: `https://contoso.sharepoint.com/sites/demo/Lists/MyList/AllItems.aspx`）を指定
-- `fields_json` は SharePoint **内部フィールド名**→値 の JSON オブジェクト。表示名で指定しても内部名に解決されるので、表示名でも可。例: `{"Title": "Sample", "ステータス": "処理中"}`
+
+### list_url
+- SharePoint のリストURL を指定します（例: `https://contoso.sharepoint.com/sites/demo/Lists/MyList/AllItems.aspx`）
+- GUID 形式のリスト ID も対応しています
+- **リスト解決の補足**: リスト名に日本語などの非ASCII文字が含まれる場合、`displayName` フィルタで解決できないことがあります。その場合、`webUrl` パスマッチングで自動的に補完します。
+
+### fields_json
+- SharePoint **内部フィールド名**→値 の JSON オブジェクト
+- 表示名で指定しても内部名に解決されるので、表示名でも可
+- 例: `{"Title": "Sample", "ステータス": "処理中"}`
+
+### select_fields
+- 取得するフィールドをカンマ区切りで指定: `Title,Status,Priority`
+- 外側クォート（シングル/ダブル）は自動除去: `"Title,Status"` → `Title,Status`
+- 各フィールドのクォートも除去: `"Title","Status"` → `Title,Status`
+- **厳格な検証**: 存在しないフィールドを指定すると `GraphError` が発生します
+- **欠落フィールドの補完**: Graph API が空値フィールドを省略する場合、プラグイン側で `None` を補完します（OData__ プレフィックス付きフィールドも対応）
 
 ## list_items: filters（JSON配列）
 ### 仕様
@@ -66,6 +81,7 @@ Manage SharePoint list items (create/update/read) via Microsoft Graph using Dele
 - 作成日時の条件も `filters` の `createdDateTime` で指定します（`type: "datetime"` を推奨）。
 - リスト列の日時（例: 登録日時）に `type: "datetime"` を指定した場合、`fields/<name>` の比較は文字列としてクォートされます。
 - 作成(create)/更新(update) でも `fields` のキーは表示名を内部名へ解決してから送信します。
+- **未知フィールドの検証**: `filters` に存在しないフィールドを指定すると `GraphError` が発生します。
 
 ## 互換性
 - `filter_field` / `filter_operator` / `filter_value` は廃止しました。フィルタは `filters`（JSON配列）で指定してください。
@@ -83,6 +99,13 @@ Manage SharePoint list items (create/update/read) via Microsoft Graph using Dele
 - SharePoint 側で「未インデックス列へのサーバーフィルタ」は 400 で拒否される場合があります。
   - 対象列にインデックスを付けるのが最短です。
 - Choice列の選択肢（入力可能値）は `sharepoint_list_get_choices` で取得できます。
+
+## エラー
+プラグインは以下のエラーを送出します:
+- `GraphError`: API 呼び出し失敗（存在しないフィールド指定、未知の filter フィールドなど）
+- `AuthenticationError`: 認証失敗（トークン期限切れ、無効なトークンなど）
+- `AuthorizationError`: 権限不足（必要なスコープが付与されていない）
+- `RateLimitError`: レート制限超過（429 エラー）
 
 ## デバッグ
 - Remote Debug で接続し、Create→Read→Update→Read の最小動線で確認してください。
