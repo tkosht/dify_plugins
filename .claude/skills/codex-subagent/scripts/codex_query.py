@@ -128,7 +128,7 @@ def filter_logs(
         if mode and exec_data.get("mode") != mode:
             continue
 
-        heuristic = eval_data.get("heuristic", {})
+        heuristic = eval_data.get("heuristic") or {}
         score = heuristic.get(
             "combined_score", heuristic.get("average_score", 0)
         )
@@ -163,22 +163,29 @@ def format_log_row(log: dict[str, Any]) -> dict[str, Any]:
     """ログをフラットな辞書に変換"""
     exec_data = log.get("execution", {})
     eval_data = log.get("evaluation", {})
-    heuristic = eval_data.get("heuristic", {})
-    human = eval_data.get("human", {}) or {}
-    llm = eval_data.get("llm", {}) or {}
+    heuristic = eval_data.get("heuristic") or {}
+    human = eval_data.get("human") or {}
+    llm = eval_data.get("llm") or {}
     results = log.get("results", [{}])
-    first_result = results[0] if results else {}
-    any_timed_out = any(r.get("timed_out") for r in (results or []))
+
+    # pipeline モードは results[].exec に実行結果がある
+    mode = exec_data.get("mode", "")
+    if mode == "pipeline" and results:
+        first_exec = results[0].get("exec", {}) if results else {}
+        any_timed_out = any(r.get("exec", {}).get("timed_out") for r in results)
+    else:
+        first_exec = results[0] if results else {}
+        any_timed_out = any(r.get("timed_out") for r in (results or []))
 
     return {
         "run_id": log.get("run_id", "")[:8],
         "timestamp": log.get("timestamp", ""),
-        "mode": exec_data.get("mode", ""),
+        "mode": mode,
         "task_type": exec_data.get("task_type", ""),
         "prompt": exec_data.get("prompt", "")[:50],
-        "success": first_result.get("success", False),
+        "success": first_exec.get("success", False),
         "timed_out": any_timed_out,
-        "execution_time": first_result.get("execution_time", 0),
+        "execution_time": first_exec.get("execution_time", 0),
         "heuristic_score": heuristic.get(
             "combined_score",
             heuristic.get("average_score", 0),
@@ -275,7 +282,7 @@ def print_stats(logs: list[dict[str, Any]]) -> None:
     for log in logs:
         exec_data = log.get("execution", {})
         eval_data = log.get("evaluation", {})
-        heuristic = eval_data.get("heuristic", {})
+        heuristic = eval_data.get("heuristic") or {}
 
         score = heuristic.get(
             "combined_score", heuristic.get("average_score", 0)
@@ -287,7 +294,7 @@ def print_stats(logs: list[dict[str, Any]]) -> None:
         if human.get("score"):
             human_scores.append(human["score"])
 
-        llm = eval_data.get("llm", {}) or {}
+        llm = eval_data.get("llm") or {}
         if llm.get("correctness"):
             llm_scores.append(llm["correctness"])
 
@@ -371,7 +378,7 @@ def main():
     parser.add_argument(
         "--mode",
         type=str,
-        choices=["single", "parallel", "competition"],
+        choices=["single", "parallel", "competition", "pipeline"],
         help="実行モード",
     )
     parser.add_argument(

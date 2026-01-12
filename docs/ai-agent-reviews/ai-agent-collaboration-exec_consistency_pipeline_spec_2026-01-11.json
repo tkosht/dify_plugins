@@ -1,0 +1,18 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": ["draft", "review", "revise"],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "ai-agent-collaboration-exec のドキュメント・コード・テストの整合性を分析し、/draft に記録する。根拠は /facts にオブジェクト配列で記録。チェック項目: (1) SKILL.md と references の内容整合、(2) codex-subagent SKILL.md との連携仕様整合、(3) pipeline_spec_template.json と schemas の整合、(4) テストカバレッジ。/facts はオブジェクト配列（文字列禁止）。"
+    },
+    {
+      "id": "review",
+      "instructions": "draft の分析結果を独立レビューし、欠落・リスク・不整合を /critique に記録する。指摘には根拠（ファイルパス:行番号）を必ず付与する。"
+    },
+    {
+      "id": "revise",
+      "instructions": "critique を踏まえて最終評価を /revise に記録する。未解決事項は /open_questions に記録。整合性の総合評価（OK/NG/要改善）を明記する。"
+    }
+  ]
+}

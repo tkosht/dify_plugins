@@ -61,6 +61,11 @@ flowchart LR
 ```
 
 ## codex-subagent pipeline 構成（例）
+※この構成例は `--pipeline-spec` 使用前提（`--pipeline-stages` の既定は `draft,critique,revise` のみ）。
+- **既定パイプラインの踏襲は禁止**。タスクに合わせて初期/動的ステージを設計し、理由と最適化観点を /draft に記録すること。
+- 途中での再設計は `next_stages` で動的追加する。動的追加を許容する場合は `allow_dynamic_stages: true` を明示すること。
+- 動的設計が必要な場合は `--pipeline-spec` を使用し、`--pipeline-stages` の固定テンプレートに依存しないこと。
+- `allowed_stage_ids` は初期/動的追加の候補を含む。`stages` は初期実行順のみを列挙すること。
 ```json
 {
   "allow_dynamic_stages": true,
@@ -68,13 +73,11 @@ flowchart LR
   "stages": [
     { "id": "draft",   "instructions": "開発案・差分方針を /draft に記録。根拠は /facts。" },
     { "id": "execute", "instructions": "Executor が実ファイル変更＋テスト実行。結果/ログを /facts に記録。" },
-    { "id": "review",  "instructions": "Reviewer が指摘・リスクを /critique に記録。根拠必須。" },
-    { "id": "revise",  "instructions": "Executor が修正反映。/revise にまとめ、未解決は /open_questions。" },
-    { "id": "verify",  "instructions": "Verifier がテスト再実行。結果を /facts に追記。" }
+    { "id": "review",  "instructions": "Reviewer が指摘・リスクを /critique に記録。根拠必須。" }
   ]
 }
 ```
-`release` ステージを使う場合は `allowed_stage_ids` に含め、使わない場合は除外して整合させる。
+`release`/`verify` などの動的追加を使う可能性がある場合は `allowed_stage_ids` に含め、使わない場合は除外して整合させる。
 
 ## Capsule 構造（責務と格納先）
 - /draft: 開発案・変更方針
@@ -90,6 +93,7 @@ flowchart LR
   - /open_questions が残る
   - /facts と不整合
   - テスト/CI 未通過
+  - パイプライン設計が既定踏襲でタスク最適化されていない
 - 終了条件:
   - 重大指摘ゼロ
   - /open_questions が解消または受理

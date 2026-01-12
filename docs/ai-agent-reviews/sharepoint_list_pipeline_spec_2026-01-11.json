@@ -1,0 +1,18 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": ["draft", "review", "revise"],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "評価方針と一次結果を /draft に記録。根拠は /facts（オブジェクト配列）。推測禁止。"
+    },
+    {
+      "id": "review",
+      "instructions": "Reviewer が独立レビューを /critique に記録。重大な不整合と根拠を列挙。"
+    },
+    {
+      "id": "revise",
+      "instructions": "結果を統合し /revise に結論とギャップ一覧を整理。未解決は /open_questions。/facts と整合。"
+    }
+  ]
+}

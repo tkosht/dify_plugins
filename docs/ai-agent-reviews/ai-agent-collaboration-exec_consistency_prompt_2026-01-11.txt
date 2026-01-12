@@ -1,0 +1,37 @@
+ROLE: Consistency validation for ai-agent-collaboration-exec (docs/code/tests)
+DATE: 2026-01-11
+
+OBJECTIVE
+- ai-agent-collaboration-exec のドキュメント/コード/テスト整合性を確認する。
+- 不整合・不足・ドリフトを特定する。
+
+SCOPE (read-only; these files only)
+- .claude/skills/ai-agent-collaboration-exec/SKILL.md
+- .claude/skills/ai-agent-collaboration-exec/references/execution_framework.md
+- .claude/skills/ai-agent-collaboration-exec/references/pipeline_spec_template.json
+- .claude/skills/ai-agent-collaboration-exec/references/subagent_prompt_templates.md
+- .claude/skills/ai-agent-collaboration-exec/references/contract_output.md
+- .claude/skills/codex-subagent/SKILL.md
+- .claude/skills/codex-subagent/scripts/codex_exec.py
+- .claude/skills/codex-subagent/schemas/pipeline_spec.schema.json
+- .claude/skills/codex-subagent/schemas/capsule.schema.json
+- tests/codex_subagent/test_pipeline_spec.py
+- tests/codex_subagent/test_pipeline_schema.py
+- tests/codex_subagent/test_tool_use_integration.py
+
+CONSTRAINTS
+- Use read_file only; no other tools.
+- 事実ベース。不明は "不明" と記載。
+- 根拠はファイルパス + 行番号で提示する。
+- チェック観点:
+  1) SKILL.md と references の整合
+  2) ai-agent-collaboration-exec docs と codex-subagent SKILL/実装の整合
+  3) pipeline_spec_template.json と pipeline_spec schema の整合
+  4) テストカバレッジとドキュメント記述の整合
+- /facts はオブジェクト配列（type/items/evidence を含める）。
+
+OUTPUT
+- /draft: チェック観点ごとの短い要約
+- /critique: 不整合・不足の一覧（根拠付き）
+- /revise: 総合評価（OK/NG/要改善）と改善提案
+- /open_questions: 未解決事項のみ
