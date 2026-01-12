@@ -31,11 +31,12 @@ metadata:
 - 書き込み許可範囲
 - レビュー/検証の記録先（review_output_dir）
 - 必須ステージ/任意ステージ
+- 動的追加/ループ条件（next_stages）と採用理由
 - テスト/CI 要件
 
 ## 入力受け渡し例
 - 親エージェントは 1 つの PROMPT に統合して `codex_exec.py --prompt` に渡す。
-- 必須要素: OBJECTIVE / SCOPE / CONSTRAINTS / REQUIRED OUTPUTS / CAPSULE PATCH RULES / TEST DESIGN REQUIREMENT。
+- 必須要素: OBJECTIVE / SCOPE / CONSTRAINTS / REQUIRED OUTPUTS / CAPSULE PATCH RULES / PIPELINE DESIGN REQUIREMENT / TEST DESIGN REQUIREMENT。
 - 例（最小構成）:
   ```text
   ROLE: Parent agent orchestration for <topic>
@@ -57,6 +58,11 @@ metadata:
   CAPSULE PATCH RULES
   - /facts はオブジェクト配列（文字列禁止）
   - /draft /critique /revise はオブジェクトのまま
+
+  PIPELINE DESIGN REQUIREMENT
+  - 既定パイプラインの踏襲禁止
+  - 初期/動的ステージの設計理由
+  - next_stages 追加条件
   ```
 
 ## 役割分担（実行責任）
@@ -69,13 +75,14 @@ metadata:
 ## 手順
 1. 参照ドキュメントを読み、役割分担と例外条件を確定すること。
 2. Executor/Reviewer/Verifier の責務と書き込み範囲を明示すること。
-3. パイプラインを `references/pipeline_spec_template.json` で組成し、必要なステージのみ残すこと。
-4. `allowed_stage_ids` と使用ステージの整合を確認すること（`release` を使う場合は追加、使わない場合は削除）。
-5. Capsule 構造を `/draft /critique /revise /facts /open_questions /assumptions` に合わせること。
-6. サブエージェントの依頼文を `references/subagent_prompt_templates.md` から作成すること。
-7. ループ条件/終了条件、テスト/CI ゲートを明記すること。
-8. 成果物契約出力を `references/contract_output.md` に従って固定化すること。
-9. 事実ベースで記述し、不明は "不明" と明記すること。
+3. パイプラインを `references/pipeline_spec_template.json` で組成し、**既定パイプラインの踏襲は禁止**としてタスクに最適化すること（初期/動的ステージと理由を /draft.proposal に記録）。
+4. 動的設計が必要な場合は `--pipeline-spec` を使用し、`--pipeline-stages` の固定テンプレートに依存しないこと。
+5. `allowed_stage_ids` は初期/動的追加を含む採用ステージに合わせること（`release` を使う可能性がある場合のみ含め、使わない場合は除外）。`stages` は初期実行順のみ列挙すること。
+6. Capsule 構造を `/draft /critique /revise /facts /open_questions /assumptions` に合わせること。
+7. サブエージェントの依頼文を `references/subagent_prompt_templates.md` から作成すること。
+8. ループ条件/終了条件、動的追加条件（next_stages）とテスト/CI ゲートを明記すること。
+9. 成果物契約出力を `references/contract_output.md` に従って固定化すること。
+10. 事実ベースで記述し、不明は "不明" と明記すること。
 
 ## 実行前提/依存
 - `codex` 実行バイナリが PATH にあること（例: `node_modules/.bin`）。
@@ -92,18 +99,20 @@ metadata:
 ## Capsule パッチルール（必須）
 - `/facts` は「オブジェクト配列」。文字列は不可。
 - `/draft` `/critique` `/revise` はオブジェクトのまま、キー追加で記録する。
+- `/open_questions` `/assumptions` も許可パス。配列として追記する。
 - JSON Patch 例:
   `{ "op": "add", "path": "/facts/-", "value": { "type": "commands", "items": ["cmd1"], "evidence": "shell" } }`
 
 ## 最小 pipeline spec 例
+※この例は `--pipeline-spec` 使用前提（`--pipeline-stages` の既定は `draft,critique,revise` のみ）。`stages` は初期実行のみを記載し、動的追加は `next_stages` で行う。
 ```json
 {
-  "allow_dynamic_stages": false,
-  "allowed_stage_ids": ["draft", "review", "revise"],
+  "allow_dynamic_stages": true,
+  "allowed_stage_ids": ["draft", "execute", "review", "revise", "verify", "release"],
   "stages": [
-    { "id": "draft", "instructions": "評価方針を /draft に記録。根拠は /facts。" },
-    { "id": "review", "instructions": "独立レビューを /critique に記録。根拠必須。" },
-    { "id": "revise", "instructions": "修正と結論を /revise に記録。未解決は /open_questions。" }
+    { "id": "draft", "instructions": "パイプライン設計と成功条件を /draft に記録。根拠は /facts。" },
+    { "id": "execute", "instructions": "実行結果/ログを /facts に記録。" },
+    { "id": "review", "instructions": "独立レビューを /critique に記録。根拠必須。" }
   ]
 }
 ```

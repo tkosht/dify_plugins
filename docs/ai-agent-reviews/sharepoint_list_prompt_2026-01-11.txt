@@ -1,0 +1,85 @@
+PROMPT_ID: sharepoint_list_consistency_2026-01-11_v1
+
+ROLE: Parent agent orchestration for sharepoint_list consistency review
+DATE: 2026-01-11
+
+OBJECTIVE
+- app/sharepoint_list のドキュメント・コード・テストの整合性を評価し、齟齬と未カバー事項を明確化する。
+
+SCOPE
+- Target repo: /home/devuser/workspace
+- Target paths (these only):
+  - app/sharepoint_list/README.md
+  - app/sharepoint_list/PRIVACY.md
+  - app/sharepoint_list/manifest.yaml
+  - app/sharepoint_list/provider/sharepoint_list.yaml
+  - app/sharepoint_list/provider/sharepoint_list.py
+  - app/sharepoint_list/tools/create_item.yaml
+  - app/sharepoint_list/tools/update_item.yaml
+  - app/sharepoint_list/tools/get_item.yaml
+  - app/sharepoint_list/tools/list_items.yaml
+  - app/sharepoint_list/tools/get_choices.yaml
+  - app/sharepoint_list/internal/validators.py
+  - app/sharepoint_list/internal/operations.py
+  - app/sharepoint_list/internal/filters.py
+  - app/sharepoint_list/internal/request_builders.py
+  - docs/03.detail_design/sharepoint_list_list_items_filters.md
+  - docs/note_sharepoint_list_devlog.md
+  - tests/sharepoint_list/test_validators.py
+  - tests/sharepoint_list/test_validators_list_url.py
+  - tests/sharepoint_list/test_operations_crud.py
+  - tests/sharepoint_list/test_operations_fields.py
+  - tests/sharepoint_list/test_operations_select.py
+  - tests/sharepoint_list/test_operations_filters.py
+  - tests/sharepoint_list/test_operations_choices.py
+  - tests/sharepoint_list/test_operations_debug.py
+  - tests/sharepoint_list/test_filters.py
+  - tests/sharepoint_list/test_requests.py
+
+CONSTRAINTS
+- Read-only. No file edits.
+- Do not run tests.
+- 推測禁止。不明は「不明」。
+- 根拠は必ず「ファイルパス:行番号」で示す。
+
+CHECK ITEMS (evaluate each with OK/NG/不明)
+1) 各ツールの I/O 仕様整合
+   - README / provider/sharepoint_list.yaml / tools/*.yaml / validators.py / operations.py
+   - 対象: create_item, update_item, get_item, list_items, get_choices
+2) list_items の仕様整合
+   - select_fields, filters (JSON array), page_size, page_token, order (createdDateTime desc)
+   - README / detail_design / operations.py / filters.py / request_builders.py / tests
+3) list_url 検証とエラーメッセージ整合
+   - README / validators.py / test_validators_list_url.py
+4) デバッグログ仕様
+   - README / PRIVACY.md / operations.py / tests
+5) テストの仕様カバー不足
+   - README/設計書で言及されている仕様が tests に存在するか
+
+REQUIRED OUTPUTS
+- /draft: 評価方針と一次結果（チェック項目ごとに OK/NG/不明 + 根拠）
+- /critique: 重大な不整合・抜け漏れの指摘（根拠必須）
+- /revise: 統合結論とギャップ一覧、未解決事項
+- /facts: コマンドや根拠の記録（オブジェクト配列）
+- /open_questions: 仕様未確定事項
+
+CAPSULE PATCH RULES
+- /facts はオブジェクト配列（文字列禁止）。
+- /draft /critique /revise はオブジェクト。
+
+OUTPUT FORMAT (JSON ONLY, one per stage)
+{
+  "schema_version": "1.1",
+  "stage_id": "draft|review|revise",
+  "status": "ok|error",
+  "output_is_partial": false,
+  "capsule_patch": [
+    {"op":"replace","path":"/draft","value": {"summary":"...","checks":[{"item":"...","status":"OK|NG|不明","evidence":["path:line"],"gap":"..."}] }},
+    {"op":"add","path":"/facts/-","value": {"type":"evidence","items":["path:line"],"evidence":"read"}}
+  ]
+}
+
+ROLE BY STAGE
+- draft: Executor（read-only）
+- review: Reviewer（read-only, critique focus）
+- revise: Executor（read-only, consolidate）

@@ -143,8 +143,8 @@ def show_log_summary(log_path: Path) -> None:
                     prompt = prompt[:100] + "..."
                 print(f"Prompt: {prompt}")
 
-                eval_data = log.get("evaluation", {})
-                heuristic = eval_data.get("heuristic", {})
+                eval_data = log.get("evaluation") or {}
+                heuristic = eval_data.get("heuristic") or {}
                 print(
                     f"Heuristic Score: {heuristic.get('combined_score', 'N/A')}"
                 )
