@@ -37,7 +37,7 @@ from collections import Counter
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -131,34 +131,34 @@ PIPELINE_STAGE_TEMPLATES = {
 }
 
 
-class ExecutionMode(str, Enum):
+class ExecutionMode(StrEnum):
     SINGLE = "single"
     PARALLEL = "parallel"
     COMPETITION = "competition"
     PIPELINE = "pipeline"
 
 
-class SandboxMode(str, Enum):
+class SandboxMode(StrEnum):
     READ_ONLY = "read-only"
     WORKSPACE_WRITE = "workspace-write"
     FULL_ACCESS = "danger-full-access"
 
 
-class TaskType(str, Enum):
+class TaskType(StrEnum):
     CODE_GEN = "code_gen"
     CODE_REVIEW = "code_review"
     ANALYSIS = "analysis"
     DOCUMENTATION = "documentation"
 
 
-class SelectionStrategy(str, Enum):
+class SelectionStrategy(StrEnum):
     BEST_SINGLE = "best_single"
     VOTING = "voting"
     HYBRID = "hybrid"
     CONSERVATIVE = "conservative"
 
 
-class MergeStrategy(str, Enum):
+class MergeStrategy(StrEnum):
     CONCAT = "concat"
     DEDUP = "dedup"
     PRIORITY = "priority"
@@ -1293,8 +1293,8 @@ async def run_codex_exec_async(
             timed_out = True
             await _terminate_process_group_async(process)
 
-        (stdout, stdout_truncated) = await stdout_task
-        (stderr, stderr_truncated) = await stderr_task
+        stdout, stdout_truncated = await stdout_task
+        stderr, stderr_truncated = await stderr_task
         output_is_partial = timed_out or stdout_truncated or stderr_truncated
 
         execution_time = timeout if timed_out else (time.time() - start_time)

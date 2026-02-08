@@ -1,0 +1,27 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": [
+    "draft",
+    "execute",
+    "review",
+    "verify"
+  ],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "目的: app/sharepoint_list の整合性評価のチェック設計を確定する。手順: 1) /draft に checklist(最大5件の短文) と rules(短文) と proposal(短文) を記録。2) /facts は scope_summary を1件だけ追加。3) /open_questions は空配列または最大2件。4) 文字列は1行のみ、改行や\\nは使わない。5) JSONは単一行で出力。6) capsule_patch は必須。7) 推測禁止。不明は不明と記録。"
+    },
+    {
+      "id": "execute",
+      "instructions": "目的: チェック項目ごとに docs/code/tests の一致判定を記録する。手順: 1) /facts に最大6件の結果を追加。2) 各 value は item/evidence/source/status を含む。3) status は match|mismatch|unknown のみ。4) 文字列は1行のみ、改行や\\nは使わない。5) JSONは単一行で出力。6) capsule_patch は必須。7) 推測禁止。不明は不明と記録。"
+    },
+    {
+      "id": "review",
+      "instructions": "目的: /facts の妥当性を独立レビューする。手順: 1) /critique に最大3件の指摘を短文で記録。2) 文字列は1行のみ、改行や\\nは使わない。3) JSONは単一行で出力。4) capsule_patch は必須。5) 推測禁止。不明は不明と記録。"
+    },
+    {
+      "id": "verify",
+      "instructions": "目的: review の重大指摘や open_questions を確認する。手順: 1) /facts に最大2件の追記。2) 文字列は1行のみ、改行や\\nは使わない。3) JSONは単一行で出力。4) capsule_patch は必須。5) 推測禁止。不明は不明と記録。"
+    }
+  ]
+}

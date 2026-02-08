@@ -45,7 +45,7 @@ mode:
 # ==========
 # docker compose aliases
 up:
-	docker compose up -d
+	docker compose up -d --build
 	docker compose exec app sudo service docker start
 
 active:

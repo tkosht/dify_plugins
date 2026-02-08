@@ -1,0 +1,32 @@
+{
+  "allow_dynamic_stages": true,
+  "allowed_stage_ids": [
+    "draft",
+    "execute",
+    "review",
+    "revise",
+    "verify"
+  ],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "目的: 整合性チェックの観点と成功条件とループ条件を確定する。単一行JSONのみ。capsule_patchは1件のみで /draft を replace。/draft には {checks:[...], success:[...], loop_policy:{max_loops:2, restart_stages:[execute, review, revise, verify]}, evidence_requirements:[...]} を記録。/open_questions は 1件1行で質問/理由/次アクション。推測禁止。不明は不明。next_stagesは禁止。"
+    },
+    {
+      "id": "execute",
+      "instructions": "目的: 証拠収集と必要テスト実行。単一行JSONのみ。capsule_patchは1件のみで /facts を replace。/factsは item/evidence/source/status の配列で status は OK/FAIL/UNKNOWN。実行コマンドと結果も /facts に記録。推測禁止。不明は不明。next_stagesは禁止。"
+    },
+    {
+      "id": "review",
+      "instructions": "目的: /facts と /draft を照合し不整合を抽出。単一行JSONのみ。capsule_patchは1件のみで /critique を replace。/critique は {summary:..., issues:[{item, severity, impact, evidence, action_required}], needs_fix:bool, needs_more_evidence:bool}。severity は blocker/major/minor。推測禁止。不明は不明。next_stagesは禁止。"
+    },
+    {
+      "id": "revise",
+      "instructions": "目的: need_fix true または blocker/major がある場合に修正を適用。単一行JSONのみ。capsule_patchは1件のみで /revise を replace。/revise は {changes:[...], files:[...], commands:[...], noop:bool}。変更不要なら noop=true とし changes は空。推測禁止。不明は不明。next_stagesは禁止。"
+    },
+    {
+      "id": "verify",
+      "instructions": "目的: 成功条件の再確認とループ判定。単一行JSONのみ。capsule_patchは1件のみで /facts を replace または /facts に loop_count を追記。ループ条件: blocker/major 指摘の残存, needs_more_evidence true, /open_questions 残存, テスト失敗。loop_count < 2 の場合 next_stages に {id:execute},{id:review},{id:revise},{id:verify} を追加。loop_count >= 2 の場合 /open_questions に手動介入を追加し next_stages は出さない。推測禁止。不明は不明。"
+    }
+  ]
+}

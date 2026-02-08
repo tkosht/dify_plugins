@@ -21,6 +21,13 @@ metadata:
 ## 参照（必読）
 - `references/execution_framework.md`
 - `references/pipeline_spec_template.json`
+- `references/pipeline_spec_guarded_min.json`
+- `references/pipeline_json_guardrails.md`
+- `references/pipeline_prompt_guarded_template.md`
+- `references/pipeline_dynamic_stage_rules.md`
+- `references/pipeline_spec_dynamic_safe.json`
+- `references/pipeline_prompt_dynamic_template.md`
+- `references/pipeline_dynamic_test_run_template.md`
 - `references/subagent_prompt_templates.md`
 - `references/contract_output.md`
 
@@ -76,13 +83,15 @@ metadata:
 1. 参照ドキュメントを読み、役割分担と例外条件を確定すること。
 2. Executor/Reviewer/Verifier の責務と書き込み範囲を明示すること。
 3. パイプラインを `references/pipeline_spec_template.json` で組成し、**既定パイプラインの踏襲は禁止**としてタスクに最適化すること（初期/動的ステージと理由を /draft.proposal に記録）。
-4. 動的設計が必要な場合は `--pipeline-spec` を使用し、`--pipeline-stages` の固定テンプレートに依存しないこと。
-5. `allowed_stage_ids` は初期/動的追加を含む採用ステージに合わせること（`release` を使う可能性がある場合のみ含め、使わない場合は除外）。`stages` は初期実行順のみ列挙すること。
-6. Capsule 構造を `/draft /critique /revise /facts /open_questions /assumptions` に合わせること。
-7. サブエージェントの依頼文を `references/subagent_prompt_templates.md` から作成すること。
-8. ループ条件/終了条件、動的追加条件（next_stages）とテスト/CI ゲートを明記すること。
-9. 成果物契約出力を `references/contract_output.md` に従って固定化すること。
-10. 事実ベースで記述し、不明は "不明" と明記すること。
+4. スキーマ逸脱の再発防止として `references/pipeline_json_guardrails.md` を適用し、安定性重視の案件は `references/pipeline_spec_guarded_min.json` と `references/pipeline_prompt_guarded_template.md` を使用すること。
+5. 動的ステージが必要な案件は `references/pipeline_dynamic_stage_rules.md` と `references/pipeline_spec_dynamic_safe.json` と `references/pipeline_prompt_dynamic_template.md` を使用し、追加条件を /draft.proposal に明記すること。
+6. 動的設計が必要な場合は `--pipeline-spec` を使用し、`--pipeline-stages` の固定テンプレートに依存しないこと。
+7. `allowed_stage_ids` は初期/動的追加を含む採用ステージに合わせること（`release` を使う可能性がある場合のみ含め、使わない場合は除外）。`stages` は初期実行順のみ列挙すること。
+8. Capsule 構造を `/draft /critique /revise /facts /open_questions /assumptions` に合わせること。
+9. サブエージェントの依頼文を `references/subagent_prompt_templates.md` から作成すること。
+10. ループ条件/終了条件、動的追加条件（next_stages）とテスト/CI ゲートを明記すること。
+11. 成果物契約出力を `references/contract_output.md` に従って固定化すること。
+12. 事実ベースで記述し、不明は "不明" と明記すること。
 
 ## 実行前提/依存
 - `codex` 実行バイナリが PATH にあること（例: `node_modules/.bin`）。
@@ -95,6 +104,7 @@ metadata:
 
 ## 検証手順（必須）
 - pipeline spec の妥当性検証: `uv run pytest tests/codex_subagent/test_pipeline_spec.py --no-cov`
+- 動的ステージ運用時の実行テンプレ: `references/pipeline_dynamic_test_run_template.md`
 
 ## Capsule パッチルール（必須）
 - `/facts` は「オブジェクト配列」。文字列は不可。

@@ -1,0 +1,50 @@
+ROLE: Parent agent orchestration for sharepoint_list consistency check
+DATE: 2026-01-13
+
+STRICT NO-TOOLS RULE
+- Do NOT call any tools or run any commands.
+- Use ONLY the FACTS INPUT below. If evidence is missing, mark as 不明.
+- Output JSON ONLY (single-line JSON; no line breaks anywhere).
+
+OUTPUT FORMAT (MANDATORY)
+- Required keys: schema_version, stage_id, status, output_is_partial, capsule_patch.
+- /facts is an array of objects. Each object must include item, evidence, source, status.
+- /draft /critique /revise must be objects. /open_questions and /assumptions are arrays.
+- Do NOT include next_stages.
+- All string values must be single-line and must not contain newline or \n.
+- Avoid double quotes inside string values.
+
+OBJECTIVE
+- Evaluate consistency among documentation, code, and tests for app/sharepoint_list. Identify mismatches.
+
+CHECK ITEMS (exactly 5)
+1) list_url spec vs validators.parse_list_url and tests
+2) filters spec (JSON, ops, createdDateTime top-level, datetime quoting, Prefer header) vs code and tests
+3) select_fields behavior and validation (display names, quote stripping) vs code/tests vs tool YAML
+4) fields_json behavior (display names) vs code/tests vs tool YAML
+5) debug logging env vars and default path vs code/tests
+
+FACTS INPUT (EVIDENCE ONLY)
+- app/sharepoint_list/README.md:21-24 list_url example and GUID list ID support
+- app/sharepoint_list/internal/validators.py:35-68 parse_list_url expects /Lists/<list>/AllItems.aspx and returns site_url plus list_name_or_id
+- tests/sharepoint_list/test_validators_list_url.py:7-19 parses AllItems URL and GUID list id
+- app/sharepoint_list/README.md:31-36 select_fields allows display names, strips quotes, strict validation
+- app/sharepoint_list/internal/operations.py:346-361 parse_select_fields strips outer and per-field quotes
+- app/sharepoint_list/internal/operations.py:451-482 resolve_select_fields_for_list maps display names to internal names
+- tests/sharepoint_list/test_operations_select.py:47-80 quote removal; 165-178 display name resolved
+- app/sharepoint_list/tools/get_item.yaml:34-43 select_fields description says internal field names only
+- app/sharepoint_list/README.md:26-29 fields_json allows display names resolved to internal names
+- app/sharepoint_list/internal/operations.py:435-448 map_fields_to_internal resolves display names
+- tests/sharepoint_list/test_operations_fields.py:4-15 display name mapping for fields_json
+- app/sharepoint_list/tools/create_item.yaml:24-33 fields_json description says internal names only
+- app/sharepoint_list/tools/update_item.yaml:34-43 fields_json description says internal names only
+- app/sharepoint_list/README.md:38-50 and 77-82 filters JSON, ops list, createdDateTime top-level, fields/ for others, datetime handling
+- docs/03.detail_design/sharepoint_list_list_items_filters.md:31-46 createdDateTime vs fields/ and datetime quoting
+- docs/03.detail_design/sharepoint_list_list_items_filters.md:64-71 Prefer header for fields filters
+- app/sharepoint_list/internal/filters.py:32-67 datetime quoting rules for fields/ vs createdDateTime
+- app/sharepoint_list/internal/operations.py:760-797 createdDateTime handled as top-level, fields/ prefix, Prefer header
+- tests/sharepoint_list/test_operations_filters.py:156-189 createdDateTime top-level; 259-289 Prefer header
+- tests/sharepoint_list/test_filters.py:38-63 datetime quoting behavior
+- app/sharepoint_list/README.md:110-112 debug env vars and default path
+- app/sharepoint_list/internal/operations.py:14-15 default log path; 65-89 debug enable and NDJSON write
+- tests/sharepoint_list/test_operations_debug.py:16-40 env var enables; 54-93 NDJSON log write

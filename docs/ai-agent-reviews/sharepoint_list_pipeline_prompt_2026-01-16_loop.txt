@@ -1,0 +1,34 @@
+ROLE: Parent agent orchestration for sharepoint_list consistency loop
+DATE: 2026-01-16
+
+GLOBAL RULES
+- Follow stage instructions strictly.
+- Output JSON ONLY (single-line JSON; no line breaks anywhere).
+- Required keys: schema_version, stage_id, status, output_is_partial, capsule_patch.
+- /facts is an array of objects (item/evidence/source/status).
+- /draft /critique /revise must be objects. /open_questions and /assumptions are arrays.
+- next_stages is allowed only in verify and must be an array of objects with id only.
+- No speculation. If evidence is missing, mark as 不明.
+
+OBJECTIVE
+- Ensure consistency among documentation, code, and tests for app/sharepoint_list, and loop until resolved.
+
+SCOPE
+- Docs: app/sharepoint_list/README.md, docs/03.detail_design/sharepoint_list_list_items_filters.md, tool YAMLs
+- Code: app/sharepoint_list/internal/*, app/sharepoint_list/tools/*.py
+- Tests: tests/sharepoint_list/*
+
+CHECK ITEMS (edit as needed)
+1) list_url spec vs parse_list_url behavior and tests
+2) filters spec (JSON, ops, createdDateTime top-level, datetime quoting, Prefer header) vs code/tests
+3) select_fields behavior and validation vs code/tests vs tool YAML
+4) fields_json behavior vs code/tests vs tool YAML
+5) debug logging env vars and default path vs code/tests
+
+LOOP POLICY
+- max_loops: 2
+- restart_stages: execute, review, revise, verify
+
+FACTS INPUT (EVIDENCE ONLY)
+- <path:line summary>
+- <path:line summary>

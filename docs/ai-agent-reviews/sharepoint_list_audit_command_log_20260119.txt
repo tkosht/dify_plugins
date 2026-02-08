@@ -1,0 +1,49 @@
+1) command: eza -1 memory-bank/00-core/*mandatory*.md | result: memory-bank/00-core/knowledge_access_principles_mandatory.md; memory-bank/00-core/mandatory_rules_checklist.md
+2) command: rg -n '^#' memory-bank/00-core/mandatory_rules_checklist.md | result: headings listed
+3) command: date | result: 2026-01-19 01:40:36 JST (raw output uses ja locale)
+4) command: git branch --show-current | result: task/sharepoint-list-consistency
+5) command: eza -1 checklists | result: listed
+6) command: nl -ba checklists/sharepoint_list_consistency_checklist_2026-01-19.md | sed -n '1,200p' | result: listed
+7) command: nl -ba app/sharepoint_list/README.md | sed -n '1,240p' | result: listed
+8) command: nl -ba app/sharepoint_list/README.md | sed -n '240,400p' | result: no output (EOF)
+9) command: nl -ba app/sharepoint_list/PRIVACY.md | sed -n '1,200p' | result: listed
+10) command: nl -ba docs/03.detail_design/sharepoint_list_list_items_filters.md | sed -n '1,240p' | result: listed
+11) command: nl -ba docs/note_sharepoint_list_devlog.md | sed -n '1,240p' | result: listed
+12) command: rg -n "DEBUG|debug|SHAREPOINT_LIST_DEBUG_LOG|SHAREPOINT_LIST_DEBUG_LOG_PATH" docs/note_sharepoint_list_devlog.md | result: matches listed
+13) command: nl -ba docs/note_sharepoint_list_devlog.md | sed -n '280,330p' | result: listed
+14) command: nl -ba app/sharepoint_list/manifest.yaml | sed -n '1,200p' | result: listed
+15) command: nl -ba app/sharepoint_list/provider/sharepoint_list.yaml | sed -n '1,200p' | result: listed
+16) command: nl -ba app/sharepoint_list/tools/create_item.yaml | sed -n '1,200p' | result: listed
+17) command: nl -ba app/sharepoint_list/tools/update_item.yaml | sed -n '1,200p' | result: listed
+18) command: nl -ba app/sharepoint_list/tools/get_item.yaml | sed -n '1,200p' | result: listed
+19) command: nl -ba app/sharepoint_list/tools/list_items.yaml | sed -n '1,240p' | result: listed
+20) command: nl -ba app/sharepoint_list/tools/get_choices.yaml | sed -n '1,200p' | result: listed
+21) command: nl -ba app/sharepoint_list/tools/create_item.py | sed -n '1,200p' | result: listed
+22) command: nl -ba app/sharepoint_list/tools/update_item.py | sed -n '1,200p' | result: listed
+23) command: nl -ba app/sharepoint_list/tools/get_item.py | sed -n '1,220p' | result: listed
+24) command: nl -ba app/sharepoint_list/tools/list_items.py | sed -n '1,220p' | result: listed
+25) command: nl -ba app/sharepoint_list/tools/get_choices.py | sed -n '1,200p' | result: listed
+26) command: nl -ba app/sharepoint_list/internal/validators.py | sed -n '1,240p' | result: listed
+27) command: nl -ba app/sharepoint_list/internal/filters.py | sed -n '1,240p' | result: listed
+28) command: rg -n "parse_select_fields|list_items|resolve_list|debug|SHAREPOINT_LIST_DEBUG_LOG|get_choice|fields" app/sharepoint_list/internal/operations.py | result: matches listed
+29) command: nl -ba app/sharepoint_list/internal/operations.py | sed -n '1,240p' | result: listed
+30) command: nl -ba app/sharepoint_list/internal/operations.py | sed -n '240,520p' | result: listed
+31) command: nl -ba app/sharepoint_list/internal/operations.py | sed -n '520,760p' | result: listed
+32) command: nl -ba app/sharepoint_list/internal/operations.py | sed -n '760,1040p' | result: listed
+33) command: nl -ba app/sharepoint_list/internal/operations.py | sed -n '1040,1120p' | result: listed
+34) command: nl -ba app/sharepoint_list/internal/request_builders.py | sed -n '1,260p' | result: listed
+35) command: nl -ba app/sharepoint_list/internal/http_client.py | sed -n '1,240p' | result: listed
+36) command: nl -ba app/sharepoint_list/provider/sharepoint_list.py | sed -n '1,240p' | result: listed
+37) command: nl -ba tests/sharepoint_list/test_validators_list_url.py | sed -n '1,240p' | result: listed
+38) command: nl -ba tests/sharepoint_list/test_validators.py | sed -n '1,220p' | result: listed
+39) command: nl -ba tests/sharepoint_list/test_filters.py | sed -n '1,240p' | result: listed
+40) command: nl -ba tests/sharepoint_list/test_operations_filters.py | sed -n '1,520p' | result: listed
+41) command: nl -ba tests/sharepoint_list/test_operations_select.py | sed -n '1,260p' | result: listed
+42) command: nl -ba tests/sharepoint_list/test_operations_select.py | sed -n '260,520p' | result: listed
+43) command: nl -ba tests/sharepoint_list/test_operations_select.py | sed -n '520,820p' | result: listed
+44) command: nl -ba tests/sharepoint_list/test_operations_fields.py | sed -n '1,260p' | result: listed
+45) command: nl -ba tests/sharepoint_list/test_operations_choices.py | sed -n '1,260p' | result: listed
+46) command: nl -ba tests/sharepoint_list/test_operations_crud.py | sed -n '1,260p' | result: listed
+47) command: nl -ba tests/sharepoint_list/test_operations_crud.py | sed -n '260,520p' | result: listed
+48) command: nl -ba tests/sharepoint_list/test_requests.py | sed -n '1,260p' | result: listed
+49) decision: tests not run | reason: static consistency audit only in execute stage; test run optional per instructions

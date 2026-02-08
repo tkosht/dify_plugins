@@ -1,0 +1,56 @@
+ROLE: Parent agent orchestration for sharepoint_list doc-code-test consistency audit
+DATE: 2026-01-19
+
+STRICT NO-TOOLS RULE
+- Do NOT call any tools or run any commands.
+- Use ONLY the FACTS INPUT below. If evidence is missing, mark as 不明.
+- Output JSON ONLY (single-line JSON; no line breaks anywhere).
+- 不明は /open_questions に追加する。
+
+OUTPUT FORMAT (MANDATORY)
+- Required keys: schema_version, stage_id, status, output_is_partial, capsule_patch.
+- /facts is an array of objects. Each object must include item, evidence, source, status.
+- /draft /critique /revise must be objects. /open_questions and /assumptions are arrays.
+- Do NOT include next_stages.
+- All string values must be single-line and must not contain newline or \n.
+- Avoid double quotes inside string values.
+
+OBJECTIVE
+- app/sharepoint_list の doc/code/tests 整合性をチェックし、match|mismatch|unknown を判定する
+
+CHECK ITEMS (exactly 5)
+1) ツール一覧と主要パラメータ（README vs tool YAML vs tool実装）
+2) list_url 検証と list_id 解決（README vs validators/operations vs tests）
+3) select_fields の仕様（README vs operations vs tests）
+4) filters 仕様（README + 設計doc vs filters/operations/tools vs tests）
+5) list_items の pagination / orderby / page_size 制約（README/tools vs operations/request_builders vs tests）
+
+FACTS INPUT (EVIDENCE ONLY)
+- README tools list: create_item list_url+fields_json, update_item adds item_id, get_item adds item_id and optional select_fields, list_items requires list_url with optional select_fields filters page_size page_token and orderby createdDateTime desc, get_choices uses list_url field_identifier. app/sharepoint_list/README.md:12-17
+- Tool YAML params: create_item requires list_url fields_json; update_item requires list_url item_id fields_json; get_item requires list_url item_id select_fields optional; list_items has list_url select_fields page_size default 20 max 100 page_token filters JSON and createdDateTime note; get_choices requires list_url field_identifier. app/sharepoint_list/tools/create_item.yaml:12-34; update_item.yaml:13-44; get_item.yaml:13-44; list_items.yaml:13-96; get_choices.yaml:13-34
+- Tool impl params: list_items sets page_size default 20 and caps at 100, rejects created_after created_before, JSON dumps filters; get_item parses select_fields and requires item_id; create update parse fields_json and update requires item_id. app/sharepoint_list/tools/list_items.py:49-83; get_item.py:41-53; create_item.py:41-55; update_item.py:41-60
+- README list_url: SharePoint list URL example with /Lists/<list>/AllItems.aspx, GUID supported, non-ASCII name may fall back to webUrl path match. app/sharepoint_list/README.md:21-24
+- parse_list_url: requires sharepoint.com host, path includes /Lists/<list>/ and returns site_url and list_name_or_id. app/sharepoint_list/internal/validators.py:35-68
+- resolve_list_id: if GUID return; else filter by displayName then enumerate and match webUrl path; ambiguous webUrl raises GraphError; not found raises GraphError. app/sharepoint_list/internal/operations.py:118-238
+- list_url tests: parse AllItems and GUID, invalid URL raises. tests/sharepoint_list/test_validators_list_url.py:7-31
+- resolve_list_id tests: GUID returned as is, displayName filter resolves, not found raises GraphError. tests/sharepoint_list/test_operations_crud.py:340-390
+- README select_fields: comma separated, removes outer and per-field quotes, unknown field raises GraphError, missing fields filled with None and OData__ variants. app/sharepoint_list/README.md:31-36
+- parse_select_fields removes outer and per-field quotes. app/sharepoint_list/internal/operations.py:346-361
+- _validate_requested_fields raises GraphError for unknown fields. app/sharepoint_list/internal/operations.py:386-421
+- select_fields tests: quote removal and parsing behavior. tests/sharepoint_list/test_operations_select.py:47-90
+- select_fields tests: displayName resolved in expand and select_fields used in expand. tests/sharepoint_list/test_operations_select.py:234-404
+- select_fields tests: fills missing selected fields and OData__ alias. tests/sharepoint_list/test_operations_select.py:440-501
+- select_fields tests: unknown select or filter field raises GraphError. tests/sharepoint_list/test_operations_select.py:503-567
+- README filters: JSON array or single object string with field op value type; ops eq ne gt ge lt le contains startswith endswith; createdDateTime top-level; other fields mapped to fields/<internalName>; displayName resolved; datetime on fields/<name> is quoted; unknown fields GraphError; created_after before deprecated. app/sharepoint_list/README.md:38-88
+- Filters design doc: same input schema, createdDateTime top-level, fields/<internalName> for others, datetime quoting rules, and join, Prefer header for fields/ filters. docs/03.detail_design/sharepoint_list_list_items_filters.md:7-71
+- filters.py: ALLOWED_OPS, parse_filters requires field and op, format_odata_value leaves datetime unquoted, build_filter_fragment quotes datetime for fields/. app/sharepoint_list/internal/filters.py:7-17;32-67;70-106
+- list_items filter mapping: createdDateTime stays top-level, others mapped to fields/, orderby createdDateTime desc, Prefer header for fields/ filters. app/sharepoint_list/internal/operations.py:759-797
+- filters tests: JSON array/object, ops, datetime quoting, invalid op. tests/sharepoint_list/test_filters.py:8-64;80-95
+- list_items filter tests: createdDateTime top-level, fields/ prefix, displayName resolved, Prefer header, and join. tests/sharepoint_list/test_operations_filters.py:156-418
+- README list_items orderby createdDateTime desc. app/sharepoint_list/README.md:16
+- devlog list_items createdDateTime desc fixed. docs/note_sharepoint_list_devlog.md:299
+- list_items page_size default 20 max 100 and page_token usage; created_after before deprecated. app/sharepoint_list/tools/list_items.py:49-83
+- list_items caps top <= 100 and extracts next_page_token from @odata.nextLink skiptoken. app/sharepoint_list/internal/operations.py:779-780;1007-1014
+- request_builders list_items uses $top $skiptoken $filter $orderby and $expand fields. app/sharepoint_list/internal/request_builders.py:145-179
+- pagination tests: next_page_token extraction, page_token uses $skiptoken, page_size cap at 100. tests/sharepoint_list/test_operations_crud.py:173-300
+- request builder tests: orderby createdDateTime desc and expand fields select. tests/sharepoint_list/test_requests.py:190-217
