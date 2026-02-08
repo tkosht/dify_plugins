@@ -238,6 +238,10 @@ uv run python .claude/skills/codex-subagent/scripts/codex_feedback.py --scope au
 - 既定は `--sandbox read-only`（書き込みが必要な場合は親エージェント側で実施）
 - ログ分類は既定で自動（TTY 判定）。必要なら `--log-scope human|auto` で上書きする
 - 指示と矛盾/不明点がある場合は、最小の確認質問で先に潰す
+- pipeline JSON 逸脱防止: `references/pipeline_json_guardrails.md` を必読
+- 安定テンプレ: `references/pipeline_prompt_guarded_template.md` と `references/pipeline_spec_guarded_min.json` を優先
+- 動的ステージ運用: `references/pipeline_dynamic_stage_rules.md` と `references/pipeline_prompt_dynamic_template.md` と `references/pipeline_spec_dynamic_safe.json`
+- 動的ステージのテスト実行: `references/pipeline_dynamic_test_run_template.md`
 
 ---
 
