@@ -1,0 +1,60 @@
+identity:
+  name: gpt5_function_calling
+  author: tkosht
+  label:
+    en_US: GPT-5 Function Calling
+    ja_JP: GPT-5 Function Calling
+description:
+  en_US: GPT-5 optimized function-calling strategy
+  ja_JP: GPT-5 最適化の Function Calling 戦略
+features:
+  - history-messages
+parameters:
+  - name: model
+    type: model-selector
+    scope: tool-call&llm
+    required: true
+    label:
+      en_US: Model
+      ja_JP: モデル
+  - name: tools
+    type: array[tools]
+    required: true
+    label:
+      en_US: Tool list
+      ja_JP: ツール一覧
+  - name: instruction
+    type: string
+    required: true
+    label:
+      en_US: Instruction
+      ja_JP: 指示
+    auto_generate:
+      type: prompt_instruction
+    template:
+      enabled: true
+  - name: context
+    type: any
+    scope: array[object]
+    required: false
+    label:
+      en_US: Context
+      ja_JP: コンテキスト
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Query
+      ja_JP: クエリ
+  - name: maximum_iterations
+    type: number
+    required: true
+    default: 6
+    min: 1
+    max: 30
+    label:
+      en_US: Maximum Iterations
+      ja_JP: 最大反復回数
+extra:
+  python:
+    source: strategies/gpt5_function_calling.py
