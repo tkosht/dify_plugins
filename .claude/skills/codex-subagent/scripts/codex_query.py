@@ -172,7 +172,9 @@ def format_log_row(log: dict[str, Any]) -> dict[str, Any]:
     mode = exec_data.get("mode", "")
     if mode == "pipeline" and results:
         first_exec = results[0].get("exec", {}) if results else {}
-        any_timed_out = any(r.get("exec", {}).get("timed_out") for r in results)
+        any_timed_out = any(
+            r.get("exec", {}).get("timed_out") for r in results
+        )
     else:
         first_exec = results[0] if results else {}
         any_timed_out = any(r.get("timed_out") for r in (results or []))

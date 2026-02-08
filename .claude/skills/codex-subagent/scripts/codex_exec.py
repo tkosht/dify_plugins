@@ -1293,8 +1293,8 @@ async def run_codex_exec_async(
             timed_out = True
             await _terminate_process_group_async(process)
 
-        (stdout, stdout_truncated) = await stdout_task
-        (stderr, stderr_truncated) = await stderr_task
+        stdout, stdout_truncated = await stdout_task
+        stderr, stderr_truncated = await stderr_task
         output_is_partial = timed_out or stdout_truncated or stderr_truncated
 
         execution_time = timeout if timed_out else (time.time() - start_time)
