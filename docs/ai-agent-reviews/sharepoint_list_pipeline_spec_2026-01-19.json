@@ -1,0 +1,32 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": [
+    "draft",
+    "execute",
+    "review",
+    "revise",
+    "verify"
+  ],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "目的: 整合性チェックの設計を確定する。手順: 1) FACTS INPUT のみを根拠に /facts に item/evidence/source/status を追加(不明は不明)。2) チェック項目ごとの一致判定基準と docs/code/tests の対応表方針を /draft.proposal に整理。3) 既定パイプライン踏襲禁止。役割(Executor/Reviewer/Verifier)と各ステージの対応理由、ループ/終了条件を /draft.proposal に記録。4) stage_result は単一行JSON、capsule_patch 必須。"
+    },
+    {
+      "id": "execute",
+      "instructions": "目的: Executor として FACTS INPUT に基づき一次判定を行う。手順: 1) /facts に item/evidence/source/status を追加(根拠はパス+行番号、status は match|mismatch|unknown)。2) 不明は /open_questions に追加。3) stage_result は単一行JSON、capsule_patch 必須。"
+    },
+    {
+      "id": "review",
+      "instructions": "目的: Reviewer として独立レビューを行い、ギャップ/リスクを明確化する。手順: 1) /facts と FACTS INPUT を突合。2) 不一致/不足/回帰リスクを /critique.issues に列挙(重大度/影響/根拠)。3) パイプライン設計がタスク最適化されていない場合は /critique に NG を明記。4) stage_result は単一行JSON、capsule_patch 必須。"
+    },
+    {
+      "id": "revise",
+      "instructions": "目的: /critique を反映して最終判定を確定する。手順: 1) /revise.summary と /revise.changes に修正点を記録。2) 必要なら /facts を補正。3) stage_result は単一行JSON、capsule_patch 必須。"
+    },
+    {
+      "id": "verify",
+      "instructions": "目的: Verifier として最終整合性と未解決事項を確認する。手順: 1) 重大指摘や未解決が残る場合は /open_questions に追加。2) stage_result は単一行JSON、capsule_patch 必須。"
+    }
+  ]
+}

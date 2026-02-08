@@ -1,0 +1,40 @@
+ROLE: Parent agent orchestration for sharepoint_list doc-code-test consistency audit
+DATE: 2026-01-19
+
+STRICT NO-TOOLS RULE
+- Do NOT call any tools or run any commands.
+- Use ONLY the FACTS INPUT below. If evidence is missing, mark as 不明.
+- Output JSON ONLY (single-line JSON; no line breaks anywhere).
+- 不明は /open_questions に追加する。
+
+OUTPUT FORMAT (MANDATORY)
+- Required keys: schema_version, stage_id, status, output_is_partial, capsule_patch.
+- /facts is an array of objects. Each object must include item, evidence, source, status.
+- /draft /critique /revise must be objects. /open_questions and /assumptions are arrays.
+- Do NOT include next_stages.
+- All string values must be single-line and must not contain newline or \n.
+- Avoid double quotes inside string values.
+
+OBJECTIVE
+- app/sharepoint_list の doc/code/tests 整合性をチェックし、match|mismatch|unknown を判定する
+
+CHECK ITEMS (exactly 3)
+1) デバッグログ環境変数とプライバシー記述（README/PRIVACY/devlog vs operations/tests）
+2) get_choices の仕様（README/tools vs operations/tests）
+3) エラー種別（README vs code/tests）
+
+FACTS INPUT (EVIDENCE ONLY)
+- README debug log env vars: set SHAREPOINT_LIST_DEBUG_LOG=1 and optional SHAREPOINT_LIST_DEBUG_LOG_PATH with default /tmp/sharepoint_list.debug.ndjson. app/sharepoint_list/README.md:110-112
+- PRIVACY: debug logs include request metadata like filters field names paging; auth headers and tokens are not logged. app/sharepoint_list/PRIVACY.md:2
+- Devlog: debug log enabled by SHAREPOINT_LIST_DEBUG_LOG=1 and path by SHAREPOINT_LIST_DEBUG_LOG_PATH default /tmp/sharepoint_list.debug.ndjson. docs/note_sharepoint_list_devlog.md:300-301
+- operations debug env vars: _get_debug_log_path uses SHAREPOINT_LIST_DEBUG_LOG_PATH default /tmp/sharepoint_list.debug.ndjson; _is_debug_log_enabled checks SHAREPOINT_LIST_DEBUG_LOG. operations writes NDJSON lines when enabled. app/sharepoint_list/internal/operations.py:11-16;65-67;70-89
+- debug log test: get_choice_field_info writes log when SHAREPOINT_LIST_DEBUG_LOG=1 and SHAREPOINT_LIST_DEBUG_LOG_PATH set. tests/sharepoint_list/test_operations_choices.py:143-177
+- README get_choices note: choice options obtainable via sharepoint_list_get_choices. app/sharepoint_list/README.md:101
+- get_choices tool YAML: requires list_url and field_identifier. app/sharepoint_list/tools/get_choices.yaml:13-34
+- get_choices tool impl: validates field_identifier and calls get_choice_field_info. app/sharepoint_list/tools/get_choices.py:39-63
+- get_choice_field_info: resolves column by name or displayName, non-choice column raises GraphError, returns displayName name choices allowMultipleSelections defaultValue. app/sharepoint_list/internal/operations.py:544-595;623-628
+- get_choices tests: choice column returns choices; non-choice raises GraphError; displayName works. tests/sharepoint_list/test_operations_choices.py:45-103
+- README error types: GraphError, AuthenticationError, AuthorizationError, RateLimitError. app/sharepoint_list/README.md:103-108
+- http_client error classes: AuthenticationError, AuthorizationError, RateLimitError extend GraphAPIError. app/sharepoint_list/internal/http_client.py:26-63
+- tool error mapping: list_items catches AuthenticationError AuthorizationError RateLimitError and returns error_type accordingly. app/sharepoint_list/tools/list_items.py:98-133
+- error tests: GraphAPIError attributes and Authentication/Authorization/RateLimit errors raised on 401/403/429 in http_client. tests/sharepoint_list/test_http_client.py:45-63;191-222

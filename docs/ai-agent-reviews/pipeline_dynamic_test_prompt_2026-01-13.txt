@@ -1,0 +1,27 @@
+ROLE: Parent agent orchestration for dynamic stage test
+DATE: 2026-01-13
+
+STRICT NO-TOOLS RULE
+- Do NOT call any tools or run any commands.
+- Use ONLY the FACTS INPUT below. If evidence is missing, mark as 不明.
+- Output JSON ONLY (single-line JSON; no line breaks anywhere).
+
+OUTPUT FORMAT (MANDATORY)
+- Required keys: schema_version, stage_id, status, output_is_partial, capsule_patch.
+- next_stages は必要時のみ。要素は {id} のみ。
+- /facts is an array of objects. Each object must include item, evidence, source, status.
+- /draft /critique /revise must be objects. /open_questions and /assumptions are arrays.
+- All string values must be single-line and must not contain newline or \n.
+- capsule_patch は1件のみ。
+
+OBJECTIVE
+- Check the dynamic pipeline spec file for two items and record facts.
+
+DYNAMIC CONDITIONS
+- /draft.proposal に「review ステージで next_stages に {id:"verify"} を追加する」ことを記録。
+- review ステージでは必ず next_stages に {id:"verify"} を追加する（テスト目的）。
+- verify ステージでは /revise に検証サマリを 1 件だけ記録する。
+
+FACTS INPUT (EVIDENCE ONLY)
+- .claude/skills/ai-agent-collaboration-exec/references/pipeline_spec_dynamic_safe.json:2 allow_dynamic_stages is true.
+- .claude/skills/ai-agent-collaboration-exec/references/pipeline_spec_dynamic_safe.json:3-8 allowed_stage_ids includes verify.

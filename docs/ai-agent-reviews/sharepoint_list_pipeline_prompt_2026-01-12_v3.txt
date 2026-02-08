@@ -1,0 +1,36 @@
+ROLE: Parent agent orchestration for sharepoint_list doc-code-test consistency audit
+DATE: 2026-01-12
+
+STRICT NO-TOOLS RULE
+- Do NOT call any tools or run any commands.
+- Use ONLY the FACTS INPUT below. If evidence is missing, mark as 不明.
+- Output JSON ONLY (single-line JSON; no line breaks anywhere).
+
+OUTPUT FORMAT (MANDATORY)
+- Required keys: schema_version, stage_id, status, output_is_partial, capsule_patch.
+- /facts is an array of objects. Each object must include item, evidence, source, status.
+- /draft /critique /revise must be objects. /open_questions and /assumptions are arrays.
+- Do NOT include next_stages.
+- All string values must be single-line and must not contain newline or \n.
+- Avoid double quotes inside string values.
+
+OBJECTIVE
+- app/sharepoint_list のドキュメント・コード・テストの相互整合性を、根拠付きで一致/不一致/不明として整理する
+
+FACTS INPUT (EVIDENCE ONLY)
+- README tools/params: app/sharepoint_list/README.md:12-17
+- tool YAML specs: app/sharepoint_list/tools/create_item.yaml:12-34; update_item.yaml:13-44; get_item.yaml:13-44; list_items.yaml:8-96; get_choices.yaml:13-34
+- filters spec in README: app/sharepoint_list/README.md:38-85
+- filters design doc: docs/03.detail_design/sharepoint_list_list_items_filters.md:7-73
+- filters code: app/sharepoint_list/internal/filters.py:7-67; 70-106
+- list_items order/prefer/pagination code: app/sharepoint_list/internal/operations.py:760-798; 1007-1063
+- tests for filters: tests/sharepoint_list/test_filters.py:8-85; tests/sharepoint_list/test_operations_filters.py:156-418
+- select_fields rules in README: app/sharepoint_list/README.md:31-36
+- select_fields code: app/sharepoint_list/internal/operations.py:346-361; 386-421; 908-951
+- select_fields tests: tests/sharepoint_list/test_operations_select.py:50-501
+
+CHECK ITEMS (exactly 3)
+1) Tool parameters consistency (README vs tool YAML vs tool impl)
+2) Filters spec consistency (README + design doc vs filters.py + tests)
+3) select_fields consistency (README vs operations.py + tests)
+

@@ -1,0 +1,47 @@
+TASK_INPUT_SNAPSHOT: sharepoint_list consistency audit
+DATE: 2026-01-19
+OBJECTIVE: Verify doc/code/tests consistency for app/sharepoint_list with match|mismatch|unknown classification and evidence.
+SCOPE_PATH: /home/devuser/workspace
+SCOPE_PATH: app/sharepoint_list/README.md
+SCOPE_PATH: app/sharepoint_list/PRIVACY.md
+SCOPE_PATH: app/sharepoint_list/manifest.yaml
+SCOPE_PATH: app/sharepoint_list/provider/sharepoint_list.yaml
+SCOPE_PATH: app/sharepoint_list/provider/sharepoint_list.py
+SCOPE_PATH: app/sharepoint_list/main.py
+SCOPE_PATH: app/sharepoint_list/tools/create_item.yaml
+SCOPE_PATH: app/sharepoint_list/tools/get_choices.yaml
+SCOPE_PATH: app/sharepoint_list/tools/get_item.yaml
+SCOPE_PATH: app/sharepoint_list/tools/list_items.yaml
+SCOPE_PATH: app/sharepoint_list/tools/update_item.yaml
+SCOPE_PATH: app/sharepoint_list/tools/create_item.py
+SCOPE_PATH: app/sharepoint_list/tools/get_choices.py
+SCOPE_PATH: app/sharepoint_list/tools/get_item.py
+SCOPE_PATH: app/sharepoint_list/tools/list_items.py
+SCOPE_PATH: app/sharepoint_list/tools/update_item.py
+SCOPE_PATH: app/sharepoint_list/internal/filters.py
+SCOPE_PATH: app/sharepoint_list/internal/operations.py
+SCOPE_PATH: app/sharepoint_list/internal/request_builders.py
+SCOPE_PATH: app/sharepoint_list/internal/validators.py
+SCOPE_PATH: app/sharepoint_list/internal/http_client.py
+SCOPE_PATH: docs/03.detail_design/sharepoint_list_list_items_filters.md
+SCOPE_PATH: docs/note_sharepoint_list_devlog.md
+SCOPE_PATH: tests/sharepoint_list/test_validators.py
+SCOPE_PATH: tests/sharepoint_list/test_validators_list_url.py
+SCOPE_PATH: tests/sharepoint_list/test_filters.py
+SCOPE_PATH: tests/sharepoint_list/test_operations_filters.py
+SCOPE_PATH: tests/sharepoint_list/test_operations_select.py
+SCOPE_PATH: tests/sharepoint_list/test_operations_fields.py
+SCOPE_PATH: tests/sharepoint_list/test_operations_choices.py
+SCOPE_PATH: tests/sharepoint_list/test_operations_crud.py
+SCOPE_PATH: tests/sharepoint_list/test_requests.py
+CONSTRAINT: No external network access.
+CONSTRAINT: Do not handle secrets; do not open .env or .env.example.
+CONSTRAINT: No destructive commands (git reset/checkout -- etc).
+CONSTRAINT: Writes only allowed in docs/ai-agent-reviews/ and checklists/ if needed; no code changes.
+CONSTRAINT: Fact-based only; record unknown when no evidence.
+CONSTRAINT: Evidence must include file path + line number.
+CONSTRAINT: Strings must not contain newlines in capsule JSON output.
+REQUIRED_OUTPUT: Consistency check results per item with docs/code/tests match|mismatch|unknown.
+REQUIRED_OUTPUT: List of mismatches or missing items with impact and candidate fix targets.
+REQUIRED_OUTPUT: Evidence with file path + line number.
+REQUIRED_OUTPUT: Mark out-of-scope as unknown.

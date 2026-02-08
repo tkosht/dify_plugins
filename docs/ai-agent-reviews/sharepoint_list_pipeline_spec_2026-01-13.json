@@ -1,0 +1,27 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": [
+    "draft",
+    "execute",
+    "review",
+    "verify"
+  ],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "目的: 整合性チェックの観点を確定する。ツール禁止・FACTS INPUTのみ使用。単一行JSONのみ出力。必須キー: schema_version, stage_id, status, output_is_partial, capsule_patch。capsule_patchは1件のみ。/draft を replace し、{checklist:[...], rules:[...]} を格納。checklistはCHECK ITEMSの要約、rulesは推測禁止/証拠必須/不明は不明。next_stagesは禁止。"
+    },
+    {
+      "id": "execute",
+      "instructions": "目的: CHECK ITEMSごとの整合判定を /facts に記録。ツール禁止・FACTS INPUTのみ使用。単一行JSONのみ出力。capsule_patchは1件のみで /facts を replace。/factsは最大5件の配列で item/evidence/source/status を持つ。statusは YES/NO/UNKNOWN。next_stagesは禁止。"
+    },
+    {
+      "id": "review",
+      "instructions": "目的: 重要な不整合やギャップを /critique に記録。ツール禁止・FACTS INPUTのみ使用。単一行JSONのみ出力。capsule_patchは1件のみで /critique を replace。/critiqueは {summary:..., issues:[...]}。issuesは最大3件。不明は不明と記載。next_stagesは禁止。"
+    },
+    {
+      "id": "verify",
+      "instructions": "目的: 追加検証が不要であることを宣言。ツール禁止・FACTS INPUTのみ使用。単一行JSONのみ出力。capsule_patchは空配列。next_stagesは禁止。"
+    }
+  ]
+}

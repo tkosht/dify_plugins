@@ -1,0 +1,27 @@
+{
+  "allow_dynamic_stages": true,
+  "allowed_stage_ids": [
+    "draft",
+    "execute",
+    "review",
+    "verify"
+  ],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "目的: app/sharepoint_list のドキュメント・コード・テスト整合性評価のためのチェック設計を確定する。\n手順: 1) 入力PROMPTに記載された対象ファイルのみをスコープとし、範囲外は不明と明記。2) /facts は少数(1-3件)の要約に限定し、scope_summary としてスコープ範囲を要約記録する（ファイルの全列挙は禁止）。3) 検証観点のチェックリストを /draft.checklist に整理（最大8項目、粒度は機能単位）。4) docs→code→tests の対応ルールを /draft.rules に整理（一致/不一致/不明の判定基準を明記）。5) 既定パイプラインの踏襲は禁止。初期ステージ(draft,execute,review)と動的追加ステージ(verify)の採用理由・条件を /draft.proposal に記録。6) /open_questions は文字列配列で「質問 / 理由 / 次のアクション」を1行ずつ記録。7) stage_result には next_stages を出力しない（/draft.proposal 内の条件記録のみ）。8) 推測禁止。不明は不明と記録。"
+    },
+    {
+      "id": "execute",
+      "instructions": "目的: チェックリストに基づき整合性の証拠を収集する。\n手順: 1) 各チェック項目ごとに docs/code/tests の一致判定を1件の /facts で記録（最大12件）。evidence はファイルパスと行番号を短く記載。2) status は match/mismatch/unknown のいずれか。3) 不一致は /open_questions に理由と次アクションを記録。4) 推測禁止。不明は不明と記録。"
+    },
+    {
+      "id": "review",
+      "instructions": "目的: 収集した /facts の妥当性と見落としを独立に検証する。\n手順: 1) /facts を点検し、根拠不足・チェック漏れ・判定ミスを /critique に重大度付きで記録（最大10件）。2) docs↔code↔tests のギャップを重要度順に指摘する。3) パイプライン設計がタスク最適化されていない場合は /critique にNGと明記。4) 推測禁止。不明は不明と記録。"
+    },
+    {
+      "id": "verify",
+      "instructions": "目的: review の重大指摘や open_questions を解消する追加確認。\n手順: 1) /critique の重大指摘または /open_questions が残る場合のみ実行。2) 指摘対象の項目のみ再確認し、/facts に追記（最大6件）。3) 解消できない場合は理由と次のアクションを /open_questions に記録。4) 推測禁止。不明は不明と記録。"
+    }
+  ]
+}

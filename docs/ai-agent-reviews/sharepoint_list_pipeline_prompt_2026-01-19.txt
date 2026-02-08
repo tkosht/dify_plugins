@@ -1,0 +1,133 @@
+ROLE: Parent agent orchestration for sharepoint_list doc-code-test consistency audit
+DATE: 2026-01-19
+
+STRICT NO-TOOLS RULE
+- Do NOT call any tools or run any commands.
+- Use ONLY the FACTS INPUT below. If evidence is missing, mark as 不明.
+- Output JSON ONLY (see OUTPUT FORMAT). Single-line JSON; no line breaks in any string values.
+
+OUTPUT FORMAT (MANDATORY)
+- Return JSON ONLY for each stage_result.
+- Required keys: schema_version, stage_id, status, output_is_partial, capsule_patch.
+- /facts is an array of objects (no strings). Each object must include item, evidence, source, status.
+- /draft /critique /revise must be objects.
+- /open_questions and /assumptions are arrays.
+- Do NOT include next_stages in stage_result.
+
+OBJECTIVE
+- app/sharepoint_list のドキュメント・コード・テストの相互整合性を、根拠付きで一致/不一致/不明として整理する
+
+SCOPE
+- Target repo: /home/devuser/workspace
+- Target paths (these only):
+  - app/sharepoint_list/README.md
+  - app/sharepoint_list/PRIVACY.md
+  - app/sharepoint_list/manifest.yaml
+  - app/sharepoint_list/provider/sharepoint_list.yaml
+  - app/sharepoint_list/provider/sharepoint_list.py
+  - app/sharepoint_list/main.py
+  - app/sharepoint_list/tools/*.yaml
+  - app/sharepoint_list/tools/*.py
+  - app/sharepoint_list/internal/*.py
+  - docs/03.detail_design/sharepoint_list_list_items_filters.md
+  - docs/note_sharepoint_list_devlog.md
+  - tests/sharepoint_list/*
+
+CONSTRAINTS
+- Read-only. File changes prohibited.
+- No external network.
+- Do not open .env or .env.example files.
+- Fact-based only. If evidence is missing, mark as 不明.
+- Evidence must include file path and line numbers.
+
+REQUIRED OUTPUTS
+1) 整合性チェック結果（項目ごとに docs / code / tests の一致判定: match|mismatch|unknown）
+2) 不一致・欠落の一覧（影響範囲と修正対象の候補）
+3) 根拠（ファイルパス + 行番号）
+4) 解析対象外の明示（このスコープ外は不明と記録）
+
+CAPSULE PATCH RULES
+- /facts is an array of objects (no strings). Each object must include item, evidence, source, status.
+- /draft /critique /revise remain objects.
+- /open_questions and /assumptions are arrays.
+
+PIPELINE DESIGN REQUIREMENT
+- Do NOT reuse default pipeline. Provide a tailored stage/role mapping and loop/exit conditions in /draft.proposal.
+
+TEST DESIGN REQUIREMENT
+- テスト実行は不要（静的整合性評価のみ）。
+- ただし tests/ の内容を根拠として照合すること。
+
+CHECK ITEMS
+1) ツール一覧と主要パラメータ（README vs tool YAML vs tool実装）
+2) list_url 検証と list_id 解決（README vs validators/operations vs tests）
+3) select_fields の仕様（README vs operations vs tests）
+4) filters 仕様（README + 設計doc vs filters/operations/tools vs tests）
+5) list_items の pagination / orderby / page_size 制約（README/tools vs operations/request_builders vs tests）
+6) デバッグログ環境変数とプライバシー記述（README/PRIVACY/devlog vs operations/tests）
+7) get_choices の仕様（README/tools vs operations/tests）
+8) エラー種別（README vs code/tests）
+
+FACTS INPUT (EVIDENCE ONLY)
+
+[Docs]
+- README tools list + parameters: app/sharepoint_list/README.md:12-17
+- README list_url format + GUID + webUrl fallback: app/sharepoint_list/README.md:21-24
+- README select_fields quote removal + GraphError + missing fields fill: app/sharepoint_list/README.md:31-36
+- README filters spec/ops/createdDateTime top-level/displayName resolve/datetime quoting/unknown field GraphError: app/sharepoint_list/README.md:38-85
+- README deprecated created_after/before: app/sharepoint_list/README.md:86-88
+- README get_choices note: app/sharepoint_list/README.md:101
+- README error types: app/sharepoint_list/README.md:103-108
+- README debug log env vars + default path: app/sharepoint_list/README.md:110-112
+- PRIVACY debug log contents + no auth headers: app/sharepoint_list/PRIVACY.md:2
+- Devlog final spec list_url/filters/orderby + debug env vars: docs/note_sharepoint_list_devlog.md:296-301
+- Filters design doc input + ops: docs/03.detail_design/sharepoint_list_list_items_filters.md:7-28
+- Filters design doc field mapping + datetime quoting + and: docs/03.detail_design/sharepoint_list_list_items_filters.md:31-56
+- Filters design doc Prefer header: docs/03.detail_design/sharepoint_list_list_items_filters.md:64-71
+
+[Tool YAML]
+- create_item params list_url + fields_json: app/sharepoint_list/tools/create_item.yaml:12-34
+- update_item params list_url + item_id + fields_json: app/sharepoint_list/tools/update_item.yaml:13-44
+- get_item params list_url + item_id + select_fields: app/sharepoint_list/tools/get_item.yaml:13-44
+- list_items params select_fields/page_size/page_token/filters + createdDateTime note: app/sharepoint_list/tools/list_items.yaml:13-96
+- get_choices params list_url + field_identifier: app/sharepoint_list/tools/get_choices.yaml:13-34
+- provider tool list: app/sharepoint_list/provider/sharepoint_list.yaml:56-61
+
+[Code]
+- parse_list_url expects SharePoint host and /Lists/<list>/AllItems.aspx: app/sharepoint_list/internal/validators.py:35-68
+- debug log env vars + default path: app/sharepoint_list/internal/operations.py:11-16,65-67
+- GraphError alias: app/sharepoint_list/internal/operations.py:18-20
+- resolve_list_id displayName filter + webUrl path fallback + ambiguous error: app/sharepoint_list/internal/operations.py:118-238
+- parse_select_fields removes outer/per-field quotes: app/sharepoint_list/internal/operations.py:346-361
+- unknown select/filters field raises GraphError: app/sharepoint_list/internal/operations.py:386-421
+- filters ops/JSON parsing + datetime quoting for fields/: app/sharepoint_list/internal/filters.py:7-17,32-67,70-106
+- list_items maps createdDateTime top-level and others to fields/, orderby createdDateTime desc: app/sharepoint_list/internal/operations.py:759-790
+- list_items Prefer header for fields/ filters: app/sharepoint_list/internal/operations.py:791-797
+- list_items page_size cap (top <= 100): app/sharepoint_list/internal/operations.py:779-780
+- list_items fills missing selected fields with None/OData__ variants: app/sharepoint_list/internal/operations.py:908-951
+- list_items next_page_token from @odata.nextLink $skiptoken: app/sharepoint_list/internal/operations.py:1007-1014
+- get_choice_field_info non-choice error + return payload: app/sharepoint_list/internal/operations.py:544-595,623-628
+- request_builders expand/orderby/filters: app/sharepoint_list/internal/request_builders.py:103-126,145-179
+- http_client error classes Authentication/Authorization/RateLimit: app/sharepoint_list/internal/http_client.py:26-63
+
+[Tool Implementations]
+- list_items page_size default 20/max100 + deprecated created_after/before + filters JSON: app/sharepoint_list/tools/list_items.py:49-83
+- get_item uses parse_select_fields and item_id required: app/sharepoint_list/tools/get_item.py:41-53
+- create/update parse fields_json + update requires item_id: app/sharepoint_list/tools/create_item.py:41-55 / app/sharepoint_list/tools/update_item.py:41-60
+- get_choices requires field_identifier: app/sharepoint_list/tools/get_choices.py:39-63
+- tool error mapping Authentication/Authorization/RateLimit: app/sharepoint_list/tools/list_items.py:98-133
+
+[Tests]
+- parse_list_url AllItems + GUID + invalid URL: tests/sharepoint_list/test_validators_list_url.py:7-31
+- filters JSON array/object + ops + datetime quoting: tests/sharepoint_list/test_filters.py:8-64
+- filters invalid operator/alias: tests/sharepoint_list/test_filters.py:80-95
+- list_items filters createdDateTime top-level + fields/ prefix + displayName resolve + Prefer header + and: tests/sharepoint_list/test_operations_filters.py:156-418
+- select_fields quote removal: tests/sharepoint_list/test_operations_select.py:47-90
+- select_fields resolve/displayName + expand: tests/sharepoint_list/test_operations_select.py:234-404
+- select_fields missing field fill + OData__ alias: tests/sharepoint_list/test_operations_select.py:440-501
+- unknown select/filters raise GraphError: tests/sharepoint_list/test_operations_select.py:503-567
+- get_choices choice/non-choice behavior: tests/sharepoint_list/test_operations_choices.py:45-103
+- debug log env vars (choice): tests/sharepoint_list/test_operations_choices.py:143-177
+- list_items pagination + page_token + page_size cap: tests/sharepoint_list/test_operations_crud.py:173-300
+- resolve_list_id via filter + not found: tests/sharepoint_list/test_operations_crud.py:340-390
+- list_items orderby/expand in request builder: tests/sharepoint_list/test_requests.py:190-217

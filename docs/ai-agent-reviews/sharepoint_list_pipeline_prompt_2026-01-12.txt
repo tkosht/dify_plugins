@@ -1,0 +1,143 @@
+ROLE: Parent agent orchestration for sharepoint_list doc-code-test consistency audit
+DATE: 2026-01-12
+
+STRICT NO-TOOLS RULE
+- Do NOT call any tools or run any commands.
+- Use ONLY the FACTS INPUT below. If evidence is missing, mark as 不明.
+- Output JSON ONLY (see OUTPUT FORMAT).
+
+OUTPUT FORMAT (MANDATORY)
+- Return JSON ONLY for each stage_result.
+- JSON schema (example):
+  {
+    "schema_version": "1.1",
+    "stage_id": "draft|execute|review|verify",
+    "status": "ok|fatal_error",
+    "output_is_partial": false,
+    "capsule_patch": [
+      {"op":"replace","path":"/draft","value":{...}},
+      {"op":"add","path":"/facts/-","value":{"item":"...","evidence":"path:line","source":"doc|code|test","status":"match|mismatch|unknown"}}
+    ]
+  }
+- /facts is an array of objects (no strings). Each object must include item, evidence, source, status.
+- /draft /critique /revise must be objects.
+- /open_questions and /assumptions are arrays.
+- Do NOT include next_stages in stage_result.
+- String values MUST be single-line (no newline characters in strings).
+
+OBJECTIVE
+- app/sharepoint_list のドキュメント・コード・テストの相互整合性を、根拠付きで一致/不一致/不明として整理する
+
+SCOPE
+- Target repo: /home/devuser/workspace
+- Target paths (these only):
+  - app/sharepoint_list/README.md
+  - app/sharepoint_list/manifest.yaml
+  - app/sharepoint_list/provider/sharepoint_list.yaml
+  - app/sharepoint_list/tools/create_item.yaml
+  - app/sharepoint_list/tools/get_choices.yaml
+  - app/sharepoint_list/tools/get_item.yaml
+  - app/sharepoint_list/tools/list_items.yaml
+  - app/sharepoint_list/tools/update_item.yaml
+  - docs/03.detail_design/sharepoint_list_list_items_filters.md
+  - app/sharepoint_list/main.py
+  - app/sharepoint_list/provider/sharepoint_list.py
+  - app/sharepoint_list/internal/filters.py
+  - app/sharepoint_list/internal/operations.py
+  - app/sharepoint_list/internal/request_builders.py
+  - app/sharepoint_list/internal/validators.py
+  - app/sharepoint_list/internal/http_client.py
+  - app/sharepoint_list/tools/create_item.py
+  - app/sharepoint_list/tools/get_choices.py
+  - app/sharepoint_list/tools/get_item.py
+  - app/sharepoint_list/tools/list_items.py
+  - app/sharepoint_list/tools/update_item.py
+  - tests/sharepoint_list/test_validators.py
+  - tests/sharepoint_list/test_validators_list_url.py
+  - tests/sharepoint_list/test_filters.py
+  - tests/sharepoint_list/test_operations_filters.py
+  - tests/sharepoint_list/test_operations_select.py
+  - tests/sharepoint_list/test_operations_fields.py
+  - tests/sharepoint_list/test_operations_choices.py
+  - tests/sharepoint_list/test_operations_crud.py
+  - tests/sharepoint_list/test_requests.py
+
+CONSTRAINTS
+- Read-only. File changes prohibited.
+- No external network.
+- Do not open .env or .env.example files.
+- Fact-based only. If evidence is missing, mark as 不明.
+- Evidence must include file path and line numbers.
+
+REQUIRED OUTPUTS
+1) 整合性チェック結果（項目ごとに docs / code / tests の一致判定: match|mismatch|unknown）
+2) 不一致・欠落の一覧（影響範囲と修正対象の候補）
+3) 根拠（ファイルパス + 行番号）
+4) 解析対象外の明示（このスコープ外は不明と記録）
+
+CAPSULE PATCH RULES
+- /facts is an array of objects (no strings). Each object must include item, evidence, source, status.
+- /draft /critique /revise remain objects.
+- /open_questions and /assumptions are arrays.
+
+PIPELINE DESIGN REQUIREMENT
+- Do NOT reuse default pipeline. Provide a tailored initial stage design and conditions for dynamic verify stage in /draft.proposal.
+- Include next_stages conditions inside /draft.proposal (do not output next_stages in stage_result).
+
+TEST DESIGN REQUIREMENT
+- テスト実行は不要（静的整合性評価のみ）。
+- ただし tests/ の内容を根拠として照合すること。
+
+FACTS INPUT (EVIDENCE ONLY)
+
+[Docs]
+- README: ツール一覧と主要パラメータ（list_url/fields_json/item_id/select_fields/filters/page_size/page_token/createdDateTime desc 固定）: app/sharepoint_list/README.md:12-17
+- README: list_url の形式・GUID対応・非ASCII時のwebUrlパスマッチ補完: app/sharepoint_list/README.md:21-24
+- README: select_fields のクォート除去、未知フィールドでGraphError、欠落フィールド補完: app/sharepoint_list/README.md:31-36
+- README: filters JSON配列/オブジェクト、field/op/value/type、演算子、createdDateTime top-level、displayName解決、未知フィールドでGraphError: app/sharepoint_list/README.md:38-85
+- README: created_after/created_before 廃止→filters createdDateTime: app/sharepoint_list/README.md:86-88
+- README: エラー種別 (GraphError/AuthenticationError/AuthorizationError/RateLimitError): app/sharepoint_list/README.md:104-108
+- README: デバッグ環境変数 SHAREPOINT_LIST_DEBUG_LOG/SHAREPOINT_LIST_DEBUG_LOG_PATH: app/sharepoint_list/README.md:110-112
+- Filters設計doc: filters JSON配列/単体、field/op/value/type、演算子: docs/03.detail_design/sharepoint_list_list_items_filters.md:7-28
+- Filters設計doc: createdDateTime top-level、その他は fields/<internalName>: docs/03.detail_design/sharepoint_list_list_items_filters.md:31-35
+- Filters設計doc: displayName→内部名解決 (columns): docs/03.detail_design/sharepoint_list_list_items_filters.md:37-38
+- Filters設計doc: datetime のクォート規則 (top-levelは非クォート/fieldsはクォート) と and 結合: docs/03.detail_design/sharepoint_list_list_items_filters.md:40-56
+- Filters設計doc: Prefer header HonorNonIndexedQueriesWarning=true: docs/03.detail_design/sharepoint_list_list_items_filters.md:64-73
+
+[Tool YAML]
+- create_item parameters list_url(required) + fields_json(required): app/sharepoint_list/tools/create_item.yaml:12-34
+- update_item parameters list_url(required) + item_id(required) + fields_json(required): app/sharepoint_list/tools/update_item.yaml:13-44
+- get_item parameters list_url(required) + item_id(required) + select_fields(optional): app/sharepoint_list/tools/get_item.yaml:13-44
+- list_items parameters list_url(required), select_fields(optional), page_size(default20/max100), page_token, filters (field/op/value/type + createdDateTime exact): app/sharepoint_list/tools/list_items.yaml:8-96
+- get_choices parameters list_url(required) + field_identifier(required): app/sharepoint_list/tools/get_choices.yaml:13-34
+- provider tool list: create/update/get/list/get_choices: app/sharepoint_list/provider/sharepoint_list.yaml:56-61
+
+[Code]
+- list_url parse expects /Lists/<list>/AllItems.aspx and sharepoint host: app/sharepoint_list/internal/validators.py:35-68
+- list_id 解決: displayName フィルタ→webUrlパスマッチ補完→曖昧時エラー: app/sharepoint_list/internal/operations.py:132-236
+- select_fields parse (外側クォート除去/各フィールドクォート除去): app/sharepoint_list/internal/operations.py:346-361
+- 未知select/filtersフィールドはGraphError: app/sharepoint_list/internal/operations.py:386-421
+- filters: op一覧/JSON配列or単体/field+op必須: app/sharepoint_list/internal/filters.py:7-17,70-106
+- filters: datetimeはtop-level非クォート、fields/はクォート: app/sharepoint_list/internal/filters.py:32-67
+- list_items: createdDateTime以外は fields/<name>、orderby createdDateTime desc: app/sharepoint_list/internal/operations.py:760-790
+- list_items: filters に fields/ を含む場合 Prefer ヘッダ付与: app/sharepoint_list/internal/operations.py:791-798
+- list_items: Graphの欠落フィールドを None で補完し OData__ 別名も補完: app/sharepoint_list/internal/operations.py:908-951
+- list_items: @odata.nextLink から next_page_token 抽出: app/sharepoint_list/internal/operations.py:1007-1063
+- get_choice_field_info: 表示名/内部名で列解決、非choiceはエラー: app/sharepoint_list/internal/operations.py:485-629
+- debug env vars: SHAREPOINT_LIST_DEBUG_LOG(_PATH) 使用: app/sharepoint_list/internal/operations.py:11-16,65-67
+
+[Tool Implementations]
+- list_items tool: page_size default 20, max 100; created_after/before 廃止; filters dict/list をJSON化: app/sharepoint_list/tools/list_items.py:49-83
+- get_item tool: item_id必須、select_fieldsは parse_select_fields: app/sharepoint_list/tools/get_item.py:41-53
+- create/update tool: fields_json を parse_fields_json、updateは item_id必須: app/sharepoint_list/tools/create_item.py:41-52 / app/sharepoint_list/tools/update_item.py:41-53
+- get_choices tool: field_identifier必須: app/sharepoint_list/tools/get_choices.py:47-56
+
+[Tests]
+- list_url parsing (AllItems, GUID) と不正URL: tests/sharepoint_list/test_validators_list_url.py:7-31
+- filters: JSON配列/単体、演算子、datetimeクォート、operator別名拒否: tests/sharepoint_list/test_filters.py:8-85
+- list_items filters: createdDateTime top-level/fields/付与、表示名解決、Preferヘッダ、and結合: tests/sharepoint_list/test_operations_filters.py:156-418
+- select_fields: クォート除去/expand/表示名解決/欠落フィールド補完: tests/sharepoint_list/test_operations_select.py:50-501
+- get_choices: choice列で選択肢取得、表示名、非choiceエラー: tests/sharepoint_list/test_operations_choices.py:45-103
+- list_items: next_page_token抽出、page_token→$skiptoken、page_size上限100: tests/sharepoint_list/test_operations_crud.py:176-301
+- request_builders: create/update/get/list のエンドポイントと expand/orderby: tests/sharepoint_list/test_requests.py:58-218
+

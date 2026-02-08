@@ -1,0 +1,13 @@
+# General Dev Collaboration Pipeline Design (2026-01-16)
+- [x] Current pipeline analysis summarized
+- [x] Generalized design goals defined
+- [x] Stage responsibilities defined
+- [x] Loop conditions defined
+- [x] Dynamic next_stages rules defined
+- [x] Pipeline spec JSON created
+- [x] Pipeline prompt template created
+- [x] Subagent prompts created
+- [x] Prompt templates (domain) created
+- [x] Meta prompt created
+- [x] Skill entrypoint created (skills + symlink)
+- [x] Knowledge record added
