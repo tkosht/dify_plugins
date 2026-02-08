@@ -35,3 +35,10 @@ Verify: <テスト／確認方法 もしくは "n/a">
   - 小規模変更で意図が1行で説明できる。
   - 変更の影響範囲が限定的である。
   - 検証内容が短く `Verify` で十分に表現できる。
+
+## Pre-commit Checks
+
+- コミット前に必ず以下を実行する。
+  - `uv run ruff check .`
+  - `uv run black --check .`
+- `black --check` 失敗時は対象ファイルを `uv run black <path...>` で整形し、再チェック後にコミットする。

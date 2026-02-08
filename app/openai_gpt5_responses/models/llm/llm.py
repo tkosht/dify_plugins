@@ -16,7 +16,10 @@ from dify_plugin.entities.model.message import (
     PromptMessage,
     PromptMessageTool,
 )
-from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
+from dify_plugin.errors.model import (
+    CredentialsValidateFailedError,
+    InvokeError,
+)
 from openai import APIConnectionError, APIStatusError, OpenAI
 
 from app.openai_gpt5_responses.internal.credentials import normalize_api_base
@@ -35,7 +38,9 @@ logger = logging.getLogger(__name__)
 
 class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
     @property
-    def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
+    def _invoke_error_mapping(
+        self,
+    ) -> dict[type[InvokeError], list[type[Exception]]]:
         return {
             InvokeError: [
                 openai.APIConnectionError,
@@ -51,7 +56,9 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
             ]
         }
 
-    def _to_credential_kwargs(self, credentials: Mapping[str, Any]) -> dict[str, Any]:
+    def _to_credential_kwargs(
+        self, credentials: Mapping[str, Any]
+    ) -> dict[str, Any]:
         api_base = normalize_api_base(credentials.get("openai_api_base"))
         timeout_seconds = self._safe_int(
             credentials.get("request_timeout_seconds"), 300
@@ -69,7 +76,9 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
         if api_base:
             kwargs["base_url"] = api_base
 
-        organization = str(credentials.get("openai_organization") or "").strip()
+        organization = str(
+            credentials.get("openai_organization") or ""
+        ).strip()
         if organization:
             kwargs["organization"] = organization
 
@@ -91,7 +100,10 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
             payload = build_responses_request(
                 model=model,
                 user_input="ping",
-                model_parameters={"max_output_tokens": 8, "enable_stream": False},
+                model_parameters={
+                    "max_output_tokens": 8,
+                    "enable_stream": False,
+                },
                 tools=[],
                 stream=False,
             )
@@ -169,7 +181,9 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
                 and stream
             )
             if effective_stream:
-                return self._as_single_chunk_stream(llm_result, prompt_messages)
+                return self._as_single_chunk_stream(
+                    llm_result, prompt_messages
+                )
 
             return llm_result
         except (APIStatusError, APIConnectionError, openai.APIError) as exc:
@@ -243,7 +257,9 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
         usage_obj = getattr(response, "usage", None)
         if usage_obj is not None:
             prompt_tokens = int(getattr(usage_obj, "input_tokens", 0) or 0)
-            completion_tokens = int(getattr(usage_obj, "output_tokens", 0) or 0)
+            completion_tokens = int(
+                getattr(usage_obj, "output_tokens", 0) or 0
+            )
             usage = self._calc_response_usage(
                 model=model,
                 credentials=dict(credentials),

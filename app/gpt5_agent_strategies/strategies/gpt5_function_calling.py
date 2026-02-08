@@ -124,7 +124,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
 
     @property
     def _system_prompt_message(self) -> SystemPromptMessage:
-        from app.gpt5_agent_strategies.internal.policy import build_system_instruction
+        from app.gpt5_agent_strategies.internal.policy import (
+            build_system_instruction,
+        )
 
         return SystemPromptMessage(
             content=build_system_instruction(self.instruction or "")
@@ -150,7 +152,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
 
         # convert tool messages
         tools = fc_params.tools
-        tool_instances = {tool.identity.name: tool for tool in tools} if tools else {}
+        tool_instances = (
+            {tool.identity.name: tool for tool in tools} if tools else {}
+        )
         prompt_messages_tools = self._init_prompt_tools(tools)
 
         # init model parameters
@@ -170,7 +174,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
         iteration_step = 1
         max_iteration_steps = fc_params.maximum_iterations
         current_thoughts: list[PromptMessage] = []
-        function_call_state = True  # continue to run until there is not any tool call
+        function_call_state = (
+            True  # continue to run until there is not any tool call
+        )
         llm_usage: dict[str, LLMUsage | None] = {"usage": None}
         final_answer = ""
 
@@ -262,7 +268,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                     iteration_step=iteration_step,
                     max_iteration_steps=max_iteration_steps,
                 ):
-                    yield self.create_text_message("".join(stream_text_fragments))
+                    yield self.create_text_message(
+                        "".join(stream_text_fragments)
+                    )
 
             else:
                 result = chunks
@@ -270,7 +278,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                 # check if there is any tool call
                 if self.check_blocking_tool_calls(result):
                     function_call_state = True
-                    tool_calls.extend(self.extract_blocking_tool_calls(result) or [])
+                    tool_calls.extend(
+                        self.extract_blocking_tool_calls(result) or []
+                    )
                     tool_call_names = ";".join(
                         [tool_call[1] for tool_call in tool_calls]
                     )
@@ -313,17 +323,22 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                 metadata={
                     LogMetadata.STARTED_AT: model_started_at,
                     LogMetadata.FINISHED_AT: time.perf_counter(),
-                    LogMetadata.ELAPSED_TIME: time.perf_counter() - model_started_at,
+                    LogMetadata.ELAPSED_TIME: time.perf_counter()
+                    - model_started_at,
                     LogMetadata.PROVIDER: model.provider,
-                    LogMetadata.TOTAL_PRICE: current_llm_usage.total_price
-                    if current_llm_usage
-                    else 0,
-                    LogMetadata.CURRENCY: current_llm_usage.currency
-                    if current_llm_usage
-                    else "",
-                    LogMetadata.TOTAL_TOKENS: current_llm_usage.total_tokens
-                    if current_llm_usage
-                    else 0,
+                    LogMetadata.TOTAL_PRICE: (
+                        current_llm_usage.total_price
+                        if current_llm_usage
+                        else 0
+                    ),
+                    LogMetadata.CURRENCY: (
+                        current_llm_usage.currency if current_llm_usage else ""
+                    ),
+                    LogMetadata.TOTAL_TOKENS: (
+                        current_llm_usage.total_tokens
+                        if current_llm_usage
+                        else 0
+                    ),
                 },
             )
 
@@ -336,7 +351,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                         type="function",
                         function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                             name=tool_call_name,
-                            arguments=json.dumps(tool_call_args, ensure_ascii=False),
+                            arguments=json.dumps(
+                                tool_call_args, ensure_ascii=False
+                            ),
                         ),
                     )
                     for (
@@ -383,11 +400,13 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                         data={},
                         metadata={
                             LogMetadata.STARTED_AT: time.perf_counter(),
-                            LogMetadata.PROVIDER: tool_instances[
-                                tool_call_name
-                            ].identity.provider
-                            if tool_instances.get(tool_call_name)
-                            else "",
+                            LogMetadata.PROVIDER: (
+                                tool_instances[
+                                    tool_call_name
+                                ].identity.provider
+                                if tool_instances.get(tool_call_name)
+                                else ""
+                            ),
                         },
                         parent=round_log,
                         status=ToolInvokeMessage.LogMessage.LogStatus.START,
@@ -411,11 +430,13 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                         data={"output": tool_response},
                         metadata={
                             LogMetadata.STARTED_AT: tool_call_started_at,
-                            LogMetadata.PROVIDER: tool_instances[
-                                tool_call_name
-                            ].identity.provider
-                            if tool_instances.get(tool_call_name)
-                            else "",
+                            LogMetadata.PROVIDER: (
+                                tool_instances[
+                                    tool_call_name
+                                ].identity.provider
+                                if tool_instances.get(tool_call_name)
+                                else ""
+                            ),
                             LogMetadata.FINISHED_AT: time.perf_counter(),
                             LogMetadata.ELAPSED_TIME: time.perf_counter()
                             - tool_call_started_at,
@@ -458,7 +479,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                         tool_instances, tool_call_name
                     )
                     tool_provider = (
-                        tool_instance.identity.provider if tool_instance else ""
+                        tool_instance.identity.provider
+                        if tool_instance
+                        else ""
                     )
                     tool_call_started_at = time.perf_counter()
                     tool_call_log = self.create_log_message(
@@ -538,7 +561,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                                     ToolInvokeMessage.MessageType.IMAGE,
                                 }:
                                     # Extract file path or URL from the message.
-                                    if hasattr(tool_invoke_response.message, "text"):
+                                    if hasattr(
+                                        tool_invoke_response.message, "text"
+                                    ):
                                         file_info = cast(
                                             ToolInvokeMessage.TextMessage,
                                             tool_invoke_response.message,
@@ -546,10 +571,14 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                                         # Try to create a blob response from file.
                                         try:
                                             local_file = (
-                                                self._read_local_file_for_blob(file_info)
+                                                self._read_local_file_for_blob(
+                                                    file_info
+                                                )
                                             )
                                             if local_file is not None:
-                                                file_content, filename = local_file
+                                                file_content, filename = (
+                                                    local_file
+                                                )
                                                 blob = self.create_blob_message(
                                                     blob=file_content,
                                                     meta={
@@ -598,7 +627,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                                     response_repr = repr(
                                         tool_invoke_response.message
                                     )
-                                    tool_result += f"tool response: {response_repr}."
+                                    tool_result += (
+                                        f"tool response: {response_repr}."
+                                    )
                         except Exception:
                             logger.exception(
                                 "Tool invoke failed: tool=%s", tool_call_name
@@ -657,16 +688,21 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                 metadata={
                     LogMetadata.STARTED_AT: round_started_at,
                     LogMetadata.FINISHED_AT: time.perf_counter(),
-                    LogMetadata.ELAPSED_TIME: time.perf_counter() - round_started_at,
-                    LogMetadata.TOTAL_PRICE: current_llm_usage.total_price
-                    if current_llm_usage
-                    else 0,
-                    LogMetadata.CURRENCY: current_llm_usage.currency
-                    if current_llm_usage
-                    else "",
-                    LogMetadata.TOTAL_TOKENS: current_llm_usage.total_tokens
-                    if current_llm_usage
-                    else 0,
+                    LogMetadata.ELAPSED_TIME: time.perf_counter()
+                    - round_started_at,
+                    LogMetadata.TOTAL_PRICE: (
+                        current_llm_usage.total_price
+                        if current_llm_usage
+                        else 0
+                    ),
+                    LogMetadata.CURRENCY: (
+                        current_llm_usage.currency if current_llm_usage else ""
+                    ),
+                    LogMetadata.TOTAL_TOKENS: (
+                        current_llm_usage.total_tokens
+                        if current_llm_usage
+                        else 0
+                    ),
                 },
             )
             # If max_iteration_steps=1, need to return tool responses
@@ -686,14 +722,18 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                         dataset_name=ctx.metadata.get("dataset_name"),
                         document_id=ctx.metadata.get("document_id"),
                         document_name=ctx.metadata.get("document_name"),
-                        data_source_type=ctx.metadata.get("document_data_source_type"),
+                        data_source_type=ctx.metadata.get(
+                            "document_data_source_type"
+                        ),
                         segment_id=ctx.metadata.get("segment_id"),
                         retriever_from=ctx.metadata.get("retriever_from"),
                         score=ctx.metadata.get("score"),
                         hit_count=ctx.metadata.get("segment_hit_count"),
                         word_count=ctx.metadata.get("segment_word_count"),
                         segment_position=ctx.metadata.get("segment_position"),
-                        index_node_hash=ctx.metadata.get("segment_index_node_hash"),
+                        index_node_hash=ctx.metadata.get(
+                            "segment_index_node_hash"
+                        ),
                         page=ctx.metadata.get("page"),
                         doc_metadata=ctx.metadata.get("doc_metadata"),
                     )
@@ -703,7 +743,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
             )
 
         metadata = ExecutionMetadata.from_llm_usage(llm_usage["usage"])
-        yield self.create_json_message({"execution_metadata": metadata.model_dump()})
+        yield self.create_json_message(
+            {"execution_metadata": metadata.model_dump()}
+        )
 
     def check_tool_calls(self, llm_result_chunk: LLMResultChunk) -> bool:
         """
@@ -783,7 +825,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
             and not isinstance(prompt_messages[0], SystemPromptMessage)
             and prompt_template
         ):
-            prompt_messages.insert(0, SystemPromptMessage(content=prompt_template))
+            prompt_messages.insert(
+                0, SystemPromptMessage(content=prompt_template)
+            )
 
         return prompt_messages or []
 
@@ -808,11 +852,16 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
             ):
                 prompt_message.content = "\n".join(
                     [
-                        content.data
-                        if content.type == PromptMessageContentType.TEXT
-                        else "[image]"
-                        if content.type == PromptMessageContentType.IMAGE
-                        else "[file]"
+                        (
+                            content.data
+                            if content.type == PromptMessageContentType.TEXT
+                            else (
+                                "[image]"
+                                if content.type
+                                == PromptMessageContentType.IMAGE
+                                else "[file]"
+                            )
+                        )
                         for content in prompt_message.content
                     ]
                 )
@@ -839,7 +888,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
 
         # Clear images if: model doesn't support vision OR it's not the first iteration
         if not supports_vision or len(current_thoughts) != 0:
-            prompt_messages = self._clear_user_prompt_image_messages(prompt_messages)
+            prompt_messages = self._clear_user_prompt_image_messages(
+                prompt_messages
+            )
 
         return prompt_messages
 
@@ -868,7 +919,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
 
         return candidate_real
 
-    def _read_local_file_for_blob(self, file_info: str) -> tuple[bytes, str] | None:
+    def _read_local_file_for_blob(
+        self, file_info: str
+    ) -> tuple[bytes, str] | None:
         safe_path = self._resolve_safe_local_file_path(file_info)
         if safe_path is None or not os.path.exists(safe_path):
             return None

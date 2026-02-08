@@ -19,13 +19,21 @@ def _parameter_names(strategy_yaml: str) -> set[str]:
 
 def test_function_calling_strategy_has_required_parameters() -> None:
     names = _parameter_names("gpt5_function_calling.yaml")
-    assert {"model", "tools", "instruction", "query", "maximum_iterations"}.issubset(
-        names
-    )
+    assert {
+        "model",
+        "tools",
+        "instruction",
+        "query",
+        "maximum_iterations",
+    }.issubset(names)
 
 
 def test_react_strategy_has_required_parameters() -> None:
     names = _parameter_names("gpt5_react.yaml")
-    assert {"model", "tools", "instruction", "query", "maximum_iterations"}.issubset(
-        names
-    )
+    assert {
+        "model",
+        "tools",
+        "instruction",
+        "query",
+        "maximum_iterations",
+    }.issubset(names)

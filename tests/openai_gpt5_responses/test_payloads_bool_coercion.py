@@ -20,7 +20,9 @@ from app.openai_gpt5_responses.internal.payloads import build_responses_request
         (0, False),
     ],
 )
-def test_enable_stream_accepts_bool_like_values(raw: object, expected: bool) -> None:
+def test_enable_stream_accepts_bool_like_values(
+    raw: object, expected: bool
+) -> None:
     payload = build_responses_request(
         model="gpt-5.2",
         user_input="hello",

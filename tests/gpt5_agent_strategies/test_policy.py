@@ -13,9 +13,15 @@ def test_build_system_instruction_contains_policy_sections() -> None:
 
 
 def test_should_continue_stops_at_max_iterations() -> None:
-    assert should_continue(iteration=1, maximum_iterations=3, has_tool_call=True)
-    assert not should_continue(iteration=3, maximum_iterations=3, has_tool_call=True)
+    assert should_continue(
+        iteration=1, maximum_iterations=3, has_tool_call=True
+    )
+    assert not should_continue(
+        iteration=3, maximum_iterations=3, has_tool_call=True
+    )
 
 
 def test_should_continue_stops_without_tool_call() -> None:
-    assert not should_continue(iteration=1, maximum_iterations=5, has_tool_call=False)
+    assert not should_continue(
+        iteration=1, maximum_iterations=5, has_tool_call=False
+    )

@@ -40,14 +40,18 @@ def _install_provider_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
             self.models = _Models()
 
     dify_plugin_mod.ModelProvider = ModelProvider
-    errors_model_mod.CredentialsValidateFailedError = CredentialsValidateFailedError
+    errors_model_mod.CredentialsValidateFailedError = (
+        CredentialsValidateFailedError
+    )
     openai_mod.APIError = APIError
     openai_mod.APIStatusError = APIStatusError
     openai_mod.APIConnectionError = APIConnectionError
     openai_mod.OpenAI = OpenAI
 
     monkeypatch.setitem(sys.modules, "dify_plugin", dify_plugin_mod)
-    monkeypatch.setitem(sys.modules, "dify_plugin.errors.model", errors_model_mod)
+    monkeypatch.setitem(
+        sys.modules, "dify_plugin.errors.model", errors_model_mod
+    )
     monkeypatch.setitem(sys.modules, "openai", openai_mod)
 
 
@@ -56,7 +60,9 @@ def provider_module(monkeypatch: pytest.MonkeyPatch) -> Any:
     _install_provider_stubs(monkeypatch)
     sys.modules.pop("app.openai_gpt5_responses.provider.openai_gpt5", None)
     importlib.invalidate_caches()
-    return importlib.import_module("app.openai_gpt5_responses.provider.openai_gpt5")
+    return importlib.import_module(
+        "app.openai_gpt5_responses.provider.openai_gpt5"
+    )
 
 
 def test_provider_safe_int_and_credential_kwargs(provider_module: Any) -> None:
@@ -79,7 +85,9 @@ def test_provider_safe_int_and_credential_kwargs(provider_module: Any) -> None:
     assert kwargs["organization"] == "org"
 
 
-def test_validate_provider_credentials_requires_api_key(provider_module: Any) -> None:
+def test_validate_provider_credentials_requires_api_key(
+    provider_module: Any,
+) -> None:
     provider = provider_module.OpenAIGPT5ResponsesProvider()
     with pytest.raises(provider_module.CredentialsValidateFailedError):
         provider.validate_provider_credentials({})

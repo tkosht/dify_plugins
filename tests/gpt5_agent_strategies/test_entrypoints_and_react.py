@@ -47,14 +47,25 @@ def test_agent_main_and_provider_entrypoint() -> None:
     )
 
     assert main_module.plugin.env.kwargs["MAX_REQUEST_TIMEOUT"] == 240
-    assert provider_module.GPT5AgentProvider.__mro__[1].__name__ == "AgentProvider"
+    assert (
+        provider_module.GPT5AgentProvider.__mro__[1].__name__
+        == "AgentProvider"
+    )
 
 
 def test_gpt5_react_reuses_function_calling_strategy(monkeypatch: Any) -> None:
     _install_strategy_dify_stub(monkeypatch)
     sys.modules.pop("app.gpt5_agent_strategies.strategies.gpt5_react", None)
 
-    module = importlib.import_module("app.gpt5_agent_strategies.strategies.gpt5_react")
+    module = importlib.import_module(
+        "app.gpt5_agent_strategies.strategies.gpt5_react"
+    )
 
-    assert module.GPT5ReActParams.__mro__[1].__name__ == "GPT5FunctionCallingParams"
-    assert module.GPT5ReActStrategy.__mro__[1].__name__ == "GPT5FunctionCallingStrategy"
+    assert (
+        module.GPT5ReActParams.__mro__[1].__name__
+        == "GPT5FunctionCallingParams"
+    )
+    assert (
+        module.GPT5ReActStrategy.__mro__[1].__name__
+        == "GPT5FunctionCallingStrategy"
+    )

@@ -82,7 +82,9 @@ def _install_dify_plugin_stub(monkeypatch: pytest.MonkeyPatch) -> None:
 
             return _Ctx()
 
-        def _validate_and_filter_model_parameters(self, **kwargs: Any) -> dict[str, Any]:
+        def _validate_and_filter_model_parameters(
+            self, **kwargs: Any
+        ) -> dict[str, Any]:
             return dict(kwargs["model_parameters"])
 
         def _transform_invoke_error(self, exc: Exception) -> Exception:
@@ -155,18 +157,24 @@ def _install_dify_plugin_stub(monkeypatch: pytest.MonkeyPatch) -> None:
     model_message_mod.AssistantPromptMessage = AssistantPromptMessage
     model_message_mod.PromptMessage = PromptMessage
     model_message_mod.PromptMessageTool = PromptMessageTool
-    errors_model_mod.CredentialsValidateFailedError = CredentialsValidateFailedError
+    errors_model_mod.CredentialsValidateFailedError = (
+        CredentialsValidateFailedError
+    )
     errors_model_mod.InvokeError = InvokeError
 
     monkeypatch.setitem(sys.modules, "dify_plugin", dify_plugin_mod)
     monkeypatch.setitem(sys.modules, "dify_plugin.entities", entities_mod)
     monkeypatch.setitem(sys.modules, "dify_plugin.entities.model", model_mod)
-    monkeypatch.setitem(sys.modules, "dify_plugin.entities.model.llm", model_llm_mod)
+    monkeypatch.setitem(
+        sys.modules, "dify_plugin.entities.model.llm", model_llm_mod
+    )
     monkeypatch.setitem(
         sys.modules, "dify_plugin.entities.model.message", model_message_mod
     )
     monkeypatch.setitem(sys.modules, "dify_plugin.errors", errors_mod)
-    monkeypatch.setitem(sys.modules, "dify_plugin.errors.model", errors_model_mod)
+    monkeypatch.setitem(
+        sys.modules, "dify_plugin.errors.model", errors_model_mod
+    )
 
 
 @pytest.fixture
@@ -200,7 +208,9 @@ def test_invoke_disable_stream_string_returns_blocking_result(
         "_normalize_parameters",
         lambda **_: {"enable_stream": "false"},
     )
-    monkeypatch.setattr(model, "_to_credential_kwargs", lambda _credentials: {})
+    monkeypatch.setattr(
+        model, "_to_credential_kwargs", lambda _credentials: {}
+    )
     monkeypatch.setattr(model, "_to_llm_result", lambda **_: llm_result)
 
     result = model._invoke(
@@ -237,10 +247,14 @@ def test_invoke_enable_stream_string_returns_generator(
         "_normalize_parameters",
         lambda **_: {"enable_stream": "true"},
     )
-    monkeypatch.setattr(model, "_to_credential_kwargs", lambda _credentials: {})
+    monkeypatch.setattr(
+        model, "_to_credential_kwargs", lambda _credentials: {}
+    )
     monkeypatch.setattr(model, "_to_llm_result", lambda **_: llm_result)
 
-    def _streaming_response(_llm_result: Any, _prompt_messages: list[Any]) -> Any:
+    def _streaming_response(
+        _llm_result: Any, _prompt_messages: list[Any]
+    ) -> Any:
         yield expected_chunk
 
     monkeypatch.setattr(model, "_as_single_chunk_stream", _streaming_response)
@@ -308,7 +322,9 @@ def test_normalize_parameters_fallback_after_validation_error(
     def _raise_value_error(**_: Any) -> dict[str, Any]:
         raise ValueError("bad")
 
-    monkeypatch.setattr(model, "_validate_and_filter_model_parameters", _raise_value_error)
+    monkeypatch.setattr(
+        model, "_validate_and_filter_model_parameters", _raise_value_error
+    )
     normalized = model._normalize_parameters(
         model="gpt-5.2",
         credentials={},
@@ -327,7 +343,9 @@ def test_to_llm_result_converts_usage_and_tool_calls(
 ) -> None:
     model = llm_module.OpenAIGPT5LargeLanguageModel()
     usage_marker = {"ok": True}
-    monkeypatch.setattr(model, "_calc_response_usage", lambda **_: usage_marker)
+    monkeypatch.setattr(
+        model, "_calc_response_usage", lambda **_: usage_marker
+    )
     response = types.SimpleNamespace(
         model="gpt-5.2",
         output_text="assistant answer",
@@ -351,7 +369,9 @@ def test_to_llm_result_converts_usage_and_tool_calls(
 
     assert llm_result.message.content == "assistant answer"
     assert llm_result.message.tool_calls[0].function.name == "lookup"
-    assert llm_result.message.tool_calls[0].function.arguments == '{"q": "hello"}'
+    assert (
+        llm_result.message.tool_calls[0].function.arguments == '{"q": "hello"}'
+    )
     assert llm_result.usage is usage_marker
 
 
@@ -392,7 +412,9 @@ def test_invoke_sets_user_and_stop_truncation(
     class _Responses:
         def create(self, **kwargs: Any) -> Any:
             captured.update(kwargs)
-            return types.SimpleNamespace(model="gpt-5.2", usage=None, output_text="ok", output=[])
+            return types.SimpleNamespace(
+                model="gpt-5.2", usage=None, output_text="ok", output=[]
+            )
 
     class _OpenAI:
         def __init__(self, **_: Any) -> None:
@@ -401,8 +423,12 @@ def test_invoke_sets_user_and_stop_truncation(
     model = llm_module.OpenAIGPT5LargeLanguageModel()
     llm_result = _build_llm_result(llm_module)
     monkeypatch.setattr(llm_module, "OpenAI", _OpenAI)
-    monkeypatch.setattr(model, "_normalize_parameters", lambda **_: {"enable_stream": False})
-    monkeypatch.setattr(model, "_to_credential_kwargs", lambda _credentials: {})
+    monkeypatch.setattr(
+        model, "_normalize_parameters", lambda **_: {"enable_stream": False}
+    )
+    monkeypatch.setattr(
+        model, "_to_credential_kwargs", lambda _credentials: {}
+    )
     monkeypatch.setattr(model, "_to_llm_result", lambda **_: llm_result)
 
     result = model._invoke(

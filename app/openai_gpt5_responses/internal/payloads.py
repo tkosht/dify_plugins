@@ -44,7 +44,9 @@ def _parse_json_schema(raw: str) -> dict[str, Any]:
     schema_name = str(parsed.get("name") or "structured_output")
     schema_body = parsed.get("schema")
     if not isinstance(schema_body, Mapping):
-        raise ValueError("json_schema must include an object field named 'schema'")
+        raise ValueError(
+            "json_schema must include an object field named 'schema'"
+        )
 
     return {
         "type": "json_schema",
@@ -60,7 +62,10 @@ def _tool_to_response_tool(tool: Any) -> dict[str, Any]:
     if isinstance(tool, Mapping):
         name = str(tool.get("name") or "").strip()
         description = str(tool.get("description") or "")
-        parameters = tool.get("parameters") or {"type": "object", "properties": {}}
+        parameters = tool.get("parameters") or {
+            "type": "object",
+            "properties": {},
+        }
         if not name:
             raise ValueError("tool name is required")
         return {
@@ -116,7 +121,9 @@ def build_responses_request(
     if reasoning_effort is not None:
         reasoning_effort = str(reasoning_effort)
         if reasoning_effort not in _ALLOWED_REASONING_EFFORT:
-            raise ValueError(f"unsupported reasoning_effort: {reasoning_effort}")
+            raise ValueError(
+                f"unsupported reasoning_effort: {reasoning_effort}"
+            )
         payload["reasoning"] = {"effort": reasoning_effort}
 
     response_format = str(params.get("response_format") or "text")

@@ -11,7 +11,9 @@ from app.gpt5_agent_strategies.internal.tooling import (
 
 def test_parse_tool_arguments_accepts_json_object() -> None:
     result = parse_tool_arguments('{"q":"hello","limit":3}')
-    assert result == ToolArgumentsParseResult(ok=True, args={"q": "hello", "limit": 3})
+    assert result == ToolArgumentsParseResult(
+        ok=True, args={"q": "hello", "limit": 3}
+    )
 
 
 def test_parse_tool_arguments_accepts_empty_string_as_empty_object() -> None:

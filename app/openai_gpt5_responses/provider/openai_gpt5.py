@@ -19,7 +19,8 @@ def _safe_int(value: object, default: int) -> int:
 def _to_credential_kwargs(credentials: Mapping) -> dict:
     api_base = normalize_api_base(credentials.get("openai_api_base"))
     timeout_seconds = max(
-        30, min(900, _safe_int(credentials.get("request_timeout_seconds"), 300))
+        30,
+        min(900, _safe_int(credentials.get("request_timeout_seconds"), 300)),
     )
     max_retries = max(0, min(5, _safe_int(credentials.get("max_retries"), 1)))
 

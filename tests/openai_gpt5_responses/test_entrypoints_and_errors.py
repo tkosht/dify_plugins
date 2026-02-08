@@ -34,5 +34,9 @@ def test_openai_main_plugin_entrypoint() -> None:
 
 
 def test_format_runtime_error() -> None:
-    module = importlib.import_module("app.openai_gpt5_responses.internal.errors")
-    assert module.format_runtime_error("boom", category="tool") == "[tool] boom"
+    module = importlib.import_module(
+        "app.openai_gpt5_responses.internal.errors"
+    )
+    assert (
+        module.format_runtime_error("boom", category="tool") == "[tool] boom"
+    )

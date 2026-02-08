@@ -46,11 +46,15 @@ def test_prompt_messages_keep_tool_call_context() -> None:
         tool_calls=[
             FakeToolCall(
                 id="call_1",
-                function=FakeFunction(name="lookup", arguments='{"q":"hello"}'),
+                function=FakeFunction(
+                    name="lookup", arguments='{"q":"hello"}'
+                ),
             )
         ],
     )
-    tool = FakeMessage(role="tool", content="tool result", tool_call_id="call_1")
+    tool = FakeMessage(
+        role="tool", content="tool result", tool_call_id="call_1"
+    )
 
     payload = prompt_messages_to_responses_input([assistant, tool])
 
@@ -103,7 +107,9 @@ def test_prompt_messages_keep_empty_tool_output_with_call_id() -> None:
     ]
 
 
-def test_prompt_messages_support_mixed_content_and_mapping_tool_arguments() -> None:
+def test_prompt_messages_support_mixed_content_and_mapping_tool_arguments() -> (
+    None
+):
     assistant = FakeMessage(
         role="assistant",
         content=[
@@ -132,8 +138,12 @@ def test_prompt_messages_skip_invalid_tool_call_without_id_or_name() -> None:
         role="assistant",
         content="thought",
         tool_calls=[
-            FakeToolCall(id="", function=FakeFunction(name="lookup", arguments="{}")),
-            FakeToolCall(id="call", function=FakeFunction(name="", arguments="{}")),
+            FakeToolCall(
+                id="", function=FakeFunction(name="lookup", arguments="{}")
+            ),
+            FakeToolCall(
+                id="call", function=FakeFunction(name="", arguments="{}")
+            ),
         ],
     )
 

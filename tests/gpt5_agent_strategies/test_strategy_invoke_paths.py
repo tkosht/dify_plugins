@@ -14,7 +14,9 @@ def _install_strategy_dify_stub(monkeypatch: pytest.MonkeyPatch) -> None:
     entities_agent_mod = types.ModuleType("dify_plugin.entities.agent")
     entities_model_mod = types.ModuleType("dify_plugin.entities.model")
     entities_model_llm_mod = types.ModuleType("dify_plugin.entities.model.llm")
-    entities_model_message_mod = types.ModuleType("dify_plugin.entities.model.message")
+    entities_model_message_mod = types.ModuleType(
+        "dify_plugin.entities.model.message"
+    )
     entities_tool_mod = types.ModuleType("dify_plugin.entities.tool")
     interfaces_agent_mod = types.ModuleType("dify_plugin.interfaces.agent")
 
@@ -178,14 +180,21 @@ def _install_strategy_dify_stub(monkeypatch: pytest.MonkeyPatch) -> None:
         model: str = "gpt-5.2"
         completion_params: dict[str, Any] = Field(default_factory=dict)
         history_prompt_messages: list[Any] = Field(default_factory=list)
-        entity: AgentModelEntity | None = Field(default_factory=AgentModelEntity)
+        entity: AgentModelEntity | None = Field(
+            default_factory=AgentModelEntity
+        )
 
     class AgentStrategy:
-        def _init_prompt_tools(self, tools: list[Any] | None) -> list[Any]:  # noqa: ARG002
+        def _init_prompt_tools(
+            self, tools: list[Any] | None
+        ) -> list[Any]:  # noqa: ARG002
             return []
 
         def recalc_llm_max_tokens(
-            self, entity: Any, prompt_messages: list[Any], completion_params: dict[str, Any]
+            self,
+            entity: Any,
+            prompt_messages: list[Any],
+            completion_params: dict[str, Any],
         ) -> None:  # noqa: ARG002
             return None
 
@@ -209,10 +218,14 @@ def _install_strategy_dify_stub(monkeypatch: pytest.MonkeyPatch) -> None:
         def create_text_message(self, text: str) -> dict[str, Any]:
             return {"kind": "text", "text": text}
 
-        def create_blob_message(self, blob: bytes, meta: dict[str, Any]) -> dict[str, Any]:
+        def create_blob_message(
+            self, blob: bytes, meta: dict[str, Any]
+        ) -> dict[str, Any]:
             return {"kind": "blob", "blob": blob, "meta": meta}
 
-        def create_json_message(self, payload: dict[str, Any]) -> dict[str, Any]:
+        def create_json_message(
+            self, payload: dict[str, Any]
+        ) -> dict[str, Any]:
             return {"kind": "json", "payload": payload}
 
         def create_retriever_resource_message(
@@ -224,10 +237,14 @@ def _install_strategy_dify_stub(monkeypatch: pytest.MonkeyPatch) -> None:
                 "context": context,
             }
 
-        def increase_usage(self, llm_usage: dict[str, Any], usage: Any) -> None:
+        def increase_usage(
+            self, llm_usage: dict[str, Any], usage: Any
+        ) -> None:
             llm_usage["usage"] = usage
 
-        def update_prompt_message_tool(self, tool_instance: Any, prompt_tool: Any) -> None:  # noqa: ARG002
+        def update_prompt_message_tool(
+            self, tool_instance: Any, prompt_tool: Any
+        ) -> None:  # noqa: ARG002
             return None
 
     entities_agent_mod.AgentInvokeMessage = AgentInvokeMessage
@@ -239,7 +256,9 @@ def _install_strategy_dify_stub(monkeypatch: pytest.MonkeyPatch) -> None:
     entities_model_llm_mod.LLMUsage = LLMUsage
     entities_model_message_mod.AssistantPromptMessage = AssistantPromptMessage
     entities_model_message_mod.PromptMessage = PromptMessage
-    entities_model_message_mod.PromptMessageContentType = PromptMessageContentType
+    entities_model_message_mod.PromptMessageContentType = (
+        PromptMessageContentType
+    )
     entities_model_message_mod.SystemPromptMessage = SystemPromptMessage
     entities_model_message_mod.ToolPromptMessage = ToolPromptMessage
     entities_model_message_mod.UserPromptMessage = UserPromptMessage
@@ -251,16 +270,26 @@ def _install_strategy_dify_stub(monkeypatch: pytest.MonkeyPatch) -> None:
     interfaces_agent_mod.ToolEntity = ToolEntity
     interfaces_agent_mod.ToolInvokeMeta = ToolInvokeMeta
 
-    monkeypatch.setitem(sys.modules, "dify_plugin.entities.agent", entities_agent_mod)
-    monkeypatch.setitem(sys.modules, "dify_plugin.entities.model", entities_model_mod)
+    monkeypatch.setitem(
+        sys.modules, "dify_plugin.entities.agent", entities_agent_mod
+    )
+    monkeypatch.setitem(
+        sys.modules, "dify_plugin.entities.model", entities_model_mod
+    )
     monkeypatch.setitem(
         sys.modules, "dify_plugin.entities.model.llm", entities_model_llm_mod
     )
     monkeypatch.setitem(
-        sys.modules, "dify_plugin.entities.model.message", entities_model_message_mod
+        sys.modules,
+        "dify_plugin.entities.model.message",
+        entities_model_message_mod,
     )
-    monkeypatch.setitem(sys.modules, "dify_plugin.entities.tool", entities_tool_mod)
-    monkeypatch.setitem(sys.modules, "dify_plugin.interfaces.agent", interfaces_agent_mod)
+    monkeypatch.setitem(
+        sys.modules, "dify_plugin.entities.tool", entities_tool_mod
+    )
+    monkeypatch.setitem(
+        sys.modules, "dify_plugin.interfaces.agent", interfaces_agent_mod
+    )
 
 
 class _SequenceLLM:
@@ -276,7 +305,9 @@ class _SequenceLLM:
 
 
 def _build_model_config(strategy_module: Any, *, stream: bool) -> Any:
-    features = [strategy_module.ModelFeature.STREAM_TOOL_CALL] if stream else []
+    features = (
+        [strategy_module.ModelFeature.STREAM_TOOL_CALL] if stream else []
+    )
     interfaces_mod = sys.modules["dify_plugin.interfaces.agent"]
     entity = interfaces_mod.AgentModelEntity(features=features)
     return strategy_module.AgentModelConfig(
@@ -311,7 +342,9 @@ def strategy_module(monkeypatch: pytest.MonkeyPatch) -> Any:
     )
 
 
-def test_invoke_blocking_result_message_none_is_safe(strategy_module: Any) -> None:
+def test_invoke_blocking_result_message_none_is_safe(
+    strategy_module: Any,
+) -> None:
     strategy = strategy_module.GPT5FunctionCallingStrategy()
     llm_result = strategy_module.LLMResult(
         model="gpt-5.2",
@@ -472,7 +505,9 @@ def test_invoke_parse_error_tool_call_path(strategy_module: Any) -> None:
     assert "tool arguments parse error" in joined_text
 
 
-def test_invoke_max_iteration_limit_skips_tool_execution(strategy_module: Any) -> None:
+def test_invoke_max_iteration_limit_skips_tool_execution(
+    strategy_module: Any,
+) -> None:
     strategy = strategy_module.GPT5FunctionCallingStrategy()
     tool_call = strategy_module.AssistantPromptMessage.ToolCall(
         id="call_1",
@@ -677,14 +712,18 @@ def test_resolve_safe_local_file_path_rejects_path_traversal(
     strategy_module: Any,
 ) -> None:
     strategy = strategy_module.GPT5FunctionCallingStrategy()
-    assert strategy._resolve_safe_local_file_path("/files/../etc/passwd") is None
+    assert (
+        strategy._resolve_safe_local_file_path("/files/../etc/passwd") is None
+    )
 
 
 def test_read_local_file_for_blob_rejects_oversized_file(
     strategy_module: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     strategy = strategy_module.GPT5FunctionCallingStrategy()
-    monkeypatch.setattr(strategy, "_resolve_safe_local_file_path", lambda _: "/tmp/fake")
+    monkeypatch.setattr(
+        strategy, "_resolve_safe_local_file_path", lambda _: "/tmp/fake"
+    )
     monkeypatch.setattr(strategy_module.os.path, "exists", lambda _: True)
     monkeypatch.setattr(
         strategy_module.os.path,
@@ -721,7 +760,9 @@ def test_invoke_image_blob_conversion_error_masks_internal_details(
     llm = _SequenceLLM([llm_result])
     image_response = types.SimpleNamespace(
         type=strategy_module.ToolInvokeMessage.MessageType.IMAGE,
-        message=strategy_module.ToolInvokeMessage.TextMessage(text="/files/a.png"),
+        message=strategy_module.ToolInvokeMessage.TextMessage(
+            text="/files/a.png"
+        ),
     )
 
     def _raise(_: str) -> tuple[bytes, str] | None:
