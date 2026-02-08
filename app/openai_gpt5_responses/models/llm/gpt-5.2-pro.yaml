@@ -1,0 +1,93 @@
+model: gpt-5.2-pro
+label:
+  en_US: gpt-5.2-pro
+  ja_JP: gpt-5.2-pro
+model_type: llm
+features:
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 400000
+parameter_rules:
+  - name: max_output_tokens
+    label:
+      en_US: Max Output Tokens
+      ja_JP: 最大出力トークン
+    type: number
+    required: false
+    default: 8192
+    min: 1
+    max: 128000
+  - name: reasoning_effort
+    label:
+      en_US: Reasoning Effort
+      ja_JP: 推論強度
+    type: string
+    required: false
+    default: medium
+    options:
+      - none
+      - minimal
+      - low
+      - medium
+      - high
+      - xhigh
+  - name: verbosity
+    label:
+      en_US: Verbosity
+      ja_JP: 冗長度
+    type: string
+    required: false
+    default: medium
+    options:
+      - low
+      - medium
+      - high
+  - name: response_format
+    label:
+      en_US: Response Format
+      ja_JP: 出力フォーマット
+    type: string
+    required: false
+    default: text
+    options:
+      - text
+      - json_schema
+  - name: json_schema
+    label:
+      en_US: JSON Schema
+      ja_JP: JSON スキーマ
+    type: text
+    required: false
+  - name: tool_choice
+    label:
+      en_US: Tool Choice
+      ja_JP: ツール選択
+    type: string
+    required: false
+    default: auto
+    options:
+      - auto
+      - none
+      - required
+  - name: parallel_tool_calls
+    label:
+      en_US: Parallel Tool Calls
+      ja_JP: 並列ツール呼び出し
+    type: boolean
+    required: false
+    default: true
+  - name: enable_stream
+    label:
+      en_US: Streaming
+      ja_JP: ストリーミング
+    type: boolean
+    required: false
+    default: true
+pricing:
+  input: "0"
+  output: "0"
+  unit: "0.000001"
+  currency: USD

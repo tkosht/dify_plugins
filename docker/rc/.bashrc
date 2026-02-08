@@ -122,6 +122,7 @@ export PATH="$HOME/workspace/node_modules/.bin/:$PATH"
 export UV_LINK_MODE=copy
 export CODEX_HOME="$HOME/workspace/.codex"
 
+alias codex="codex --search"
 alias auto_claude="claude --dangerously-skip-permissions"
 alias auto_codex="codex --dangerously-bypass-approvals-and-sandbox"
 alias auto_cursoragent="cursor-agent --force"
