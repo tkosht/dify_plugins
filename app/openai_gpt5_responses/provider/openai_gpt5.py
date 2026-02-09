@@ -6,7 +6,12 @@ from dify_plugin import ModelProvider
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from openai import APIConnectionError, APIStatusError, OpenAI
 
-from app.openai_gpt5_responses.internal.credentials import normalize_api_base
+try:
+    from app.openai_gpt5_responses.internal.credentials import (
+        normalize_api_base,
+    )
+except ModuleNotFoundError:
+    from internal.credentials import normalize_api_base
 
 
 def _safe_int(value: object, default: int) -> int:

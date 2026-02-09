@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any
 
 from app.openai_gpt5_responses.internal.messages import (
@@ -35,10 +36,6 @@ class FakeContentPart:
     data: str
 
 
-def _part_types(parts: list[dict[str, Any]]) -> set[str]:
-    return {str(part["type"]) for part in parts}
-
-
 def test_prompt_messages_keep_tool_call_context() -> None:
     assistant = FakeMessage(
         role="assistant",
@@ -59,21 +56,20 @@ def test_prompt_messages_keep_tool_call_context() -> None:
     payload = prompt_messages_to_responses_input([assistant, tool])
 
     assert payload[0]["role"] == "assistant"
-    assistant_parts = payload[0]["content"]
-    assert _part_types(assistant_parts) == {"output_text", "function_call"}
+    assert payload[0]["content"] == "thinking"
 
-    function_call_part = next(
-        part for part in assistant_parts if part["type"] == "function_call"
-    )
-    assert function_call_part["call_id"] == "call_1"
-    assert function_call_part["name"] == "lookup"
-    assert function_call_part["arguments"] == '{"q":"hello"}'
+    assert payload[1] == {
+        "type": "function_call",
+        "call_id": "call_1",
+        "name": "lookup",
+        "arguments": '{"q":"hello"}',
+    }
 
-    assert payload[1]["role"] == "tool"
-    tool_part = payload[1]["content"][0]
-    assert tool_part["type"] == "function_call_output"
-    assert tool_part["call_id"] == "call_1"
-    assert tool_part["output"] == "tool result"
+    assert payload[2] == {
+        "type": "function_call_output",
+        "call_id": "call_1",
+        "output": "tool result",
+    }
 
 
 def test_prompt_messages_plain_user_content_is_still_input_text() -> None:
@@ -95,14 +91,9 @@ def test_prompt_messages_keep_empty_tool_output_with_call_id() -> None:
 
     assert payload == [
         {
-            "role": "tool",
-            "content": [
-                {
-                    "type": "function_call_output",
-                    "call_id": "call_empty",
-                    "output": "",
-                }
-            ],
+            "type": "function_call_output",
+            "call_id": "call_empty",
+            "output": "",
         }
     ]
 
@@ -127,10 +118,12 @@ def test_prompt_messages_support_mixed_content_and_mapping_tool_arguments() -> (
 
     payload = prompt_messages_to_responses_input([assistant])
 
-    parts = payload[0]["content"]
-    assert parts[0] == {"type": "output_text", "text": "line1\nline2\nline3"}
-    assert parts[1]["type"] == "function_call"
-    assert parts[1]["arguments"] == '{"q": "x"}'
+    assert payload[0] == {
+        "role": "assistant",
+        "content": "line1\nline2\nline3",
+    }
+    assert payload[1]["type"] == "function_call"
+    assert payload[1]["arguments"] == '{"q": "x"}'
 
 
 def test_prompt_messages_skip_invalid_tool_call_without_id_or_name() -> None:
@@ -151,7 +144,34 @@ def test_prompt_messages_skip_invalid_tool_call_without_id_or_name() -> None:
     assert payload == [
         {
             "role": "assistant",
-            "content": [{"type": "output_text", "text": "thought"}],
+            "content": "thought",
+        }
+    ]
+
+
+def test_prompt_messages_normalize_enum_role_to_openai_role() -> None:
+    class PromptMessageRole(Enum):
+        SYSTEM = "system"
+
+    system = FakeMessage(role=PromptMessageRole.SYSTEM, content="policy")
+    payload = prompt_messages_to_responses_input([system])
+
+    assert payload == [
+        {
+            "role": "system",
+            "content": [{"type": "input_text", "text": "policy"}],
+        }
+    ]
+
+
+def test_prompt_messages_normalize_prefixed_enum_string_role() -> None:
+    system = FakeMessage(role="PromptMessageRole.SYSTEM", content="policy")
+    payload = prompt_messages_to_responses_input([system])
+
+    assert payload == [
+        {
+            "role": "system",
+            "content": [{"type": "input_text", "text": "policy"}],
         }
     ]
 

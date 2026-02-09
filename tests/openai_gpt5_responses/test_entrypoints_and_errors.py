@@ -3,7 +3,13 @@ from __future__ import annotations
 import importlib
 import sys
 import types
+from pathlib import Path
 from typing import Any
+
+import pytest
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+PLUGIN_DIR = BASE_DIR / "app" / "openai_gpt5_responses"
 
 
 def _install_dify_plugin_stub() -> None:
@@ -40,3 +46,63 @@ def test_format_runtime_error() -> None:
     assert (
         module.format_runtime_error("boom", category="tool") == "[tool] boom"
     )
+
+
+def _install_provider_import_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
+    dify_plugin_mod = types.ModuleType("dify_plugin")
+    errors_model_mod = types.ModuleType("dify_plugin.errors.model")
+    openai_mod = types.ModuleType("openai")
+
+    class ModelProvider:
+        pass
+
+    class CredentialsValidateFailedError(Exception):
+        pass
+
+    class APIError(Exception):
+        pass
+
+    class APIStatusError(APIError):
+        def __init__(self, status_code: int, message: str) -> None:
+            super().__init__(message)
+            self.status_code = status_code
+            self.message = message
+
+    class APIConnectionError(APIError):
+        pass
+
+    class _Models:
+        def list(self) -> list[str]:
+            return ["gpt-5.2"]
+
+    class OpenAI:
+        def __init__(self, **_: Any) -> None:
+            self.models = _Models()
+
+    dify_plugin_mod.ModelProvider = ModelProvider
+    errors_model_mod.CredentialsValidateFailedError = (
+        CredentialsValidateFailedError
+    )
+    openai_mod.APIError = APIError
+    openai_mod.APIStatusError = APIStatusError
+    openai_mod.APIConnectionError = APIConnectionError
+    openai_mod.OpenAI = OpenAI
+
+    monkeypatch.setitem(sys.modules, "dify_plugin", dify_plugin_mod)
+    monkeypatch.setitem(
+        sys.modules, "dify_plugin.errors.model", errors_model_mod
+    )
+    monkeypatch.setitem(sys.modules, "openai", openai_mod)
+
+
+def test_openai_provider_importable_without_app_package(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_provider_import_stubs(monkeypatch)
+    monkeypatch.setitem(sys.modules, "app", types.ModuleType("app"))
+    monkeypatch.syspath_prepend(str(PLUGIN_DIR))
+    sys.modules.pop("provider.openai_gpt5", None)
+    importlib.invalidate_caches()
+
+    module = importlib.import_module("provider.openai_gpt5")
+    assert module.OpenAIGPT5ResponsesProvider.__name__
