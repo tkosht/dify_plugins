@@ -5,9 +5,13 @@ import sys
 import types
 from collections.abc import Generator
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import pytest
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+PLUGIN_DIR = BASE_DIR / "app" / "openai_gpt5_responses"
 
 
 def _install_openai_stub(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -197,6 +201,20 @@ def _build_llm_result(llm_module: Any) -> Any:
     )
 
 
+def test_llm_module_importable_without_app_package(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_openai_stub(monkeypatch)
+    _install_dify_plugin_stub(monkeypatch)
+    monkeypatch.setitem(sys.modules, "app", types.ModuleType("app"))
+    monkeypatch.syspath_prepend(str(PLUGIN_DIR))
+    sys.modules.pop("models.llm.llm", None)
+    importlib.invalidate_caches()
+
+    module = importlib.import_module("models.llm.llm")
+    assert module.OpenAIGPT5LargeLanguageModel.__name__
+
+
 def test_invoke_disable_stream_string_returns_blocking_result(
     llm_module: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -212,6 +230,41 @@ def test_invoke_disable_stream_string_returns_blocking_result(
         model, "_to_credential_kwargs", lambda _credentials: {}
     )
     monkeypatch.setattr(model, "_to_llm_result", lambda **_: llm_result)
+
+    result = model._invoke(
+        model="gpt-5.2",
+        credentials={},
+        prompt_messages=[],
+        model_parameters={"enable_stream": "false"},
+        tools=[],
+        stream=True,
+    )
+
+    assert result is llm_result
+
+
+def test_invoke_does_not_start_nested_timing_context(
+    llm_module: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    model = llm_module.OpenAIGPT5LargeLanguageModel()
+    llm_result = _build_llm_result(llm_module)
+
+    monkeypatch.setattr(
+        model,
+        "_normalize_parameters",
+        lambda **_: {"enable_stream": "false"},
+    )
+    monkeypatch.setattr(
+        model, "_to_credential_kwargs", lambda _credentials: {}
+    )
+    monkeypatch.setattr(model, "_to_llm_result", lambda **_: llm_result)
+
+    def _timing_context_should_not_be_called() -> Any:
+        raise AssertionError("nested timing_context must not be called")
+
+    monkeypatch.setattr(
+        model, "timing_context", _timing_context_should_not_be_called
+    )
 
     result = model._invoke(
         model="gpt-5.2",
@@ -445,3 +498,180 @@ def test_invoke_sets_user_and_stop_truncation(
     assert result is llm_result
     assert captured["user"] == "user-id"
     assert captured["truncation"] == "disabled"
+
+
+def test_invoke_emits_safe_audit_logs_on_success(
+    llm_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    class _Responses:
+        def create(self, **_: Any) -> Any:
+            return types.SimpleNamespace(
+                model="gpt-5.2",
+                usage=None,
+                output_text="ok",
+                output=[],
+                _request_id="req_success_1",
+            )
+
+    class _OpenAI:
+        def __init__(self, **_: Any) -> None:
+            self.responses = _Responses()
+
+    model = llm_module.OpenAIGPT5LargeLanguageModel()
+    llm_result = _build_llm_result(llm_module)
+    monkeypatch.setattr(llm_module, "OpenAI", _OpenAI)
+    monkeypatch.setattr(
+        model,
+        "_normalize_parameters",
+        lambda **_: {"enable_stream": "false", "response_format": "text"},
+    )
+    monkeypatch.setattr(model, "_to_llm_result", lambda **_: llm_result)
+    monkeypatch.setenv("OPENAI_GPT5_AUDIT_LOG", "true")
+
+    caplog.set_level("INFO")
+
+    result = model._invoke(
+        model="gpt-5.2-pro",
+        credentials={
+            "openai_api_key": "sk-test-secret-key",
+            "openai_api_base": "https://example.test/v1",
+        },
+        prompt_messages=[types.SimpleNamespace(role="user", content="hello")],
+        model_parameters={"enable_stream": "false", "response_format": "text"},
+        tools=[],
+        stream=True,
+    )
+
+    assert result is llm_result
+    text = "\n".join(r.getMessage() for r in caplog.records)
+    assert "openai_gpt5_audit" in text
+    assert "responses_api_request" in text
+    assert "responses_api_success" in text
+    assert '"model": "gpt-5.2-pro"' in text
+    assert '"base_url_host": "example.test"' in text
+    assert '"request_id": "req_success_1"' in text
+    assert "sk-test-secret-key" not in text
+    assert '"content": "hello"' not in text
+
+
+def test_invoke_emits_safe_audit_logs_on_error(
+    llm_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    class _Responses:
+        def create(self, **_: Any) -> Any:
+            err = llm_module.APIStatusError("bad request")
+            err.status_code = 400
+            err.request_id = "req_error_1"
+            err.code = "invalid_value"
+            err.param = "input[0]"
+            err.type = "invalid_request_error"
+            raise err
+
+    class _OpenAI:
+        def __init__(self, **_: Any) -> None:
+            self.responses = _Responses()
+
+    model = llm_module.OpenAIGPT5LargeLanguageModel()
+    monkeypatch.setattr(llm_module, "OpenAI", _OpenAI)
+    monkeypatch.setattr(
+        model,
+        "_normalize_parameters",
+        lambda **_: {"enable_stream": "false", "response_format": "text"},
+    )
+    monkeypatch.setenv("OPENAI_GPT5_AUDIT_LOG", "1")
+    caplog.set_level("INFO")
+
+    with pytest.raises(llm_module.APIStatusError):
+        model._invoke(
+            model="gpt-5.2",
+            credentials={"openai_api_key": "sk-secret-key"},
+            prompt_messages=[
+                types.SimpleNamespace(role="system", content="secret prompt")
+            ],
+            model_parameters={
+                "enable_stream": "false",
+                "response_format": "text",
+            },
+            tools=[],
+            stream=True,
+        )
+
+    text = "\n".join(r.getMessage() for r in caplog.records)
+    assert "responses_api_request" in text
+    assert "responses_api_error" in text
+    assert '"status_code": 400' in text
+    assert '"request_id": "req_error_1"' in text
+    assert "sk-secret-key" not in text
+    assert "secret prompt" not in text
+
+
+def test_invoke_emits_audit_logs_even_if_root_is_warning(
+    llm_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    root_logger = llm_module.logging.getLogger()
+    original_level = root_logger.level
+
+    class _Responses:
+        def create(self, **_: Any) -> Any:
+            return types.SimpleNamespace(
+                model="gpt-5.2",
+                usage=None,
+                output_text="ok",
+                output=[],
+                _request_id="req_root_warning",
+            )
+
+    class _OpenAI:
+        def __init__(self, **_: Any) -> None:
+            self.responses = _Responses()
+
+    model = llm_module.OpenAIGPT5LargeLanguageModel()
+    llm_result = _build_llm_result(llm_module)
+    monkeypatch.setattr(llm_module, "OpenAI", _OpenAI)
+    monkeypatch.setattr(
+        model,
+        "_normalize_parameters",
+        lambda **_: {"enable_stream": "false", "response_format": "text"},
+    )
+    monkeypatch.setattr(model, "_to_llm_result", lambda **_: llm_result)
+    monkeypatch.setenv("OPENAI_GPT5_AUDIT_LOG", "true")
+
+    root_logger.setLevel("WARNING")
+    caplog.set_level("INFO")
+
+    try:
+        result = model._invoke(
+            model="gpt-5.2",
+            credentials={"openai_api_key": "sk-hidden"},
+            prompt_messages=[
+                types.SimpleNamespace(role="user", content="ping")
+            ],
+            model_parameters={
+                "enable_stream": "false",
+                "response_format": "text",
+            },
+            tools=[],
+            stream=True,
+        )
+    finally:
+        root_logger.setLevel(original_level)
+
+    assert result is llm_result
+    assert any(
+        "responses_api_request" in record.getMessage()
+        for record in caplog.records
+    )
+    assert any(
+        "responses_api_success" in record.getMessage()
+        for record in caplog.records
+    )
+    assert any(
+        record.name == "dify_plugin.plugin.audit.openai_gpt5_responses"
+        for record in caplog.records
+    )

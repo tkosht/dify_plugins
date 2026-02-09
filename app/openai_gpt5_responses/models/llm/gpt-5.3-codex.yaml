@@ -15,7 +15,10 @@ parameter_rules:
     label:
       en_US: Max Output Tokens
       ja_JP: 最大出力トークン
-    type: number
+    help:
+      en_US: Maximum number of tokens to generate in the response.
+      ja_JP: 応答として生成する最大トークン数。
+    type: int
     required: false
     default: 8192
     min: 1
@@ -24,6 +27,9 @@ parameter_rules:
     label:
       en_US: Reasoning Effort
       ja_JP: 推論強度
+    help:
+      en_US: Reasoning effort level for the model.
+      ja_JP: モデルの推論強度レベル。
     type: string
     required: false
     default: medium
@@ -38,6 +44,9 @@ parameter_rules:
     label:
       en_US: Verbosity
       ja_JP: 冗長度
+    help:
+      en_US: Verbosity of the text response.
+      ja_JP: テキスト応答の冗長度。
     type: string
     required: false
     default: medium
@@ -49,6 +58,9 @@ parameter_rules:
     label:
       en_US: Response Format
       ja_JP: 出力フォーマット
+    help:
+      en_US: Response output format.
+      ja_JP: 応答の出力フォーマット。
     type: string
     required: false
     default: text
@@ -59,12 +71,18 @@ parameter_rules:
     label:
       en_US: JSON Schema
       ja_JP: JSON スキーマ
+    help:
+      en_US: JSON Schema used when response_format is json_schema.
+      ja_JP: response_format が json_schema のときに使う JSON スキーマ。
     type: text
     required: false
   - name: tool_choice
     label:
       en_US: Tool Choice
       ja_JP: ツール選択
+    help:
+      en_US: Tool selection policy.
+      ja_JP: ツール選択ポリシー。
     type: string
     required: false
     default: auto
@@ -76,6 +94,9 @@ parameter_rules:
     label:
       en_US: Parallel Tool Calls
       ja_JP: 並列ツール呼び出し
+    help:
+      en_US: Allow multiple tool calls in parallel.
+      ja_JP: 複数ツールの並列呼び出しを許可。
     type: boolean
     required: false
     default: true
@@ -83,6 +104,9 @@ parameter_rules:
     label:
       en_US: Streaming
       ja_JP: ストリーミング
+    help:
+      en_US: Enable streaming response.
+      ja_JP: ストリーミング応答を有効化。
     type: boolean
     required: false
     default: true

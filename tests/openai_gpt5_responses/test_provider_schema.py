@@ -73,6 +73,29 @@ def test_llm_models_expose_api_exact_parameter_names() -> None:
         assert target_names.issubset(names), yaml_path.name
 
 
+def test_llm_parameter_rules_have_help_i18n_fields() -> None:
+    llm_dir = PLUGIN_DIR / "models" / "llm"
+    for yaml_path in llm_dir.glob("*.yaml"):
+        if yaml_path.name.startswith("_"):
+            continue
+
+        data = _load_yaml(yaml_path)
+        parameter_rules = data.get("parameter_rules", [])
+        assert parameter_rules, yaml_path.name
+
+        for rule in parameter_rules:
+            help_obj = rule.get("help")
+            assert isinstance(
+                help_obj, dict
+            ), f"{yaml_path.name}:{rule.get('name')} missing help"
+            assert help_obj.get(
+                "en_US"
+            ), f"{yaml_path.name}:{rule.get('name')} missing help.en_US"
+            assert help_obj.get(
+                "ja_JP"
+            ), f"{yaml_path.name}:{rule.get('name')} missing help.ja_JP"
+
+
 def test_provider_schema_has_documented_defaults() -> None:
     provider = _load_yaml(PLUGIN_DIR / "provider" / "openai_gpt5.yaml")
     schemas = provider["provider_credential_schema"]["credential_form_schemas"]

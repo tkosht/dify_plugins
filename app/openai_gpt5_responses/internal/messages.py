@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from enum import Enum
 from typing import Any
 
 
@@ -30,13 +31,8 @@ def _content_to_text(content: Any) -> str:
     return str(content)
 
 
-def _to_assistant_content(message: Any) -> list[dict[str, Any]]:
-    parts: list[dict[str, Any]] = []
-
-    text = _content_to_text(_attr_or_key(message, "content", ""))
-    if text:
-        parts.append({"type": "output_text", "text": text})
-
+def _to_assistant_function_calls(message: Any) -> list[dict[str, Any]]:
+    calls: list[dict[str, Any]] = []
     tool_calls = _attr_or_key(message, "tool_calls", []) or []
     for tool_call in tool_calls:
         call_id = _attr_or_key(tool_call, "id", "")
@@ -52,7 +48,7 @@ def _to_assistant_content(message: Any) -> list[dict[str, Any]]:
         if not call_id or not name:
             continue
 
-        parts.append(
+        calls.append(
             {
                 "type": "function_call",
                 "call_id": call_id,
@@ -61,10 +57,10 @@ def _to_assistant_content(message: Any) -> list[dict[str, Any]]:
             }
         )
 
-    return parts
+    return calls
 
 
-def _to_tool_content(message: Any) -> list[dict[str, Any]]:
+def _to_function_call_outputs(message: Any) -> list[dict[str, Any]]:
     call_id = str(_attr_or_key(message, "tool_call_id", "") or "")
     output_text = _content_to_text(_attr_or_key(message, "content", ""))
     if not call_id:
@@ -78,23 +74,44 @@ def _to_tool_content(message: Any) -> list[dict[str, Any]]:
     ]
 
 
+def _normalize_role(raw_role: Any) -> str:
+    if raw_role is None:
+        return "user"
+
+    if isinstance(raw_role, Enum):
+        role = str(raw_role.value)
+    else:
+        role = str(raw_role).strip()
+
+    if not role:
+        return "user"
+
+    if role.startswith("PromptMessageRole."):
+        role = role.split(".", 1)[1]
+
+    role = role.lower().strip()
+    if role in {"user", "assistant", "system", "developer", "tool"}:
+        return role
+
+    return "user"
+
+
 def prompt_messages_to_responses_input(
     prompt_messages: list[Any],
 ) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     for message in prompt_messages:
-        role = str(_attr_or_key(message, "role", "user") or "user")
+        role = _normalize_role(_attr_or_key(message, "role", "user"))
 
         if role == "assistant":
-            content = _to_assistant_content(message)
-            if content:
-                result.append({"role": "assistant", "content": content})
+            text = _content_to_text(_attr_or_key(message, "content", ""))
+            if text:
+                result.append({"role": "assistant", "content": text})
+            result.extend(_to_assistant_function_calls(message))
             continue
 
         if role == "tool":
-            content = _to_tool_content(message)
-            if content:
-                result.append({"role": "tool", "content": content})
+            result.extend(_to_function_call_outputs(message))
             continue
 
         text = _content_to_text(_attr_or_key(message, "content", ""))
