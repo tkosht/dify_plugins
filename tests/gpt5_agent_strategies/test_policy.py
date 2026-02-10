@@ -117,6 +117,24 @@ def test_build_system_instruction_treats_invalid_json_as_plain_text() -> None:
     assert text.endswith(malformed)
 
 
+def test_build_system_instruction_ignores_unknown_json_keys() -> None:
+    override = json.dumps(
+        {
+            "tool_preamble_policy": "- custom preamble",
+            "unknown_policy": "- this should be ignored",
+        },
+        ensure_ascii=False,
+    )
+    text = build_system_instruction(
+        base_instruction="You are a coding agent",
+        prompt_policy_overrides=override,
+    )
+
+    assert "- custom preamble" in text
+    assert "unknown_policy" not in text
+    assert "this should be ignored" not in text
+
+
 def test_should_continue_stops_at_max_iterations() -> None:
     assert should_continue(
         iteration=1, maximum_iterations=3, has_tool_call=True

@@ -1,47 +1,68 @@
 # GPT-5 Agent Strategies プラグイン
 
-このプラグインは、Dify で GPT-5 系モデル向けの Agent Strategy を提供します。
+このプラグインは Dify 向けに GPT-5 系モデル前提の Agent Strategy を提供します。
 
 ## 戦略
+
 - `gpt5_function_calling`
 - `gpt5_react`
 
-## 設計
-- Agent の継続実行ポリシーやコンテキスト収集ポリシーを、共通の prompt policy モジュールで一元管理します。
-- モデル選択・ツール選択の契約は、Dify 公式の strategy プラグインと同等の形式を採用しています。
+`gpt5_react` は `gpt5_function_calling` 実装を継承しており、実行基盤と安全ガードは共通です。
 
-## プロンプトのカスタマイズ
-- `instruction`: Dify で生成・設定されるタスク固有の指示文です。
-- `prompt_policy_overrides`: 実行時にポリシーを任意で上書きするための入力です。
-  - プレーンテキスト: 追加ポリシーブロックとして末尾に追記されます。
-  - JSON オブジェクト: 指定したポリシーブロック（`persistence_policy`, `context_gathering_policy`, `uncertainty_policy`, `tool_preamble_policy`, `extra_policy`）を上書きできます。
-  - `persistence_policy` / `context_gathering_policy` / `uncertainty_policy` / `tool_preamble_policy` は、タグ記法（`<...>`）を省略しても内部で自動付与されます。
-  - `context_gathering_policy` は system prompt の方針ブロックです。strategy の `context`（実行時コンテキストデータ）とは用途が異なります。
+## 主要パラメータ
 
-## 主要パラメータ（Dify UI の help）
-- `context`: 実行時に strategy へ渡す構造化データです。`context_gathering_policy`（system prompt 方針）とは別概念です。
-- `emit_intermediate_thoughts`: `true` で中間 `<think>` を表示、`false` で中間思考を非表示にします。
-- `maximum_iterations`: 1 ターン内のツール呼び出しループ上限です。小さすぎると探索不足、大きすぎると遅延が増える可能性があります。
+- `model`: strategy で利用する LLM
+- `tools`: 実行中に呼び出し可能なツール
+- `instruction`: 実行時ベース指示（Dify の `prompt_instruction`）
+- `prompt_policy_overrides`: system prompt ポリシー上書き
+- `context`: 実行時コンテキストデータ（構造化オブジェクト）
+- `query`: ユーザー入力
+- `maximum_iterations`: ツール呼び出しループ上限（既定 6）
+- `emit_intermediate_thoughts`: 中間 `<think>` 表示制御（既定 `true`）
 
-## Dify UI での入力例（`prompt_policy_overrides`）
-- Strategy パラメータの `prompt_policy_overrides` には `help` と `placeholder` を設定してあります。
-- UI でツールチップ/プレースホルダが表示されない環境でも、以下をそのまま貼り付けて編集できます。
+## プロンプトのカスタマイズ（`prompt_policy_overrides`）
 
-### 指定可能キー（JSON）
-- `persistence_policy`
-- `context_gathering_policy`
-- `uncertainty_policy`
-- `tool_preamble_policy`
-- `extra_policy`
+- プレーンテキスト:
+  - 追加ポリシーとして末尾に追記
+- JSON オブジェクト:
+  - 次のキーのみ上書き可能
+    - `persistence_policy`
+    - `context_gathering_policy`
+    - `uncertainty_policy`
+    - `tool_preamble_policy`
+    - `extra_policy`
+  - 未知キーは無視
+  - `persistence/context_gathering/uncertainty/tool_preamble` はタグ省略時に内部で自動タグ付与
 
-### 例1: プレーンテキスト（末尾追記）
+`context_gathering_policy` は system prompt の方針ブロックです。`context`（実行時データ）とは別概念です。
+
+## 出力表示ポリシー
+
+- `emit_intermediate_thoughts=true`:
+  - 実行中の `<think>` を表示
+- `emit_intermediate_thoughts=false`:
+  - `<think>` はユーザー表示に出さず、ユーザー向け可視テキストのみ返す
+
+## 安全方針
+
+- tool arguments は JSON object 文字列のみ許容
+- 不正 JSON / 非文字列 / 非 object は fail-closed（tool 実行しない）
+- tool 実行例外時は固定化エラーメッセージを返す
+- 同一失敗 signature の重複 tool 呼び出しは抑止する
+- local file 読み込みは `/files` 配下かつ 5MB 以下に制限する
+
+## Dify UI 入力例（`prompt_policy_overrides`）
+
+### 例1: プレーンテキスト
+
 ```text
 <runtime_policy>
 - 回答は箇条書きを優先してください。
 </runtime_policy>
 ```
 
-### 例2: JSON（ブロック上書き）
+### 例2: JSON
+
 ```json
 {
   "persistence_policy": "- タスク完了まで継続します。",
