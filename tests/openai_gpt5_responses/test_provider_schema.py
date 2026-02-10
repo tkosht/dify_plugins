@@ -53,6 +53,7 @@ def test_llm_models_expose_api_exact_parameter_names() -> None:
     target_names = {
         "max_output_tokens",
         "reasoning_effort",
+        "reasoning_summary",
         "verbosity",
         "response_format",
         "json_schema",
@@ -114,6 +115,16 @@ def test_model_yaml_does_not_claim_vision_feature() -> None:
         data = _load_yaml(yaml_path)
         features = set(data.get("features", []))
         assert "vision" not in features, yaml_path.name
+
+
+def test_model_yaml_claims_agent_thought_feature() -> None:
+    llm_dir = PLUGIN_DIR / "models" / "llm"
+    for yaml_path in llm_dir.glob("*.yaml"):
+        if yaml_path.name.startswith("_"):
+            continue
+        data = _load_yaml(yaml_path)
+        features = set(data.get("features", []))
+        assert "agent-thought" in features, yaml_path.name
 
 
 def test_api_base_normalization_is_v1_idempotent() -> None:
