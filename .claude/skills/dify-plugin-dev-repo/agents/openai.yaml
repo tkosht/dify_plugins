@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dify Plugin Dev Repo"
+  short_description: "このリポジトリのDifyプラグイン開発を実装・検証する"
+  default_prompt: "Use $dify-plugin-dev-repo to design and implement plugin changes, then enforce release-readiness-checklist and baseline-parity-evaluation before declaring completion."
