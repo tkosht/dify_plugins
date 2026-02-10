@@ -1,130 +1,145 @@
-# GPT5 Agent Strategies アーキテクチャ詳細
+# GPT5 Agent Strategies アーキテクチャ詳細（実装準拠）
 
 ## 1. 全体構成
 
-`gpt5_agent_strategies` は Dify の Agent Strategy Provider プラグインで、主に次の層で構成される。
+`gpt5_agent_strategies` は Dify の Agent Strategy Provider プラグインで、以下で構成される。
 
 - エントリポイント: `main.py`
-- Plugin マニフェスト: `manifest.yaml`
-- Provider 定義: `provider/gpt5_agent.yaml`, `provider/gpt5_agent.py`
-- Strategy 実装:
+- Manifest: `manifest.yaml`
+- Provider:
+  - `provider/gpt5_agent.yaml`
+  - `provider/gpt5_agent.py`
+- Strategy:
   - `strategies/gpt5_function_calling.py`
-  - `strategies/gpt5_react.py`（function_calling 実装を継承）
-- Prompt ポリシー:
-  - `internal/policy.py`
+  - `strategies/gpt5_react.py`（function-calling 実装を継承）
+- 内部モジュール:
+  - `internal/flow.py`（ラウンド構築・text 出力判定・tool call 抽出）
+  - `internal/tooling.py`（tool arguments parse / tool 解決）
+  - `internal/policy.py`（system instruction 合成）
+  - `internal/loop.py`（反復条件ヘルパー）
+- Prompt テンプレート:
   - `prompt/template.py`
 
-## 2. Dify 本体とのやり取り
+## 2. 入出力契約
 
 ### 2.1 Dify -> Strategy 入力
 
-Strategy 実行時に Dify から主に以下が渡る。
+主要入力:
 
-- `query`: ユーザー入力
-- `instruction`: Dify 側で作成される指示文（`prompt_instruction`）
-- `prompt_policy_overrides`: 任意のポリシー上書き文字列（本プラグイン拡張）
-- `model`: `AgentModelConfig`
-- `tools`: `ToolEntity[]`
+- `query`
+- `instruction`
+- `prompt_policy_overrides`
+- `model` (`AgentModelConfig`)
+- `tools` (`ToolEntity[]`)
 - `maximum_iterations`
 - `emit_intermediate_thoughts`
 - `context`
 
 ### 2.2 Strategy -> Dify 出力
 
-Strategy は `AgentStrategy` の message API を使って Dify へ逐次返却する。
+`AgentStrategy` の message API で逐次返却する。
 
-- `create_text_message`: ユーザー向けテキスト / `<think>` 表示
-- `create_log_message` + `finish_log_message`: ラウンド/モデル/ツール実行ログ
-- `create_retriever_resource_message`: context 由来の参照情報
-- `create_json_message`: 実行メタデータ（usage など）
+- `create_text_message`
+- `create_log_message` / `finish_log_message`
+- `create_retriever_resource_message`
+- `create_json_message`（`execution_metadata`）
 
-## 3. Agent 制御フロー
+## 3. 実行フロー
 
-`GPT5FunctionCallingStrategy._invoke()` はラウンド反復で制御される。
+`GPT5FunctionCallingStrategy._invoke()` の実装フロー:
 
-1. prompt 構築（system/history/user）
-2. `self.session.model.llm.invoke(...)`
-3. LLM出力から tool call を抽出
-4. 必要時 `self.session.tool.invoke(...)`
-5. tool 結果を `ToolPromptMessage` として次ラウンドへ連結
-6. `maximum_iterations` に達するか tool call がなくなるまで継続
+1. `GPT5FunctionCallingParams` を構築
+2. system/history/user を連結して round prompt を作成
+3. `session.model.llm.invoke(...)` を実行
+4. stream/blocking の両経路で tool call を抽出
+5. tool 実行結果を `ToolPromptMessage` として次 round へ反映
+6. `tool_calls` が無くなるか `maximum_iterations` 到達で停止
+7. `execution_metadata` を JSON で返却
 
-ストリーミング時は以下を保証する。
+補足:
 
-- tool call なし: chunk を逐次 `text` 送信
-- tool call あり: `<think>` 形式で中間思考を送信
-- 遅延 tool call でも `<think>` 重複送信を抑止
+- `gpt5_react` は function-calling 基盤をそのまま使う（別実装分岐なし）。
 
-## 4. プロンプトの実体（現行）
+## 4. Prompt Policy 合成
 
-System prompt は `build_system_instruction()` で合成される。
+`build_system_instruction()` は次を順に結合する。
 
-1. `instruction`（Dify からの可変入力）
-2. `PERSISTENCE_POLICY`
-3. `CONTEXT_GATHERING_POLICY`
-4. `UNCERTAINTY_POLICY`
-5. `TOOL_PREAMBLE_POLICY`
-6. `extra_policy`（override 指定時のみ）
+1. `instruction`
+2. `persistence_policy`
+3. `context_gathering_policy`
+4. `uncertainty_policy`
+5. `tool_preamble_policy`
+6. `extra_policy`
 
-ポリシー原文は `prompt/template.py` に集約される。
+`prompt_policy_overrides` の仕様:
 
-## 5. プロンプト可変化の仕様
+- 空文字: 上書きなし
+- プレーンテキスト: `extra_policy` として末尾追記
+- JSON object:
+  - 有効キー:
+    - `persistence_policy`
+    - `context_gathering_policy`
+    - `uncertainty_policy`
+    - `tool_preamble_policy`
+    - `extra_policy`
+  - 未知キーは無視
+  - 上 4 キーはタグ省略時に自動ラップ
 
-`prompt_policy_overrides` は 2 形式を受け付ける。
+## 5. stream 表示制御
 
-### 5.0 Dify UI での編集導線
+`emit_intermediate_thoughts` により表示方針を切り替える。
 
-- `gpt5_function_calling` / `gpt5_react` の strategy パラメータに `help` と `placeholder` を設定済み。
-- Dify UI がツールチップやプレースホルダを表示しない場合は、`app/gpt5_agent_strategies/README.md` の入力例を参照して貼り付け編集する。
-- `context_gathering_policy` は system prompt 内の方針ブロックであり、strategy パラメータ `context`（実行時コンテキスト）とは別概念。
+- `true`:
+  - 中間 `<think>` を表示
+  - tool call がある round でも thought block を表示可能
+- `false`:
+  - `<think>...</think>` をユーザー表示から除去
+  - tool call がある round では中間表示を抑制
+  - 最終表示時はユーザー向け可視テキストのみ返す
 
-### 5.1 生テキスト形式（追記）
+`should_emit_response_text(...)` は以下を判定する:
 
-JSON でない文字列は `extra_policy` として末尾へ追記する。
+- tool call なし: 常に表示
+- tool call あり + `emit_intermediate_thoughts=true`: 表示
+- tool call あり + `emit_intermediate_thoughts=false`: 最終 iteration のみ表示
 
-例:
+## 6. tool invoke 安全設計
 
-```text
-<runtime_policy>
-- Use bullet points for final answers.
-</runtime_policy>
-```
+### 6.1 引数パース
 
-### 5.2 JSON 形式（ブロック置換 + 追記）
+`parse_tool_arguments` の契約:
 
-以下キーを部分指定で上書きできる。
+- `""` -> `{}`
+- JSON object 文字列 -> parse 成功
+- 非文字列 / 不正 JSON / 非 object -> parse error
 
-- `persistence_policy`
-- `context_gathering_policy`
-- `uncertainty_policy`
-- `tool_preamble_policy`
-- `extra_policy`
+parse error 時は fail-closed:
 
-上記以外のキーは無視される。
+- tool 呼び出しせず error message を `tool_response` に格納
 
-`persistence_policy` / `context_gathering_policy` / `uncertainty_policy` / `tool_preamble_policy`
-は、タグ（`<...>`）を省略しても内部で自動付与される。
+### 6.2 tool 実行時ガード
 
-例:
+- tool 不在:
+  - `there is not a tool named ...`
+- option 不一致:
+  - parameter option validation error
+- 実行例外:
+  - `tool invoke error: failed to execute tool`
+- 同一 signature 再失敗:
+  - 再実行をスキップし重複失敗メッセージを返す
 
-```json
-{
-  "persistence_policy": "- Continue until task completion.",
-  "context_gathering_policy": "- Search broadly, then narrow quickly.",
-  "uncertainty_policy": "- State assumptions explicitly.",
-  "tool_preamble_policy": "- Before tools, emit <think> in Japanese.",
-  "extra_policy": "- Prefer official sources first."
-}
-```
+## 7. ファイル/画像メッセージ処理
 
-## 6. 互換性ポリシー
+画像/ファイル応答の local file 読み込み制約:
 
-- `prompt_policy_overrides` 未指定時は完全に従来互換。
-- 既存パラメータ（`instruction`, `maximum_iterations`, `emit_intermediate_thoughts`）は非破壊。
-- `gpt5_react` は `gpt5_function_calling` を継承するため、同一仕様で利用可能。
+- `/files` 配下のみ許可（`realpath` 検証）
+- `..` など root 逸脱パスは拒否
+- 5MB 超過ファイルは拒否
 
-## 7. 既知の運用指針
+IMAGE / IMAGE_LINK / BLOB 応答は `AgentInvokeMessage` として返却し、UI 側表示互換を維持する。
 
-- `instruction` はタスク文脈の可変領域として使う。
-- 組織共通ポリシーを動的に切替える場合は `prompt_policy_overrides` を使う。
-- 既存 UI 互換を維持したい場合は override を空のままにする。
+## 8. 運用上の要点
+
+- `instruction` はタスク依存指示に利用する。
+- 組織ポリシー切替は `prompt_policy_overrides` を利用する。
+- `context_gathering_policy`（system prompt 方針）と `context`（実行時データ）は別概念として扱う。

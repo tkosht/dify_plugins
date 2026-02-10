@@ -97,6 +97,24 @@ def test_llm_parameter_rules_have_help_i18n_fields() -> None:
             ), f"{yaml_path.name}:{rule.get('name')} missing help.ja_JP"
 
 
+def test_llm_reasoning_summary_rule_has_expected_default_and_options() -> None:
+    llm_dir = PLUGIN_DIR / "models" / "llm"
+    expected_options = {"auto", "concise", "detailed"}
+
+    for yaml_path in llm_dir.glob("*.yaml"):
+        if yaml_path.name.startswith("_"):
+            continue
+
+        data = _load_yaml(yaml_path)
+        parameter_rules = data.get("parameter_rules", [])
+        by_name = {rule.get("name"): rule for rule in parameter_rules}
+        summary_rule = by_name["reasoning_summary"]
+
+        assert summary_rule.get("default") == "auto", yaml_path.name
+        options = set(summary_rule.get("options", []))
+        assert options == expected_options, yaml_path.name
+
+
 def test_provider_schema_has_documented_defaults() -> None:
     provider = _load_yaml(PLUGIN_DIR / "provider" / "openai_gpt5.yaml")
     schemas = provider["provider_credential_schema"]["credential_form_schemas"]
