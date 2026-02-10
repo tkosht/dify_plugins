@@ -1,0 +1,24 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": [
+    "draft",
+    "execute",
+    "review",
+    "revise",
+    "verify"
+  ],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "目的: Plugin B 起動失敗の解析設計を /draft.proposal に記録。手順: 1) class_loader が複数サブクラスを検出する条件を仮説化。2) 検証観点を3つ定義。3) stage_result は単一行JSON。4) capsule_patch は1件のみ。"
+    },
+    {
+      "id": "execute",
+      "instructions": "目的: FACTS INPUT から再現メカニズムを特定し /facts に記録。手順: 1) /facts 各要素は item/evidence/source/status。2) 代替仮説は status=tentative で記録。3) stage_result は単一行JSON。4) capsule_patch は1件のみ。"
+    },
+    {
+      "id": "review",
+      "instructions": "目的: 修正案をリスク順に /critique と /revise に整理。手順: 1) low-risk と medium-risk を分離。2) 検証手順を具体コマンドで提示。3) stage_result は単一行JSON。4) capsule_patch は1件のみ。"
+    }
+  ]
+}

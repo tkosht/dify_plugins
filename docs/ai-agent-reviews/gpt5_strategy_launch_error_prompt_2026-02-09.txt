@@ -1,0 +1,61 @@
+ROLE: Parent agent orchestration for Plugin B launch error analysis
+DATE: 2026-02-09
+
+STRICT NO-TOOLS RULE
+- Do NOT call any tools or run commands.
+- Use ONLY FACTS INPUT below.
+- If evidence is insufficient, mark as 不明.
+- Output JSON ONLY (single-line JSON; no extra text).
+
+OUTPUT FORMAT (MANDATORY)
+- Required keys: schema_version, stage_id, status, output_is_partial, capsule_patch.
+- Do NOT include next_stages.
+- /facts is an array of objects; each object includes item, evidence, source, status.
+- /draft /critique /revise must be objects.
+- /open_questions and /assumptions must be arrays.
+- All string values must be single-line and must not contain newline or \\n.
+
+OBJECTIVE
+- Analyze root causes for Plugin B launch failure:
+  Exception: Multiple subclasses of AgentStrategy in strategies/gpt5_react.py
+
+SCOPE
+- Target plugin: gpt5_agent_strategies
+- Target artifact: plugins/gpt5_agent_strategies.difypkg
+- Target files: app/gpt5_agent_strategies/*
+
+CONSTRAINTS
+- Fact-based reasoning only.
+- Keep plugin B analysis independent from plugin A.
+- Focus on deterministic class discovery behavior.
+
+REQUIRED OUTPUTS
+1) Precise mechanism causing "Multiple subclasses of AgentStrategy".
+2) Ranked fix options (low-risk first).
+3) CI and packaging verification steps.
+4) Open questions requiring plugin_daemon source/logs.
+
+CAPSULE PATCH RULES
+- /facts must be an array of objects with item, evidence, source, status.
+- /draft /critique /revise must be objects.
+- /open_questions and /assumptions must be arrays.
+- capsule_patch should contain only one operation.
+
+PIPELINE DESIGN REQUIREMENT
+- In /draft.proposal, explain why 3-stage analysis is sufficient.
+
+TEST DESIGN REQUIREMENT
+- Include verification commands:
+  - pytest target scope
+  - dify plugin package
+  - dify plugin module list
+
+FACTS INPUT (EVIDENCE ONLY)
+- [error] plugin launch failed with:
+  Exception: Multiple subclasses of AgentStrategy in .../strategies/gpt5_react.py (user report).
+- [code] app/gpt5_agent_strategies/strategies/gpt5_react.py:1-10 imports GPT5FunctionCallingStrategy and GPT5FunctionCallingParams into module namespace.
+- [code] app/gpt5_agent_strategies/strategies/gpt5_react.py:13 defines GPT5ReActParams(GPT5FunctionCallingParams).
+- [code] app/gpt5_agent_strategies/strategies/gpt5_react.py:17 defines GPT5ReActStrategy(GPT5FunctionCallingStrategy).
+- [code] app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:125 defines GPT5FunctionCallingStrategy(AgentStrategy).
+- [packaging] dify plugin package app/gpt5_agent_strategies succeeded on 2026-02-09 18:16 JST.
+- [module-list] dify plugin module list plugins/gpt5_agent_strategies.difypkg succeeds and shows both strategies metadata.

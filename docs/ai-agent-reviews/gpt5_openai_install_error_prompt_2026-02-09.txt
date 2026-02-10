@@ -1,0 +1,63 @@
+ROLE: Parent agent orchestration for Plugin A install decode error analysis
+DATE: 2026-02-09
+
+STRICT NO-TOOLS RULE
+- Do NOT call any tools or run commands.
+- Use ONLY FACTS INPUT below.
+- If evidence is insufficient, mark as 不明.
+- Output JSON ONLY (single-line JSON; no extra text).
+
+OUTPUT FORMAT (MANDATORY)
+- Required keys: schema_version, stage_id, status, output_is_partial, capsule_patch.
+- Do NOT include next_stages.
+- /facts is an array of objects; each object includes item, evidence, source, status.
+- /draft /critique /revise must be objects.
+- /open_questions and /assumptions must be arrays.
+- All string values must be single-line and must not contain newline or \\n.
+
+OBJECTIVE
+- Analyze root causes for Plugin A install error:
+  Failed to parse response from plugin daemon to PluginDaemonBasicResponse [PluginDecodeResponse]
+  at URL plugin/<workspace>/management/install/upload/package
+
+SCOPE
+- Target plugin: openai_gpt5_responses
+- Target artifact: plugins/openai_gpt5_responses.difypkg
+- Target files: app/openai_gpt5_responses/* and tests/openai_gpt5_responses/*
+
+CONSTRAINTS
+- Fact-based reasoning only.
+- No speculation without evidence.
+- Keep plugin A analysis independent from plugin B.
+
+REQUIRED OUTPUTS
+1) Root causes ranked (high/medium/low confidence).
+2) Supporting evidence and refuting evidence per cause.
+3) Minimal mitigation plan.
+4) Unknowns that still require server logs.
+
+CAPSULE PATCH RULES
+- /facts must be an array of objects with item, evidence, source, status.
+- /draft /critique /revise must be objects.
+- /open_questions and /assumptions must be arrays.
+- capsule_patch should contain only one operation.
+
+PIPELINE DESIGN REQUIREMENT
+- Do not follow generic template blindly.
+- In /draft.proposal, include why draft->execute->review is enough.
+
+TEST DESIGN REQUIREMENT
+- Include verification commands relevant to this plugin package:
+  - dify plugin package
+  - dify plugin module list
+  - pytest target scope
+
+FACTS INPUT (EVIDENCE ONLY)
+- [error] install request failed with PluginDecodeResponse at upload/package endpoint (user report).
+- [build] /home/devuser/workspace/plugins/openai_gpt5_responses.difypkg exists and is regenerated on 2026-02-09 18:16 JST.
+- [module-list] dify plugin module list plugins/openai_gpt5_responses.difypkg succeeds and lists models/parameters.
+- [yaml] app/openai_gpt5_responses/models/llm/gpt-5-codex.yaml:18-20 has help.en_US/help.ja_JP; same schema style applied across gpt-5*.yaml.
+- [package-contents] plugins/openai_gpt5_responses.difypkg contains __pycache__/*.pyc entries:
+  __pycache__/main.cpython-312.pyc, internal/__pycache__/*.pyc, models/llm/__pycache__/llm.cpython-312.pyc, provider/__pycache__/openai_gpt5.cpython-312.pyc.
+- [runtime-import-style] app/openai_gpt5_responses/models/llm/llm.py uses app.* import with fallback to internal.* (try/except ModuleNotFoundError).
+- [runtime-import-style] app/openai_gpt5_responses/provider/openai_gpt5.py uses app.* import with fallback to internal.*.
