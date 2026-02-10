@@ -1,8 +1,9 @@
 import json
 import logging
 import os
+import re
 import time
-from collections.abc import Generator
+from collections.abc import Generator, Mapping
 from copy import deepcopy
 from typing import Any, cast
 
@@ -31,16 +32,28 @@ from dify_plugin.interfaces.agent import (
 )
 from pydantic import BaseModel
 
-from app.gpt5_agent_strategies.internal.flow import (
-    build_round_prompt_messages,
-    extract_blocking_tool_calls,
-    extract_stream_tool_calls,
-    should_emit_response_text,
-)
-from app.gpt5_agent_strategies.internal.tooling import (
-    parse_tool_arguments,
-    resolve_tool_instance,
-)
+try:
+    from app.gpt5_agent_strategies.internal.flow import (
+        build_round_prompt_messages,
+        extract_blocking_tool_calls,
+        extract_stream_tool_calls,
+        should_emit_response_text,
+    )
+    from app.gpt5_agent_strategies.internal.tooling import (
+        parse_tool_arguments,
+        resolve_tool_instance,
+    )
+except ModuleNotFoundError:
+    from internal.flow import (
+        build_round_prompt_messages,
+        extract_blocking_tool_calls,
+        extract_stream_tool_calls,
+        should_emit_response_text,
+    )
+    from internal.tooling import (
+        parse_tool_arguments,
+        resolve_tool_instance,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -104,9 +117,11 @@ class ContextItem(BaseModel):
 class GPT5FunctionCallingParams(BaseModel):
     query: str
     instruction: str | None
+    prompt_policy_overrides: str | None = None
     model: AgentModelConfig
     tools: list[ToolEntity] | None
     maximum_iterations: int = 3
+    emit_intermediate_thoughts: bool = True
     context: list[ContextItem] | None = None
 
 
@@ -114,9 +129,13 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
     _LOCAL_FILE_ROOT = "/files"
     _MAX_BLOB_FILE_BYTES = 5 * 1024 * 1024
     _TOOL_INVOKE_ERROR_MESSAGE = "tool invoke error: failed to execute tool"
+    _REPEATED_TOOL_INVOKE_ERROR_MESSAGE = (
+        "tool invoke error: repeated failure detected; skipped duplicate call"
+    )
 
     query: str = ""
     instruction: str | None = ""
+    prompt_policy_overrides: str | None = None
 
     @property
     def _user_prompt_message(self) -> UserPromptMessage:
@@ -124,12 +143,20 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
 
     @property
     def _system_prompt_message(self) -> SystemPromptMessage:
-        from app.gpt5_agent_strategies.internal.policy import (
-            build_system_instruction,
-        )
+        try:
+            from app.gpt5_agent_strategies.internal.policy import (
+                build_system_instruction,
+            )
+        except ModuleNotFoundError:
+            from internal.policy import (
+                build_system_instruction,
+            )
 
         return SystemPromptMessage(
-            content=build_system_instruction(self.instruction or "")
+            content=build_system_instruction(
+                self.instruction or "",
+                self.prompt_policy_overrides,
+            )
         )
 
     def _invoke(
@@ -144,6 +171,7 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
         query = fc_params.query
         self.query = query
         self.instruction = fc_params.instruction
+        self.prompt_policy_overrides = fc_params.prompt_policy_overrides
         history_prompt_messages = build_round_prompt_messages(
             history_prompt_messages=fc_params.model.history_prompt_messages,
             system_message=self._system_prompt_message,
@@ -169,6 +197,7 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
             if fc_params.model.completion_params
             else []
         )
+        emit_intermediate_thoughts = fc_params.emit_intermediate_thoughts
 
         # init function calling state
         iteration_step = 1
@@ -179,6 +208,7 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
         )
         llm_usage: dict[str, LLMUsage | None] = {"usage": None}
         final_answer = ""
+        failed_tool_invocations: dict[tuple[str, str], str] = {}
 
         while function_call_state and iteration_step <= max_iteration_steps:
             # start a new round
@@ -240,11 +270,16 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
 
             if isinstance(chunks, Generator):
                 stream_text_fragments: list[str] = []
+                deferred_stream_text_fragments: list[str] = []
+                stream_text_emitted = False
                 for chunk in chunks:
+                    chunk_text_fragments: list[str] = []
                     # check if there is any tool call
                     if self.check_tool_calls(chunk):
                         function_call_state = True
-                        tool_calls.extend(self.extract_tool_calls(chunk) or [])
+                        tool_calls = self._merge_tool_calls(
+                            tool_calls, self.extract_tool_calls(chunk) or []
+                        )
                         tool_call_names = ";".join(
                             [tool_call[1] for tool_call in tool_calls]
                         )
@@ -252,25 +287,96 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                     if chunk.delta.message and chunk.delta.message.content:
                         if isinstance(chunk.delta.message.content, list):
                             for content in chunk.delta.message.content:
-                                response += content.data
-                                stream_text_fragments.append(content.data)
+                                text_piece = str(content.data or "")
+                                if not text_piece:
+                                    continue
+                                response += text_piece
+                                stream_text_fragments.append(text_piece)
+                                chunk_text_fragments.append(text_piece)
                         else:
                             chunk_text = str(chunk.delta.message.content)
-                            response += chunk_text
-                            stream_text_fragments.append(chunk_text)
+                            if chunk_text:
+                                response += chunk_text
+                                stream_text_fragments.append(chunk_text)
+                                chunk_text_fragments.append(chunk_text)
 
                     if chunk.delta.usage:
                         self.increase_usage(llm_usage, chunk.delta.usage)
                         current_llm_usage = chunk.delta.usage
 
-                if stream_text_fragments and should_emit_response_text(
+                    if chunk_text_fragments and not function_call_state:
+                        if emit_intermediate_thoughts:
+                            for text_piece in chunk_text_fragments:
+                                yield self.create_text_message(text_piece)
+                            stream_text_emitted = True
+                        else:
+                            deferred_stream_text_fragments.extend(
+                                chunk_text_fragments
+                            )
+                    elif chunk_text_fragments:
+                        deferred_stream_text_fragments.extend(
+                            chunk_text_fragments
+                        )
+
+                if should_emit_response_text(
                     has_tool_calls=bool(tool_calls),
                     iteration_step=iteration_step,
                     max_iteration_steps=max_iteration_steps,
+                    emit_intermediate_thoughts=emit_intermediate_thoughts,
                 ):
-                    yield self.create_text_message(
-                        "".join(stream_text_fragments)
-                    )
+                    if tool_calls:
+                        if emit_intermediate_thoughts:
+                            if deferred_stream_text_fragments:
+                                stream_text = "".join(
+                                    deferred_stream_text_fragments
+                                )
+                                stream_text = self._format_thought_block(
+                                    stream_text
+                                )
+                                yield self.create_text_message(stream_text)
+                            elif (
+                                not stream_text_emitted
+                                and stream_text_fragments
+                            ):
+                                stream_text = "".join(stream_text_fragments)
+                                stream_text = self._format_thought_block(
+                                    stream_text
+                                )
+                                yield self.create_text_message(stream_text)
+                            elif not stream_text_emitted:
+                                yield self.create_text_message(
+                                    self._fallback_tool_call_thought(
+                                        tool_calls
+                                    )
+                                )
+                        elif not stream_text_emitted:
+                            stream_text = "".join(
+                                deferred_stream_text_fragments
+                                or stream_text_fragments
+                            )
+                            visible_text = (
+                                self._strip_think_blocks_for_display(
+                                    stream_text
+                                )
+                            )
+                            if visible_text:
+                                yield self.create_text_message(visible_text)
+                    elif stream_text_fragments and not stream_text_emitted:
+                        if emit_intermediate_thoughts:
+                            for text_piece in stream_text_fragments:
+                                yield self.create_text_message(text_piece)
+                        else:
+                            stream_text = "".join(
+                                deferred_stream_text_fragments
+                                or stream_text_fragments
+                            )
+                            visible_text = (
+                                self._strip_think_blocks_for_display(
+                                    stream_text
+                                )
+                            )
+                            if visible_text:
+                                yield self.create_text_message(visible_text)
 
             else:
                 result = chunks
@@ -278,8 +384,9 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                 # check if there is any tool call
                 if self.check_blocking_tool_calls(result):
                     function_call_state = True
-                    tool_calls.extend(
-                        self.extract_blocking_tool_calls(result) or []
+                    tool_calls = self._merge_tool_calls(
+                        tool_calls,
+                        self.extract_blocking_tool_calls(result) or [],
                     )
                     tool_call_names = ";".join(
                         [tool_call[1] for tool_call in tool_calls]
@@ -299,16 +406,85 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
 
                 if result_message is not None and not result_message.content:
                     result_message.content = ""
+                emitted_result_text = False
                 if result_message is not None and should_emit_response_text(
                     has_tool_calls=bool(tool_calls),
                     iteration_step=iteration_step,
                     max_iteration_steps=max_iteration_steps,
+                    emit_intermediate_thoughts=emit_intermediate_thoughts,
                 ):
                     if isinstance(result_message.content, str):
-                        yield self.create_text_message(result_message.content)
+                        if result_message.content:
+                            text = result_message.content
+                            if tool_calls:
+                                if emit_intermediate_thoughts:
+                                    text = self._format_thought_block(text)
+                                else:
+                                    text = (
+                                        self._strip_think_blocks_for_display(
+                                            text
+                                        )
+                                    )
+                            elif not emit_intermediate_thoughts:
+                                text = self._strip_think_blocks_for_display(
+                                    text
+                                )
+                            if text:
+                                yield self.create_text_message(text)
+                                emitted_result_text = True
                     elif isinstance(result_message.content, list):
+                        list_texts: list[str] = []
                         for content in result_message.content:
-                            yield self.create_text_message(content.data)
+                            text = str(getattr(content, "data", "") or "")
+                            if not text:
+                                continue
+                            list_texts.append(text)
+                        if list_texts:
+                            if tool_calls:
+                                if emit_intermediate_thoughts:
+                                    emitted_result_text = True
+                                    yield self.create_text_message(
+                                        self._format_thought_block(
+                                            "\n".join(list_texts)
+                                        )
+                                    )
+                                else:
+                                    visible_text = (
+                                        self._strip_think_blocks_for_display(
+                                            "\n".join(list_texts)
+                                        )
+                                    )
+                                    if visible_text:
+                                        emitted_result_text = True
+                                        yield self.create_text_message(
+                                            visible_text
+                                        )
+                            elif emit_intermediate_thoughts:
+                                emitted_result_text = True
+                                for text in list_texts:
+                                    yield self.create_text_message(text)
+                            else:
+                                for text in list_texts:
+                                    visible_text = (
+                                        self._strip_think_blocks_for_display(
+                                            text
+                                        )
+                                    )
+                                    if not visible_text:
+                                        continue
+                                    emitted_result_text = True
+                                    yield self.create_text_message(
+                                        visible_text
+                                    )
+
+                    if (
+                        not emitted_result_text
+                        and tool_calls
+                        and emit_intermediate_thoughts
+                    ):
+                        yield self.create_text_message(
+                            self._fallback_tool_call_thought(tool_calls)
+                        )
 
             yield self.finish_log_message(
                 log=model_log,
@@ -521,129 +697,179 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                         }
                     else:
                         # invoke tool
-                        try:
-                            tool_invoke_responses = self.session.tool.invoke(
-                                provider_type=ToolProviderType(
-                                    tool_instance.provider_type
-                                ),
-                                provider=tool_instance.identity.provider,
-                                tool_name=tool_instance.identity.name,
-                                parameters={
+                        normalized_tool_input, validation_error = (
+                            self._normalize_tool_invoke_parameters(
+                                tool_instance,
+                                {
                                     **tool_instance.runtime_parameters,
                                     **tool_call_args,
                                 },
                             )
-                            tool_result = ""
-                            for tool_invoke_response in tool_invoke_responses:
-                                if (
-                                    tool_invoke_response.type
-                                    == ToolInvokeMessage.MessageType.TEXT
-                                ):
-                                    tool_result += cast(
-                                        ToolInvokeMessage.TextMessage,
-                                        tool_invoke_response.message,
-                                    ).text
-                                elif (
-                                    tool_invoke_response.type
-                                    == ToolInvokeMessage.MessageType.LINK
-                                ):
-                                    tool_result += (
-                                        "result link: "
-                                        + cast(
-                                            ToolInvokeMessage.TextMessage,
-                                            tool_invoke_response.message,
-                                        ).text
-                                        + "."
-                                        + " please tell user to check it."
-                                    )
-                                elif tool_invoke_response.type in {
-                                    ToolInvokeMessage.MessageType.IMAGE_LINK,
-                                    ToolInvokeMessage.MessageType.IMAGE,
-                                }:
-                                    # Extract file path or URL from the message.
-                                    if hasattr(
-                                        tool_invoke_response.message, "text"
+                        )
+                        tool_signature = self._tool_invocation_signature(
+                            tool_call_name, normalized_tool_input
+                        )
+                        try:
+                            if validation_error:
+                                tool_result = validation_error
+                                tool_response = {
+                                    "tool_call_id": tool_call_id,
+                                    "tool_call_name": tool_call_name,
+                                    "tool_call_input": normalized_tool_input,
+                                    "tool_response": tool_result,
+                                    "meta": ToolInvokeMeta.error_instance(
+                                        validation_error
+                                    ).to_dict(),
+                                }
+                            elif tool_signature in failed_tool_invocations:
+                                tool_result = failed_tool_invocations[
+                                    tool_signature
+                                ]
+                                tool_response = {
+                                    "tool_call_id": tool_call_id,
+                                    "tool_call_name": tool_call_name,
+                                    "tool_call_input": normalized_tool_input,
+                                    "tool_response": (
+                                        self._REPEATED_TOOL_INVOKE_ERROR_MESSAGE
+                                    ),
+                                    "meta": ToolInvokeMeta.error_instance(
+                                        tool_result
+                                    ).to_dict(),
+                                }
+                            else:
+                                tool_invoke_responses = self.session.tool.invoke(
+                                    provider_type=ToolProviderType(
+                                        tool_instance.provider_type
+                                    ),
+                                    provider=tool_instance.identity.provider,
+                                    tool_name=tool_instance.identity.name,
+                                    parameters=normalized_tool_input,
+                                )
+                                tool_result = ""
+                                for (
+                                    tool_invoke_response
+                                ) in tool_invoke_responses:
+                                    if (
+                                        tool_invoke_response.type
+                                        == ToolInvokeMessage.MessageType.TEXT
                                     ):
-                                        file_info = cast(
+                                        tool_result += cast(
                                             ToolInvokeMessage.TextMessage,
                                             tool_invoke_response.message,
                                         ).text
-                                        # Try to create a blob response from file.
-                                        try:
-                                            local_file = (
-                                                self._read_local_file_for_blob(
+                                    elif (
+                                        tool_invoke_response.type
+                                        == ToolInvokeMessage.MessageType.LINK
+                                    ):
+                                        tool_result += (
+                                            "result link: "
+                                            + cast(
+                                                ToolInvokeMessage.TextMessage,
+                                                tool_invoke_response.message,
+                                            ).text
+                                            + "."
+                                            + " please tell user to check it."
+                                        )
+                                    elif tool_invoke_response.type in {
+                                        ToolInvokeMessage.MessageType.IMAGE_LINK,
+                                        ToolInvokeMessage.MessageType.IMAGE,
+                                    }:
+                                        # Extract file path or URL from the message.
+                                        if hasattr(
+                                            tool_invoke_response.message,
+                                            "text",
+                                        ):
+                                            file_info = cast(
+                                                ToolInvokeMessage.TextMessage,
+                                                tool_invoke_response.message,
+                                            ).text
+                                            # Try to create a blob response from file.
+                                            try:
+                                                read_local_file = (
+                                                    self._read_local_file_for_blob
+                                                )
+                                                local_file = read_local_file(
                                                     file_info
                                                 )
-                                            )
-                                            if local_file is not None:
-                                                file_content, filename = (
-                                                    local_file
+                                                if local_file is not None:
+                                                    file_content, filename = (
+                                                        local_file
+                                                    )
+                                                    blob = self.create_blob_message(
+                                                        blob=file_content,
+                                                        meta={
+                                                            "mime_type": (
+                                                                "image/png"
+                                                            ),
+                                                            "filename": filename,
+                                                        },
+                                                    )
+                                                    yield blob
+                                            except Exception:
+                                                logger.exception(
+                                                    "Failed to create blob message "
+                                                    "from local image output"
                                                 )
-                                                blob = self.create_blob_message(
-                                                    blob=file_content,
-                                                    meta={
-                                                        "mime_type": "image/png",
-                                                        "filename": filename,
-                                                    },
+                                                yield self.create_text_message(
+                                                    "Failed to process generated "
+                                                    "image file."
                                                 )
-                                                yield blob
-                                        except Exception:
-                                            logger.exception(
-                                                "Failed to create blob message "
-                                                "from local image output"
-                                            )
-                                            yield self.create_text_message(
-                                                "Failed to process generated image "
-                                                "file."
-                                            )
-                                    tool_result += (
-                                        "image generated and sent to user. "
-                                        "Tell user to review it now."
-                                    )
-                                    yield self._to_agent_invoke_message(
-                                        tool_invoke_response
-                                    )
-                                elif (
-                                    tool_invoke_response.type
-                                    == ToolInvokeMessage.MessageType.JSON
-                                ):
-                                    text = json.dumps(
-                                        cast(
-                                            ToolInvokeMessage.JsonMessage,
-                                            tool_invoke_response.message,
-                                        ).json_object,
-                                        ensure_ascii=False,
-                                    )
-                                    tool_result += f"tool response: {text}."
-                                elif (
-                                    tool_invoke_response.type
-                                    == ToolInvokeMessage.MessageType.BLOB
-                                ):
-                                    tool_result += "Generated file ... "
-                                    yield self._to_agent_invoke_message(
-                                        tool_invoke_response
-                                    )
-                                else:
-                                    response_repr = repr(
-                                        tool_invoke_response.message
-                                    )
-                                    tool_result += (
-                                        f"tool response: {response_repr}."
-                                    )
+                                        tool_result += (
+                                            "image generated and sent to user. "
+                                            "Tell user to review it now."
+                                        )
+                                        yield self._to_agent_invoke_message(
+                                            tool_invoke_response
+                                        )
+                                    elif (
+                                        tool_invoke_response.type
+                                        == ToolInvokeMessage.MessageType.JSON
+                                    ):
+                                        text = json.dumps(
+                                            cast(
+                                                ToolInvokeMessage.JsonMessage,
+                                                tool_invoke_response.message,
+                                            ).json_object,
+                                            ensure_ascii=False,
+                                        )
+                                        tool_result += (
+                                            f"tool response: {text}."
+                                        )
+                                    elif (
+                                        tool_invoke_response.type
+                                        == ToolInvokeMessage.MessageType.BLOB
+                                    ):
+                                        tool_result += "Generated file ... "
+                                        yield self._to_agent_invoke_message(
+                                            tool_invoke_response
+                                        )
+                                    else:
+                                        response_repr = repr(
+                                            tool_invoke_response.message
+                                        )
+                                        tool_result += (
+                                            f"tool response: {response_repr}."
+                                        )
+                                tool_response = {
+                                    "tool_call_id": tool_call_id,
+                                    "tool_call_name": tool_call_name,
+                                    "tool_call_input": normalized_tool_input,
+                                    "tool_response": tool_result,
+                                }
                         except Exception:
                             logger.exception(
                                 "Tool invoke failed: tool=%s", tool_call_name
                             )
                             tool_result = self._TOOL_INVOKE_ERROR_MESSAGE
-                        tool_response = {
-                            "tool_call_id": tool_call_id,
-                            "tool_call_name": tool_call_name,
-                            "tool_call_input": {
-                                **tool_instance.runtime_parameters,
-                                **tool_call_args,
-                            },
-                            "tool_response": tool_result,
-                        }
+                            failed_tool_invocations[tool_signature] = (
+                                tool_result
+                            )
+                            tool_response = {
+                                "tool_call_id": tool_call_id,
+                                "tool_call_name": tool_call_name,
+                                "tool_call_input": normalized_tool_input,
+                                "tool_response": tool_result,
+                            }
 
                     yield self.finish_log_message(
                         log=tool_call_log,
@@ -759,6 +985,185 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
         """
         return bool(extract_blocking_tool_calls(llm_result))
 
+    def _merge_tool_calls(
+        self,
+        existing: list[tuple[str, str, dict[str, Any], str | None]],
+        incoming: list[tuple[str, str, dict[str, Any], str | None]],
+    ) -> list[tuple[str, str, dict[str, Any], str | None]]:
+        merged = list(existing)
+        index_by_id = {tool_call[0]: i for i, tool_call in enumerate(merged)}
+        for tool_call in incoming:
+            tool_call_id = tool_call[0]
+            if tool_call_id in index_by_id:
+                merged[index_by_id[tool_call_id]] = tool_call
+                continue
+            index_by_id[tool_call_id] = len(merged)
+            merged.append(tool_call)
+        return merged
+
+    def _fallback_tool_call_thought(
+        self, tool_calls: list[tuple[str, str, dict[str, Any], str | None]]
+    ) -> str:
+        tool_names: list[str] = []
+        for (
+            _tool_call_id,
+            tool_call_name,
+            _tool_call_args,
+            _parse_error,
+        ) in tool_calls:
+            if not tool_call_name:
+                continue
+            if tool_call_name in tool_names:
+                continue
+            tool_names.append(tool_call_name)
+
+        if not tool_names:
+            return "<think>\nまず、必要な情報を確認して進めます。\n</think>"
+        if len(tool_names) == 1:
+            return (
+                "<think>\n"
+                f"まず、{tool_names[0]} ツールで必要な情報を確認します。\n"
+                "</think>"
+            )
+
+        preview = ", ".join(tool_names[:3])
+        suffix = "..." if len(tool_names) > 3 else ""
+        return (
+            "<think>\n"
+            "必要な情報を得るため、次のツールを順に確認します: "
+            f"{preview}{suffix}\n"
+            "</think>"
+        )
+
+    @staticmethod
+    def _looks_like_think_block(text: str) -> bool:
+        stripped = text.strip()
+        return stripped.startswith("<think>") and stripped.endswith("</think>")
+
+    def _format_thought_block(self, text: str) -> str:
+        normalized = self._normalize_thought_text(text)
+        if self._looks_like_think_block(normalized):
+            return normalized
+        return f"<think>\n{normalized}\n</think>"
+
+    @staticmethod
+    def _strip_think_blocks_for_display(text: str) -> str:
+        if not text:
+            return ""
+
+        without_think_blocks = re.sub(
+            r"<think>.*?</think>",
+            "",
+            text,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        without_dangling_opening = re.sub(
+            r"<think>.*$",
+            "",
+            without_think_blocks,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        cleaned = re.sub(
+            r"</think>",
+            "",
+            without_dangling_opening,
+            flags=re.IGNORECASE,
+        )
+        return cleaned if cleaned.strip() else ""
+
+    @staticmethod
+    def _normalize_thought_text(text: str) -> str:
+        normalized = text.strip()
+        if not normalized:
+            return "まず、必要な情報を確認して進めます。"
+
+        for prefix in (
+            "意図：",
+            "意図:",
+            "Intent:",
+            "intent:",
+            "Thinking:",
+            "thinking:",
+        ):
+            if normalized.startswith(prefix):
+                normalized = normalized[len(prefix) :].strip()
+                break
+
+        return normalized or "まず、必要な情報を確認して進めます。"
+
+    def _normalize_tool_invoke_parameters(
+        self,
+        tool_instance: ToolEntity,
+        merged_parameters: dict[str, Any],
+    ) -> tuple[dict[str, Any], str | None]:
+        normalized = dict(merged_parameters)
+        for parameter in getattr(tool_instance, "parameters", []) or []:
+            parameter_name = str(getattr(parameter, "name", "") or "")
+            if not parameter_name or parameter_name not in normalized:
+                continue
+
+            options = self._parameter_option_values(parameter)
+            if not options:
+                continue
+
+            raw_value = normalized[parameter_name]
+            normalized_value: str
+            if isinstance(raw_value, bool):
+                normalized_value = "true" if raw_value else "false"
+            elif isinstance(raw_value, str):
+                normalized_value = raw_value
+            else:
+                normalized_value = str(raw_value)
+
+            if normalized_value not in options:
+                return (
+                    normalized,
+                    (
+                        f"tool arguments validation error: parameter "
+                        f"'{parameter_name}' value {raw_value!r} "
+                        f"not in options {options}"
+                    ),
+                )
+
+            normalized[parameter_name] = normalized_value
+
+        return normalized, None
+
+    def _parameter_option_values(self, parameter: Any) -> list[str]:
+        values: list[str] = []
+        for option in getattr(parameter, "options", []) or []:
+            if isinstance(option, Mapping):
+                option_value = option.get("value")
+            else:
+                option_value = getattr(option, "value", None)
+            if option_value is None:
+                continue
+            values.append(str(option_value))
+        return values
+
+    def _tool_invocation_signature(
+        self, tool_call_name: str, parameters: dict[str, Any]
+    ) -> tuple[str, str]:
+        serialized = json.dumps(parameters, sort_keys=True, default=str)
+        return tool_call_name, serialized
+
+    def _tool_call_tuple(
+        self, prompt_message: Any
+    ) -> tuple[str, str, dict[str, Any], str | None] | None:
+        tool_call_id = str(getattr(prompt_message, "id", "") or "").strip()
+        function = getattr(prompt_message, "function", None)
+        tool_call_name = str(getattr(function, "name", "") or "").strip()
+        if not tool_call_id or not tool_call_name:
+            return None
+
+        parsed = parse_tool_arguments(getattr(function, "arguments", ""))
+        return (
+            tool_call_id,
+            tool_call_name,
+            parsed.args,
+            parsed.error,
+        )
+
     def extract_tool_calls(
         self, llm_result_chunk: LLMResultChunk
     ) -> list[tuple[str, str, dict[str, Any], str | None]]:
@@ -771,16 +1176,10 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
         """
         tool_calls = []
         for prompt_message in extract_stream_tool_calls(llm_result_chunk):
-            parsed = parse_tool_arguments(prompt_message.function.arguments)
-
-            tool_calls.append(
-                (
-                    prompt_message.id,
-                    prompt_message.function.name,
-                    parsed.args,
-                    parsed.error,
-                )
-            )
+            tool_call = self._tool_call_tuple(prompt_message)
+            if tool_call is None:
+                continue
+            tool_calls.append(tool_call)
 
         return tool_calls
 
@@ -796,16 +1195,10 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
         """
         tool_calls = []
         for prompt_message in extract_blocking_tool_calls(llm_result):
-            parsed = parse_tool_arguments(prompt_message.function.arguments)
-
-            tool_calls.append(
-                (
-                    prompt_message.id,
-                    prompt_message.function.name,
-                    parsed.args,
-                    parsed.error,
-                )
-            )
+            tool_call = self._tool_call_tuple(prompt_message)
+            if tool_call is None:
+                continue
+            tool_calls.append(tool_call)
 
         return tool_calls
 

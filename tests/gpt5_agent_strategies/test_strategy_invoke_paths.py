@@ -167,8 +167,17 @@ def _install_strategy_dify_stub(monkeypatch: pytest.MonkeyPatch) -> None:
         name: str
         provider: str = "provider"
 
+    class ToolParameterOption(BaseModel):
+        value: str
+
+    class ToolParameter(BaseModel):
+        name: str
+        type: str = "string"
+        options: list[ToolParameterOption] = Field(default_factory=list)
+
     class ToolEntity(BaseModel):
         identity: ToolIdentity
+        parameters: list[ToolParameter] = Field(default_factory=list)
         runtime_parameters: dict[str, Any] = Field(default_factory=dict)
         provider_type: str = "builtin"
 
@@ -460,6 +469,451 @@ def test_invoke_streaming_plain_text_path(strategy_module: Any) -> None:
         if isinstance(m, dict) and m.get("kind") == "text"
     ]
     assert "stream hello" in text_messages
+
+
+def test_invoke_applies_prompt_policy_overrides_to_system_prompt(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    llm_result = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="answer",
+            tool_calls=[],
+        ),
+        usage=None,
+    )
+
+    class _CaptureLLM:
+        def __init__(self, response: Any) -> None:
+            self.response = response
+            self.last_kwargs: dict[str, Any] = {}
+
+        def invoke(self, **kwargs: Any) -> Any:
+            self.last_kwargs = kwargs
+            return self.response
+
+    llm = _CaptureLLM(llm_result)
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=lambda **_: []),
+    )
+
+    _ = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "You are a coding agent",
+                "prompt_policy_overrides": (
+                    '{"tool_preamble_policy":"<tool_preamble>\\n'
+                    '- custom preamble\\n</tool_preamble>"}'
+                ),
+                "model": _build_model_config(strategy_module, stream=False),
+                "tools": [],
+                "maximum_iterations": 1,
+            }
+        )
+    )
+
+    prompt_messages = llm.last_kwargs["prompt_messages"]
+    system_message = prompt_messages[0]
+    system_prompt_text = str(getattr(system_message, "content", ""))
+    assert "- custom preamble" in system_prompt_text
+    assert "Before calling tools, emit a short thought block" not in (
+        system_prompt_text
+    )
+
+
+def test_invoke_streaming_plain_text_emits_each_chunk(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    first_chunk = strategy_module.LLMResultChunk(
+        model="gpt-5.2",
+        prompt_messages=[],
+        delta=types.SimpleNamespace(
+            message=strategy_module.AssistantPromptMessage(
+                content="stream ",
+                tool_calls=[],
+            ),
+            usage=None,
+        ),
+    )
+    second_chunk = strategy_module.LLMResultChunk(
+        model="gpt-5.2",
+        prompt_messages=[],
+        delta=types.SimpleNamespace(
+            message=strategy_module.AssistantPromptMessage(
+                content="hello",
+                tool_calls=[],
+            ),
+            usage=None,
+        ),
+    )
+
+    def _stream() -> Any:
+        yield first_chunk
+        yield second_chunk
+
+    llm = _SequenceLLM([_stream()])
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=lambda **_: []),
+    )
+
+    messages = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=True),
+                "tools": [],
+                "maximum_iterations": 1,
+            }
+        )
+    )
+
+    text_messages = [
+        m["text"]
+        for m in messages
+        if isinstance(m, dict) and m.get("kind") == "text"
+    ]
+    assert text_messages == ["stream ", "hello"]
+
+
+def test_invoke_streaming_hides_think_blocks_when_disabled_but_keeps_internal_response(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    first_chunk = strategy_module.LLMResultChunk(
+        model="gpt-5.2",
+        prompt_messages=[],
+        delta=types.SimpleNamespace(
+            message=strategy_module.AssistantPromptMessage(
+                content="<think>内部で計画を立てます。",
+                tool_calls=[],
+            ),
+            usage=None,
+        ),
+    )
+    second_chunk = strategy_module.LLMResultChunk(
+        model="gpt-5.2",
+        prompt_messages=[],
+        delta=types.SimpleNamespace(
+            message=strategy_module.AssistantPromptMessage(
+                content="次に調査します。</think>ユーザー向け回答です。",
+                tool_calls=[],
+            ),
+            usage=None,
+        ),
+    )
+
+    def _stream() -> Any:
+        yield first_chunk
+        yield second_chunk
+
+    llm = _SequenceLLM([_stream()])
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=lambda **_: []),
+    )
+
+    messages = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=True),
+                "tools": [],
+                "maximum_iterations": 1,
+                "emit_intermediate_thoughts": False,
+            }
+        )
+    )
+
+    rendered = "".join(
+        m["text"]
+        for m in messages
+        if isinstance(m, dict) and m.get("kind") == "text"
+    )
+    assert "<think>" not in rendered
+    assert "</think>" not in rendered
+    assert "内部で計画を立てます" not in rendered
+    assert "次に調査します" not in rendered
+    assert "ユーザー向け回答です。" in rendered
+
+    round_log_finishes = [
+        m
+        for m in messages
+        if isinstance(m, dict)
+        and m.get("kind") == "log_finish"
+        and isinstance(m.get("data"), dict)
+        and isinstance(m["data"].get("output"), dict)
+        and "llm_response" in m["data"]["output"]
+    ]
+    assert round_log_finishes
+    llm_response = str(round_log_finishes[0]["data"]["output"]["llm_response"])
+    assert "<think>" in llm_response
+    assert "</think>" in llm_response
+    assert "ユーザー向け回答です。" in llm_response
+
+
+def test_invoke_streaming_does_not_duplicate_emitted_thought_with_late_tool_call(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool_call = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_late_stream_tool",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"q":"hello"}',
+        ),
+    )
+    thought_chunk = strategy_module.LLMResultChunk(
+        model="gpt-5.2",
+        prompt_messages=[],
+        delta=types.SimpleNamespace(
+            message=strategy_module.AssistantPromptMessage(
+                content="<think>\nsearch plan\n</think>",
+                tool_calls=[],
+            ),
+            usage=None,
+        ),
+    )
+    tool_call_chunk = strategy_module.LLMResultChunk(
+        model="gpt-5.2",
+        prompt_messages=[],
+        delta=types.SimpleNamespace(
+            message=strategy_module.AssistantPromptMessage(
+                content="",
+                tool_calls=[tool_call],
+            ),
+            usage=None,
+        ),
+    )
+
+    def _stream() -> Any:
+        yield thought_chunk
+        yield tool_call_chunk
+
+    llm = _SequenceLLM([_stream()])
+    tool_text = types.SimpleNamespace(
+        type=strategy_module.ToolInvokeMessage.MessageType.TEXT,
+        message=strategy_module.ToolInvokeMessage.TextMessage(text="tool-ok"),
+    )
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=lambda **_: [tool_text]),
+    )
+
+    messages = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=True),
+                "tools": [_build_tool_entity()],
+                "maximum_iterations": 1,
+            }
+        )
+    )
+
+    text_messages = [
+        m["text"]
+        for m in messages
+        if isinstance(m, dict) and m.get("kind") == "text"
+    ]
+    rendered = "".join(text_messages)
+    assert rendered.count("<think>\nsearch plan\n</think>") == 1
+
+
+def test_extract_tool_calls_ignores_invalid_entries(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    missing_id = strategy_module.AssistantPromptMessage.ToolCall(
+        id="",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"q":"hello"}',
+        ),
+    )
+    missing_name = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_missing_name",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="",
+            arguments='{"q":"hello"}',
+        ),
+    )
+    chunk = strategy_module.LLMResultChunk(
+        model="gpt-5.2",
+        prompt_messages=[],
+        delta=types.SimpleNamespace(
+            message=strategy_module.AssistantPromptMessage(
+                content="",
+                tool_calls=[missing_id, missing_name],
+            ),
+            usage=None,
+        ),
+    )
+
+    assert strategy.extract_tool_calls(chunk) == []
+
+
+def test_invoke_streaming_merges_duplicate_tool_call_ids(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    partial = strategy_module.LLMResultChunk(
+        model="gpt-5.2",
+        prompt_messages=[],
+        delta=types.SimpleNamespace(
+            message=strategy_module.AssistantPromptMessage(
+                content="",
+                tool_calls=[
+                    strategy_module.AssistantPromptMessage.ToolCall(
+                        id="call_1",
+                        type="function",
+                        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name="lookup",
+                            arguments="{broken",
+                        ),
+                    )
+                ],
+            ),
+            usage=None,
+        ),
+    )
+    final = strategy_module.LLMResultChunk(
+        model="gpt-5.2",
+        prompt_messages=[],
+        delta=types.SimpleNamespace(
+            message=strategy_module.AssistantPromptMessage(
+                content="",
+                tool_calls=[
+                    strategy_module.AssistantPromptMessage.ToolCall(
+                        id="call_1",
+                        type="function",
+                        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name="lookup",
+                            arguments='{"q":"hello"}',
+                        ),
+                    )
+                ],
+            ),
+            usage=None,
+        ),
+    )
+
+    def _stream() -> Any:
+        yield partial
+        yield final
+
+    llm = _SequenceLLM([_stream()])
+    calls: list[dict[str, Any]] = []
+    text_response = types.SimpleNamespace(
+        type=strategy_module.ToolInvokeMessage.MessageType.TEXT,
+        message=strategy_module.ToolInvokeMessage.TextMessage(text="ok"),
+    )
+
+    def _tool_invoke(**kwargs: Any) -> list[Any]:
+        calls.append(kwargs)
+        return [text_response]
+
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=_tool_invoke),
+    )
+
+    _ = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=True),
+                "tools": [_build_tool_entity()],
+                "maximum_iterations": 1,
+            }
+        )
+    )
+
+    assert len(calls) == 1
+    assert calls[0]["tool_name"] == "lookup"
+    assert calls[0]["parameters"]["q"] == "hello"
+
+
+def test_invoke_streaming_tool_call_thought_is_wrapped(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool_call = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_stream_intermediate",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"q":"hello"}',
+        ),
+    )
+    stream_chunk = strategy_module.LLMResultChunk(
+        model="gpt-5.2",
+        prompt_messages=[],
+        delta=types.SimpleNamespace(
+            message=strategy_module.AssistantPromptMessage(
+                content="thinking before tool",
+                tool_calls=[tool_call],
+            ),
+            usage=None,
+        ),
+    )
+    final_result = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="final answer",
+            tool_calls=[],
+        ),
+        usage=None,
+    )
+
+    def _stream() -> Any:
+        yield stream_chunk
+
+    llm = _SequenceLLM([_stream(), final_result])
+    tool_text = types.SimpleNamespace(
+        type=strategy_module.ToolInvokeMessage.MessageType.TEXT,
+        message=strategy_module.ToolInvokeMessage.TextMessage(text="tool-ok"),
+    )
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=lambda **_: [tool_text]),
+    )
+
+    messages = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=True),
+                "tools": [_build_tool_entity()],
+                "maximum_iterations": 3,
+            }
+        )
+    )
+
+    text_messages = [
+        m["text"]
+        for m in messages
+        if isinstance(m, dict) and m.get("kind") == "text"
+    ]
+    rendered = "\n".join(text_messages)
+    assert "<think>" in rendered
+    assert "</think>" in rendered
+    assert "thinking before tool" in rendered
+    assert "final answer" in rendered
 
 
 def test_invoke_parse_error_tool_call_path(strategy_module: Any) -> None:
@@ -847,3 +1301,432 @@ def test_invoke_tool_exception_masks_internal_details(
     rendered = "\n".join(text_messages)
     assert "tool invoke error: failed to execute tool" in rendered
     assert "internal error path=/srv/secret" not in rendered
+
+
+def test_invoke_normalizes_option_parameter_boolean_to_string(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool_call = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_include_answer",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"include_answer": false}',
+        ),
+    )
+    llm_result = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="need tool",
+            tool_calls=[tool_call],
+        ),
+        usage=None,
+    )
+    llm = _SequenceLLM([llm_result])
+    called: dict[str, Any] = {}
+    text_response = types.SimpleNamespace(
+        type=strategy_module.ToolInvokeMessage.MessageType.TEXT,
+        message=strategy_module.ToolInvokeMessage.TextMessage(text="ok"),
+    )
+
+    def _tool_invoke(**kwargs: Any) -> list[Any]:
+        called.update(kwargs)
+        return [text_response]
+
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=_tool_invoke),
+    )
+
+    _ = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=False),
+                "tools": [
+                    _build_tool_entity(
+                        parameters=[
+                            {
+                                "name": "include_answer",
+                                "type": "select",
+                                "options": [
+                                    {"value": "false"},
+                                    {"value": "true"},
+                                    {"value": "basic"},
+                                    {"value": "advanced"},
+                                ],
+                            }
+                        ]
+                    )
+                ],
+                "maximum_iterations": 1,
+            }
+        )
+    )
+
+    assert called["parameters"]["include_answer"] == "false"
+
+
+def test_invoke_validates_option_parameter_before_tool_call(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool_call = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_invalid_option",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"include_answer":"invalid"}',
+        ),
+    )
+    llm_result = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="need tool",
+            tool_calls=[tool_call],
+        ),
+        usage=None,
+    )
+    llm = _SequenceLLM([llm_result])
+    call_count = 0
+
+    def _tool_invoke(**_: Any) -> list[Any]:
+        nonlocal call_count
+        call_count += 1
+        return []
+
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=_tool_invoke),
+    )
+
+    messages = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=False),
+                "tools": [
+                    _build_tool_entity(
+                        parameters=[
+                            {
+                                "name": "include_answer",
+                                "type": "select",
+                                "options": [
+                                    {"value": "false"},
+                                    {"value": "true"},
+                                    {"value": "basic"},
+                                    {"value": "advanced"},
+                                ],
+                            }
+                        ]
+                    )
+                ],
+                "maximum_iterations": 1,
+            }
+        )
+    )
+
+    text_messages = [
+        m["text"]
+        for m in messages
+        if isinstance(m, dict) and m.get("kind") == "text"
+    ]
+    rendered = "\n".join(text_messages)
+    assert "tool arguments validation error" in rendered
+    assert call_count == 0
+
+
+def test_invoke_skips_repeated_failed_tool_invocation(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool_call = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_repeat_error",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"q":"hello"}',
+        ),
+    )
+    first = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="round1",
+            tool_calls=[tool_call],
+        ),
+        usage=None,
+    )
+    second = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="round2",
+            tool_calls=[tool_call],
+        ),
+        usage=None,
+    )
+    llm = _SequenceLLM([first, second])
+    call_count = 0
+
+    def _tool_invoke(**_: Any) -> list[Any]:
+        nonlocal call_count
+        call_count += 1
+        raise RuntimeError("internal invoke failure")
+
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=_tool_invoke),
+    )
+
+    messages = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=False),
+                "tools": [_build_tool_entity()],
+                "maximum_iterations": 3,
+            }
+        )
+    )
+
+    finished_logs = [m for m in messages if m.get("kind") == "log_finish"]
+    rendered = str(finished_logs)
+    assert (
+        "tool invoke error: repeated failure detected; skipped duplicate call"
+        in rendered
+    )
+    assert call_count == 1
+
+
+def test_invoke_emits_intermediate_thought_with_tool_calls_by_default(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool_call = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_intermediate",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"q":"hello"}',
+        ),
+    )
+    first = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="thinking before tool",
+            tool_calls=[tool_call],
+        ),
+        usage=None,
+    )
+    second = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="final answer",
+            tool_calls=[],
+        ),
+        usage=None,
+    )
+    llm = _SequenceLLM([first, second])
+    tool_text = types.SimpleNamespace(
+        type=strategy_module.ToolInvokeMessage.MessageType.TEXT,
+        message=strategy_module.ToolInvokeMessage.TextMessage(text="tool-ok"),
+    )
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=lambda **_: [tool_text]),
+    )
+
+    messages = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=False),
+                "tools": [_build_tool_entity()],
+                "maximum_iterations": 3,
+            }
+        )
+    )
+
+    rendered = "\n".join(
+        m["text"]
+        for m in messages
+        if isinstance(m, dict) and m.get("kind") == "text"
+    )
+    assert "<think>" in rendered
+    assert "</think>" in rendered
+    assert "thinking before tool" in rendered
+    assert "final answer" in rendered
+
+
+def test_invoke_can_disable_intermediate_thought_with_tool_calls(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool_call = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_intermediate_disabled",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"q":"hello"}',
+        ),
+    )
+    first = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="thinking before tool",
+            tool_calls=[tool_call],
+        ),
+        usage=None,
+    )
+    second = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="final answer",
+            tool_calls=[],
+        ),
+        usage=None,
+    )
+    llm = _SequenceLLM([first, second])
+    tool_text = types.SimpleNamespace(
+        type=strategy_module.ToolInvokeMessage.MessageType.TEXT,
+        message=strategy_module.ToolInvokeMessage.TextMessage(text="tool-ok"),
+    )
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=lambda **_: [tool_text]),
+    )
+
+    messages = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=False),
+                "tools": [_build_tool_entity()],
+                "maximum_iterations": 3,
+                "emit_intermediate_thoughts": False,
+            }
+        )
+    )
+
+    rendered = "\n".join(
+        m["text"]
+        for m in messages
+        if isinstance(m, dict) and m.get("kind") == "text"
+    )
+    assert "<think>" not in rendered
+    assert "</think>" not in rendered
+    assert "thinking before tool" not in rendered
+    assert "final answer" in rendered
+
+
+def test_invoke_emits_tool_thought_fallback_when_content_is_empty(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool_call = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_empty_thought",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"q":"hello"}',
+        ),
+    )
+    first = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="",
+            tool_calls=[tool_call],
+        ),
+        usage=None,
+    )
+    second = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="final answer",
+            tool_calls=[],
+        ),
+        usage=None,
+    )
+    llm = _SequenceLLM([first, second])
+    tool_text = types.SimpleNamespace(
+        type=strategy_module.ToolInvokeMessage.MessageType.TEXT,
+        message=strategy_module.ToolInvokeMessage.TextMessage(text="tool-ok"),
+    )
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=lambda **_: [tool_text]),
+    )
+
+    messages = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=False),
+                "tools": [_build_tool_entity()],
+                "maximum_iterations": 3,
+            }
+        )
+    )
+
+    rendered = "\n".join(
+        m["text"]
+        for m in messages
+        if isinstance(m, dict) and m.get("kind") == "text"
+    )
+    assert "<think>" in rendered
+    assert "まず、lookup ツールで必要な情報を確認します。" in rendered
+    assert "</think>" in rendered
+
+
+def test_format_thought_block_normalizes_intent_prefix(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    block = strategy._format_thought_block(
+        "意図：まず current_time ツールで時刻を確認します。"
+    )
+    assert block.startswith("<think>\n")
+    assert block.endswith("\n</think>")
+    assert "意図：" not in block
+    assert "まず current_time ツールで時刻を確認します。" in block
+
+
+def test_format_thought_block_avoids_double_wrapping(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    block = strategy._format_thought_block(
+        "<think>\nすでに整形済みです。\n</think>"
+    )
+    assert block.count("<think>") == 1
+    assert block.count("</think>") == 1
+
+
+def test_strip_think_blocks_for_display_removes_complete_and_dangling_blocks(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    text = "<think>内部検討</think>公開文。" "<think>途中までの思考"
+
+    cleaned = strategy._strip_think_blocks_for_display(text)
+
+    assert "<think>" not in cleaned
+    assert "</think>" not in cleaned
+    assert "内部検討" not in cleaned
+    assert "公開文。" in cleaned
