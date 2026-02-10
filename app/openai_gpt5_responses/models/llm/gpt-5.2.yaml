@@ -6,6 +6,7 @@ model_type: llm
 features:
   - tool-call
   - multi-tool-call
+  - agent-thought
   - stream-tool-call
 model_properties:
   mode: chat
@@ -40,6 +41,20 @@ parameter_rules:
       - medium
       - high
       - xhigh
+  - name: reasoning_summary
+    label:
+      en_US: Reasoning Summary
+      ja_JP: 推論サマリー
+    help:
+      en_US: Summary level for model reasoning output.
+      ja_JP: モデル推論出力のサマリー粒度。
+    type: string
+    required: false
+    default: auto
+    options:
+      - auto
+      - concise
+      - detailed
   - name: verbosity
     label:
       en_US: Verbosity

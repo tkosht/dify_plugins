@@ -3,11 +3,15 @@ from __future__ import annotations
 import importlib
 import sys
 import types
+from pathlib import Path
 from typing import Any
 
 from tests.gpt5_agent_strategies.test_strategy_invoke_paths import (
     _install_strategy_dify_stub,
 )
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+PLUGIN_DIR = BASE_DIR / "app" / "gpt5_agent_strategies"
 
 
 def _install_main_provider_stub() -> None:
@@ -69,3 +73,37 @@ def test_gpt5_react_reuses_function_calling_strategy(monkeypatch: Any) -> None:
         module.GPT5ReActStrategy.__mro__[1].__name__
         == "GPT5FunctionCallingStrategy"
     )
+
+
+def test_gpt5_react_exposes_single_agent_strategy_subclass(
+    monkeypatch: Any,
+) -> None:
+    _install_strategy_dify_stub(monkeypatch)
+    sys.modules.pop(
+        "app.gpt5_agent_strategies.strategies.gpt5_function_calling", None
+    )
+    sys.modules.pop("app.gpt5_agent_strategies.strategies.gpt5_react", None)
+
+    module = importlib.import_module(
+        "app.gpt5_agent_strategies.strategies.gpt5_react"
+    )
+    exported_types = {
+        name for name, value in vars(module).items() if isinstance(value, type)
+    }
+
+    assert "GPT5ReActStrategy" in exported_types
+    assert "GPT5FunctionCallingStrategy" not in exported_types
+    assert "GPT5FunctionCallingParams" not in exported_types
+
+
+def test_agent_strategy_importable_without_app_package(
+    monkeypatch: Any,
+) -> None:
+    _install_strategy_dify_stub(monkeypatch)
+    monkeypatch.setitem(sys.modules, "app", types.ModuleType("app"))
+    monkeypatch.syspath_prepend(str(PLUGIN_DIR))
+    sys.modules.pop("strategies.gpt5_function_calling", None)
+    importlib.invalidate_caches()
+
+    module = importlib.import_module("strategies.gpt5_function_calling")
+    assert module.GPT5FunctionCallingStrategy.__name__

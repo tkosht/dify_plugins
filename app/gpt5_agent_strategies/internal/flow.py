@@ -14,9 +14,15 @@ def build_round_prompt_messages(
 
 
 def should_emit_response_text(
-    *, has_tool_calls: bool, iteration_step: int, max_iteration_steps: int
+    *,
+    has_tool_calls: bool,
+    iteration_step: int,
+    max_iteration_steps: int,
+    emit_intermediate_thoughts: bool = True,
 ) -> bool:
     if not has_tool_calls:
+        return True
+    if emit_intermediate_thoughts:
         return True
     return iteration_step >= max_iteration_steps
 

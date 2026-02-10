@@ -61,6 +61,23 @@ audit_logger.setLevel(logging.INFO)
 audit_logger.propagate = True
 
 
+class _FunctionToolCallState:
+    __slots__ = ("item_id", "call_id", "name", "arguments")
+
+    def __init__(
+        self,
+        *,
+        item_id: str,
+        call_id: str,
+        name: str,
+        arguments: str,
+    ) -> None:
+        self.item_id = item_id
+        self.call_id = call_id
+        self.name = name
+        self.arguments = arguments
+
+
 class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
     @staticmethod
     def _is_audit_enabled() -> bool:
@@ -82,6 +99,12 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
             return int(value)
         except (TypeError, ValueError):
             return None
+
+    @staticmethod
+    def _attr_or_key(value: Any, key: str, default: Any = None) -> Any:
+        if isinstance(value, Mapping):
+            return value.get(key, default)
+        return getattr(value, key, default)
 
     def _emit_audit(self, event: str, **fields: Any) -> None:
         if not self._is_audit_enabled():
@@ -110,6 +133,35 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
             "param": getattr(exc, "param", None),
             "api_error_type": getattr(exc, "type", None),
         }
+
+    def _extract_stream_error_fields(self, event: Any) -> dict[str, Any]:
+        event_type = str(self._attr_or_key(event, "type", "") or "")
+        fields: dict[str, Any] = {
+            "event_type": event_type,
+            "code": self._attr_or_key(event, "code", None),
+            "param": self._attr_or_key(event, "param", None),
+            "message": self._attr_or_key(event, "message", None),
+        }
+
+        response = self._attr_or_key(event, "response", None)
+        if response is not None:
+            fields["request_id"] = self._extract_response_request_id(response)
+            fields["response_status"] = self._attr_or_key(
+                response, "status", None
+            )
+            error_obj = self._attr_or_key(response, "error", None)
+            if error_obj is not None:
+                fields["code"] = fields.get("code") or self._attr_or_key(
+                    error_obj, "code", None
+                )
+                fields["param"] = fields.get("param") or self._attr_or_key(
+                    error_obj, "param", None
+                )
+                fields["message"] = fields.get("message") or self._attr_or_key(
+                    error_obj, "message", None
+                )
+
+        return fields
 
     @property
     def _invoke_error_mapping(
@@ -202,6 +254,388 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
         )
         return self._get_num_tokens_by_gpt2(joined_text)
 
+    def _build_stream_chunk(
+        self,
+        *,
+        model: str,
+        prompt_messages: list[PromptMessage],
+        index: int,
+        message: AssistantPromptMessage,
+        usage: Any = None,
+        finish_reason: str | None = None,
+    ) -> LLMResultChunk:
+        return LLMResultChunk(
+            model=model,
+            prompt_messages=prompt_messages,
+            system_fingerprint=None,
+            delta=LLMResultChunkDelta(
+                index=index,
+                message=message,
+                finish_reason=finish_reason,
+                usage=usage,
+            ),
+        )
+
+    def _stream_tool_call_chunk(
+        self,
+        *,
+        model: str,
+        prompt_messages: list[PromptMessage],
+        index: int,
+        state: _FunctionToolCallState,
+    ) -> LLMResultChunk:
+        tool_call = AssistantPromptMessage.ToolCall(
+            id=state.call_id,
+            type="function",
+            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                name=state.name,
+                arguments=state.arguments or "{}",
+            ),
+        )
+        return self._build_stream_chunk(
+            model=model,
+            prompt_messages=prompt_messages,
+            index=index,
+            message=AssistantPromptMessage(content="", tool_calls=[tool_call]),
+        )
+
+    def _extract_response_request_id(self, response: Any) -> str | None:
+        request_id = self._attr_or_key(response, "_request_id", None)
+        if request_id:
+            return str(request_id)
+        request_id = self._attr_or_key(response, "request_id", None)
+        if request_id:
+            return str(request_id)
+        return None
+
+    def _extract_response_model(
+        self, fallback_model: str, response: Any
+    ) -> str:
+        value = self._attr_or_key(response, "model", None)
+        return str(value or fallback_model)
+
+    def _extract_usage(
+        self,
+        *,
+        model: str,
+        credentials: Mapping,
+        response: Any,
+    ) -> Any:
+        usage_obj = self._attr_or_key(response, "usage", None)
+        if usage_obj is None:
+            return None
+
+        prompt_tokens = int(
+            self._attr_or_key(usage_obj, "input_tokens", 0) or 0
+        )
+        completion_tokens = int(
+            self._attr_or_key(usage_obj, "output_tokens", 0) or 0
+        )
+
+        return self._calc_response_usage(
+            model=model,
+            credentials=dict(credentials),
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+        )
+
+    def _stream_finish_reason(self, response: Any) -> str:
+        status = str(self._attr_or_key(response, "status", "") or "").lower()
+        if status == "incomplete":
+            return "length"
+        if status == "failed":
+            return "error"
+        return "stop"
+
+    def _close_stream(self, stream_obj: Any) -> None:
+        close = getattr(stream_obj, "close", None)
+        if callable(close):
+            close()
+
+    def _stream_event_error_message(self, event: Any) -> str:
+        event_type = str(self._attr_or_key(event, "type", "") or "")
+        message = str(
+            self._attr_or_key(event, "message", "")
+            or self._attr_or_key(event, "error", "")
+            or "responses stream failed"
+        )
+
+        if event_type in {"response.failed", "response.incomplete"}:
+            response = self._attr_or_key(event, "response", None)
+            if response is not None:
+                error_obj = self._attr_or_key(response, "error", None)
+                if error_obj is not None:
+                    message = str(
+                        self._attr_or_key(error_obj, "message", "") or message
+                    )
+                if not message.strip():
+                    status = self._attr_or_key(response, "status", event_type)
+                    message = str(status or event_type)
+
+        code = self._attr_or_key(event, "code", None)
+        if code:
+            return f"{message} (code={code})"
+        return message
+
+    def _invoke_streaming(
+        self,
+        *,
+        model: str,
+        credentials: Mapping,
+        prompt_messages: list[PromptMessage],
+        client: OpenAI,
+        request_payload: Mapping[str, Any],
+        audit_id: str,
+    ) -> Generator[LLMResultChunk, None, None]:
+        stream_obj: Any = None
+        tool_calls: dict[str, _FunctionToolCallState] = {}
+        chunk_index = 0
+        event_count = 0
+        reasoning_open = False
+        completed_response: Any = None
+        response_model = model
+        request_id = None
+        current_event_type = ""
+        stream_error_fields: dict[str, Any] = {}
+
+        try:
+            stream_obj = client.responses.create(**dict(request_payload))
+            for event in stream_obj:
+                event_count += 1
+                current_event_type = str(
+                    self._attr_or_key(event, "type", "") or ""
+                )
+
+                if current_event_type in {
+                    "response.reasoning_text.delta",
+                    "response.reasoning_summary_text.delta",
+                }:
+                    reasoning_delta = str(
+                        self._attr_or_key(event, "delta", "") or ""
+                    )
+                    if not reasoning_delta:
+                        continue
+                    if not reasoning_open:
+                        reasoning_delta = f"<think>\n{reasoning_delta}"
+                        reasoning_open = True
+
+                    chunk_index += 1
+                    yield self._build_stream_chunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        index=chunk_index,
+                        message=AssistantPromptMessage(
+                            content=reasoning_delta,
+                            tool_calls=[],
+                        ),
+                    )
+                    continue
+
+                if current_event_type == "response.output_text.delta":
+                    text_delta = str(
+                        self._attr_or_key(event, "delta", "") or ""
+                    )
+                    if not text_delta:
+                        continue
+                    if reasoning_open:
+                        text_delta = f"\n</think>{text_delta}"
+                        reasoning_open = False
+
+                    chunk_index += 1
+                    yield self._build_stream_chunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        index=chunk_index,
+                        message=AssistantPromptMessage(
+                            content=text_delta,
+                            tool_calls=[],
+                        ),
+                    )
+                    continue
+
+                if (
+                    current_event_type
+                    == "response.function_call_arguments.delta"
+                ):
+                    item_id = str(
+                        self._attr_or_key(event, "item_id", "") or ""
+                    )
+                    arguments_delta = str(
+                        self._attr_or_key(event, "delta", "") or ""
+                    )
+                    if not item_id or not arguments_delta:
+                        continue
+
+                    state = tool_calls.get(item_id)
+                    if state is None:
+                        state = _FunctionToolCallState(
+                            item_id=item_id,
+                            call_id=item_id,
+                            name="",
+                            arguments="",
+                        )
+                        tool_calls[item_id] = state
+
+                    state.arguments += arguments_delta
+                    tool_calls[item_id] = state
+                    continue
+
+                if current_event_type == "response.output_item.done":
+                    item = self._attr_or_key(event, "item", None)
+                    if item is None:
+                        continue
+
+                    item_type = str(self._attr_or_key(item, "type", "") or "")
+                    if item_type != "function_call":
+                        continue
+
+                    item_id = str(self._attr_or_key(item, "id", "") or "")
+                    call_id = str(
+                        self._attr_or_key(item, "call_id", "") or item_id or ""
+                    )
+                    key = item_id or call_id
+                    if not key:
+                        continue
+
+                    state = tool_calls.get(key)
+                    if state is None:
+                        state = _FunctionToolCallState(
+                            item_id=item_id or key,
+                            call_id=call_id or key,
+                            name="",
+                            arguments="",
+                        )
+
+                    name = str(
+                        self._attr_or_key(item, "name", "") or state.name
+                    )
+                    raw_arguments = self._attr_or_key(item, "arguments", None)
+                    if raw_arguments is None:
+                        arguments = state.arguments
+                    elif isinstance(raw_arguments, Mapping):
+                        arguments = json.dumps(
+                            raw_arguments,
+                            ensure_ascii=False,
+                        )
+                    else:
+                        arguments = str(raw_arguments)
+
+                    state.item_id = item_id or state.item_id or key
+                    state.call_id = call_id or state.call_id
+                    state.name = name
+                    state.arguments = arguments
+
+                    tool_calls[state.item_id] = state
+                    if state.call_id:
+                        tool_calls[state.call_id] = state
+
+                    if not state.call_id or not state.name:
+                        continue
+
+                    chunk_index += 1
+                    yield self._stream_tool_call_chunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        index=chunk_index,
+                        state=state,
+                    )
+                    continue
+
+                if current_event_type == "response.completed":
+                    completed_response = self._attr_or_key(
+                        event, "response", None
+                    )
+                    if completed_response is not None:
+                        response_model = self._extract_response_model(
+                            model,
+                            completed_response,
+                        )
+                        request_id = self._extract_response_request_id(
+                            completed_response
+                        )
+                    continue
+
+                if current_event_type in {
+                    "error",
+                    "response.failed",
+                    "response.incomplete",
+                }:
+                    stream_error_fields = self._extract_stream_error_fields(
+                        event
+                    )
+                    raise InvokeError(self._stream_event_error_message(event))
+
+            if reasoning_open:
+                chunk_index += 1
+                yield self._build_stream_chunk(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    index=chunk_index,
+                    message=AssistantPromptMessage(
+                        content="\n</think>",
+                        tool_calls=[],
+                    ),
+                )
+
+            usage = None
+            finish_reason = "stop"
+            if completed_response is not None:
+                usage = self._extract_usage(
+                    model=model,
+                    credentials=credentials,
+                    response=completed_response,
+                )
+                finish_reason = self._stream_finish_reason(completed_response)
+
+            self._emit_audit(
+                "responses_api_success",
+                audit_id=audit_id,
+                model=model,
+                response_model=response_model,
+                request_id=request_id,
+                stream_event_count=event_count,
+                stream=True,
+            )
+
+            chunk_index += 1
+            yield self._build_stream_chunk(
+                model=response_model,
+                prompt_messages=prompt_messages,
+                index=chunk_index,
+                message=AssistantPromptMessage(content="", tool_calls=[]),
+                usage=usage,
+                finish_reason=finish_reason,
+            )
+        except (APIStatusError, APIConnectionError, openai.APIError) as exc:
+            self._emit_audit(
+                "responses_api_error",
+                audit_id=audit_id,
+                model=model,
+                stream=True,
+                stream_event_type=current_event_type,
+                **self._extract_error_fields(exc),
+            )
+            raise self._transform_invoke_error(exc) from exc
+        except Exception as exc:  # noqa: BLE001
+            self._emit_audit(
+                "responses_api_error",
+                audit_id=audit_id,
+                model=model,
+                stream=True,
+                stream_event_type=current_event_type,
+                **stream_error_fields,
+                error_type=type(exc).__name__,
+            )
+
+            if isinstance(exc, InvokeError):
+                raise self._transform_invoke_error(exc) from exc
+
+            logger.exception("OpenAI GPT-5 responses stream invoke failed")
+            raise self._transform_invoke_error(exc) from exc
+        finally:
+            if stream_obj is not None:
+                self._close_stream(stream_obj)
+
     def _invoke(
         self,
         model: str,
@@ -220,13 +654,22 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
                 credentials=credentials,
                 model_parameters=model_parameters,
             )
+
+            effective_stream = (
+                coerce_bool_strict(
+                    model_parameters.get("enable_stream", True),
+                    field_name="enable_stream",
+                )
+                and stream
+            )
+
             user_input = prompt_messages_to_responses_input(prompt_messages)
             request_payload = build_responses_request(
                 model=model,
                 user_input=user_input,
                 model_parameters=model_parameters,
                 tools=tools or [],
-                stream=False,
+                stream=effective_stream,
             )
 
             # Responses API stop tokens are not consistent across all models.
@@ -269,6 +712,16 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
             # LargeLanguageModel.invoke() already wraps _invoke with
             # timing_context(), so starting another timing context here
             # triggers race-condition guards in multi-thread execution.
+            if effective_stream:
+                return self._invoke_streaming(
+                    model=model,
+                    credentials=credentials,
+                    prompt_messages=prompt_messages,
+                    client=client,
+                    request_payload=request_payload,
+                    audit_id=audit_id,
+                )
+
             response = client.responses.create(**request_payload)
 
             self._emit_audit(
@@ -285,18 +738,6 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
                 prompt_messages=prompt_messages,
                 response=response,
             )
-
-            effective_stream = (
-                coerce_bool_strict(
-                    model_parameters.get("enable_stream", True),
-                    field_name="enable_stream",
-                )
-                and stream
-            )
-            if effective_stream:
-                return self._as_single_chunk_stream(
-                    llm_result, prompt_messages
-                )
 
             return llm_result
         except (APIStatusError, APIConnectionError, openai.APIError) as exc:
@@ -327,6 +768,7 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
         allowed = {
             "max_output_tokens",
             "reasoning_effort",
+            "reasoning_summary",
             "verbosity",
             "response_format",
             "json_schema",

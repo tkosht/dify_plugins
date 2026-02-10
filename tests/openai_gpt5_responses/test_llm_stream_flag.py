@@ -282,14 +282,14 @@ def test_invoke_enable_stream_string_returns_generator(
     llm_module: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     model = llm_module.OpenAIGPT5LargeLanguageModel()
-    llm_result = _build_llm_result(llm_module)
+    assistant = llm_module.AssistantPromptMessage(content="ok", tool_calls=[])
     expected_chunk = llm_module.LLMResultChunk(
         model="gpt-5.2",
         prompt_messages=[],
         system_fingerprint=None,
         delta=llm_module.LLMResultChunkDelta(
             index=0,
-            message=llm_result.message,
+            message=assistant,
             finish_reason="stop",
             usage=None,
         ),
@@ -300,17 +300,12 @@ def test_invoke_enable_stream_string_returns_generator(
         "_normalize_parameters",
         lambda **_: {"enable_stream": "true"},
     )
-    monkeypatch.setattr(
-        model, "_to_credential_kwargs", lambda _credentials: {}
-    )
-    monkeypatch.setattr(model, "_to_llm_result", lambda **_: llm_result)
+    monkeypatch.setattr(model, "_to_credential_kwargs", lambda _: {})
 
-    def _streaming_response(
-        _llm_result: Any, _prompt_messages: list[Any]
-    ) -> Any:
+    def _streaming_response(**_: Any) -> Any:
         yield expected_chunk
 
-    monkeypatch.setattr(model, "_as_single_chunk_stream", _streaming_response)
+    monkeypatch.setattr(model, "_invoke_streaming", _streaming_response)
 
     result = model._invoke(
         model="gpt-5.2",
@@ -323,6 +318,176 @@ def test_invoke_enable_stream_string_returns_generator(
 
     assert isinstance(result, Generator)
     assert list(result) == [expected_chunk]
+
+
+def test_invoke_streaming_formats_reasoning_and_emits_tool_call_on_done(
+    llm_module: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    model = llm_module.OpenAIGPT5LargeLanguageModel()
+    usage_marker = {"usage": True}
+    monkeypatch.setattr(
+        model, "_calc_response_usage", lambda **_: usage_marker
+    )
+
+    events = [
+        types.SimpleNamespace(
+            type="response.reasoning_text.delta", delta="think-1"
+        ),
+        types.SimpleNamespace(
+            type="response.reasoning_text.delta", delta=" think-2"
+        ),
+        types.SimpleNamespace(
+            type="response.output_text.delta", delta="Answer"
+        ),
+        types.SimpleNamespace(
+            type="response.function_call_arguments.delta",
+            item_id="item_1",
+            delta='{"q":',
+        ),
+        types.SimpleNamespace(
+            type="response.function_call_arguments.delta",
+            item_id="item_1",
+            delta='"ok"}',
+        ),
+        types.SimpleNamespace(
+            type="response.output_item.done",
+            item=types.SimpleNamespace(
+                type="function_call",
+                id="item_1",
+                call_id="call_1",
+                name="lookup",
+                arguments='{"q":"ok"}',
+            ),
+        ),
+        types.SimpleNamespace(
+            type="response.completed",
+            response=types.SimpleNamespace(
+                model="gpt-5.2",
+                status="completed",
+                usage=types.SimpleNamespace(input_tokens=2, output_tokens=3),
+                _request_id="req_stream_ok",
+            ),
+        ),
+    ]
+
+    class _Stream(list):
+        closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    stream = _Stream(events)
+
+    class _Responses:
+        def create(self, **_: Any) -> Any:
+            return stream
+
+    class _OpenAI:
+        def __init__(self, **_: Any) -> None:
+            self.responses = _Responses()
+
+    chunks = list(
+        model._invoke_streaming(
+            model="gpt-5.2",
+            credentials={},
+            prompt_messages=[],
+            client=_OpenAI(),
+            request_payload={"model": "gpt-5.2", "stream": True},
+            audit_id="audit123",
+        )
+    )
+
+    assert chunks[0].delta.message.content == "<think>\nthink-1"
+    assert chunks[1].delta.message.content == " think-2"
+    assert chunks[2].delta.message.content == "\n</think>Answer"
+
+    assert chunks[3].delta.message.tool_calls[0].id == "call_1"
+    assert chunks[3].delta.message.tool_calls[0].function.name == "lookup"
+    assert chunks[3].delta.message.tool_calls[0].function.arguments == (
+        '{"q":"ok"}'
+    )
+
+    assert chunks[-1].delta.finish_reason == "stop"
+    assert chunks[-1].delta.usage is usage_marker
+    assert chunks[-1].delta.message.content == ""
+    assert stream.closed is True
+
+
+def test_invoke_streaming_closes_open_think_when_stream_ends(
+    llm_module: Any,
+) -> None:
+    model = llm_module.OpenAIGPT5LargeLanguageModel()
+
+    events = [
+        types.SimpleNamespace(
+            type="response.reasoning_text.delta", delta="thinking"
+        ),
+        types.SimpleNamespace(
+            type="response.completed",
+            response=types.SimpleNamespace(
+                model="gpt-5.2",
+                status="completed",
+                usage=types.SimpleNamespace(input_tokens=1, output_tokens=1),
+            ),
+        ),
+    ]
+
+    class _Responses:
+        def create(self, **_: Any) -> Any:
+            return events
+
+    class _OpenAI:
+        def __init__(self, **_: Any) -> None:
+            self.responses = _Responses()
+
+    chunks = list(
+        model._invoke_streaming(
+            model="gpt-5.2",
+            credentials={},
+            prompt_messages=[],
+            client=_OpenAI(),
+            request_payload={"model": "gpt-5.2", "stream": True},
+            audit_id="audit123",
+        )
+    )
+
+    assert chunks[0].delta.message.content == "<think>\nthinking"
+    assert chunks[1].delta.message.content == "\n</think>"
+    assert chunks[-1].delta.finish_reason == "stop"
+
+
+def test_invoke_streaming_raises_invoke_error_on_error_event(
+    llm_module: Any,
+) -> None:
+    model = llm_module.OpenAIGPT5LargeLanguageModel()
+
+    events = [
+        types.SimpleNamespace(
+            type="error",
+            code="invalid_request",
+            message="bad request",
+        )
+    ]
+
+    class _Responses:
+        def create(self, **_: Any) -> Any:
+            return events
+
+    class _OpenAI:
+        def __init__(self, **_: Any) -> None:
+            self.responses = _Responses()
+
+    with pytest.raises(llm_module.InvokeError):
+        list(
+            model._invoke_streaming(
+                model="gpt-5.2",
+                credentials={},
+                prompt_messages=[],
+                client=_OpenAI(),
+                request_payload={"model": "gpt-5.2", "stream": True},
+                audit_id="audit123",
+            )
+        )
 
 
 def test_safe_int_and_credential_kwargs_bounds(llm_module: Any) -> None:

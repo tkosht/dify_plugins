@@ -14,6 +14,7 @@ _ALLOWED_REASONING_EFFORT = {
     "high",
     "xhigh",
 }
+_ALLOWED_REASONING_SUMMARY = {"auto", "concise", "detailed"}
 
 
 def coerce_bool_strict(value: Any, *, field_name: str) -> bool:
@@ -117,6 +118,7 @@ def build_responses_request(
     if max_output_tokens is not None:
         payload["max_output_tokens"] = int(max_output_tokens)
 
+    reasoning_payload: dict[str, Any] = {}
     reasoning_effort = params.get("reasoning_effort")
     if reasoning_effort is not None:
         reasoning_effort = str(reasoning_effort)
@@ -124,7 +126,19 @@ def build_responses_request(
             raise ValueError(
                 f"unsupported reasoning_effort: {reasoning_effort}"
             )
-        payload["reasoning"] = {"effort": reasoning_effort}
+        reasoning_payload["effort"] = reasoning_effort
+
+    reasoning_summary = params.get("reasoning_summary")
+    if reasoning_summary is not None:
+        reasoning_summary = str(reasoning_summary)
+        if reasoning_summary not in _ALLOWED_REASONING_SUMMARY:
+            raise ValueError(
+                f"unsupported reasoning_summary: {reasoning_summary}"
+            )
+        reasoning_payload["summary"] = reasoning_summary
+
+    if reasoning_payload:
+        payload["reasoning"] = reasoning_payload
 
     response_format = str(params.get("response_format") or "text")
     if response_format not in _ALLOWED_RESPONSE_FORMATS:

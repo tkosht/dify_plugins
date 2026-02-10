@@ -1,0 +1,24 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": [
+    "draft",
+    "execute",
+    "review",
+    "revise",
+    "verify"
+  ],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "目的: Plugin A 解析計画を /draft.proposal に記録。手順: 1) 根因候補の初期仮説を3件。2) 追加調査の条件を next_stages 条件として明記。3) stage_result は単一行JSON。4) capsule_patch は1件のみ。"
+    },
+    {
+      "id": "execute",
+      "instructions": "目的: FACTS INPUT から根拠を抽出し /facts に記録。手順: 1) 各facts要素は item/evidence/source/status を持つオブジェクト。2) 反証があれば status=refuted。3) stage_result は単一行JSON。4) capsule_patch は1件のみ。"
+    },
+    {
+      "id": "review",
+      "instructions": "目的: 根因候補を優先度付きで /critique に整理。手順: 1) 支持証拠と反証を分離。2) 最小の対処案を /revise.proposal に追加。3) stage_result は単一行JSON。4) capsule_patch は1件のみ。"
+    }
+  ]
+}

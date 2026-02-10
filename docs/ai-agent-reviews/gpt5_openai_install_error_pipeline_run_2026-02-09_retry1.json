@@ -1,0 +1,519 @@
+{
+  "pipeline_run_id": "48b808b0-378e-44c8-8e21-5268d52ebd86",
+  "success": true,
+  "stage_results": [
+    {
+      "schema_version": "1.1",
+      "stage_id": "draft",
+      "status": "ok",
+      "output_is_partial": false,
+      "capsule_patch": [
+        {
+          "op": "replace",
+          "path": "/draft",
+          "value": {
+            "proposal": {
+              "summary": "Plugin A(openai_gpt5_responses)のinstall decode errorを事実ベースで3仮説に収束し、executeで最小検証してreviewで採否判定する。",
+              "why_draft_execute_review_is_enough": "対象は単一プラグイン・単一アーティファクト・単一失敗点(upload/package)に限定され、既知事実で仮説形成が可能なため、draftで仮説固定、executeで指定3コマンドと再インストール検証、reviewで根因確定の3段で十分。",
+              "root_causes_ranked": [
+                {
+                  "rank": 1,
+                  "confidence": "high",
+                  "cause": "インストール時のモジュール読み込みでランタイム例外が発生し、daemonがPluginDaemonBasicResponse形式のJSONを返せずdecode失敗した。",
+                  "supporting_evidence": [
+                    "error: upload/packageでPluginDaemonBasicResponseのparse失敗が報告され、daemon応答が期待形式ではない。",
+                    "runtime-import-style: llm.pyとopenai_gpt5.pyにapp.* importとinternal.* fallback分岐があり、実行環境差で分岐失敗が起きうる。"
+                  ],
+                  "refuting_evidence": [
+                    "module-list: 同一.difypkgのdify plugin module listは成功しており、静的メタデータ読み取り自体は成立している。"
+                  ]
+                },
+                {
+                  "rank": 2,
+                  "confidence": "medium",
+                  "cause": "difypkgへの__pycache__/*.pyc混入がinstall経路の検証または展開処理を不安定化し、非JSON応答を誘発した。",
+                  "supporting_evidence": [
+                    "package-contents: .difypkg内に__pycache__/main.cpython-312.pycやinternal/models/provider配下のpycが含まれる。",
+                    "error: 失敗箇所がupload/packageであり、パッケージ受理直後の処理境界で失敗している。"
+                  ],
+                  "refuting_evidence": [
+                    "module-list: 同一パッケージでmodels/parameters列挙は成功しており、少なくともCLI経路では致命障害になっていない。"
+                  ]
+                },
+                {
+                  "rank": 3,
+                  "confidence": "low",
+                  "cause": "coreとplugin daemon間の応答スキーマ互換性不整合によりdecode失敗した。",
+                  "supporting_evidence": [
+                    "error文面はPluginDaemonBasicResponseへのparse失敗を直接示している。"
+                  ],
+                  "refuting_evidence": [
+                    "plugin A固有アーティファクトに事実上の特徴(pycache混入、import分岐実装)があり、プラグイン内容起因でも説明可能。",
+                    "サーバーログ未取得のため互換性不整合の直接証拠は不明。"
+                  ]
+                }
+              ],
+              "minimal_mitigation_plan": [
+                "パッケージ生成前にapp/openai_gpt5_responses配下の__pycache__と*.pycを除外して再パッケージ化する。",
+                "install時に読まれるモジュールのimport経路を単純化し、環境依存のapp.*優先分岐を減らす。",
+                "再生成物でmodule list再確認後にinstall再試行し、結果をreviewで確定する。"
+              ],
+              "verification_commands": [
+                "dify plugin package app/openai_gpt5_responses -o plugins/openai_gpt5_responses.difypkg",
+                "dify plugin module list plugins/openai_gpt5_responses.difypkg",
+                "pytest tests/openai_gpt5_responses -q"
+              ],
+              "unknowns_requiring_server_logs": [
+                "upload/package時のdaemon生レスポンス本文(JSONか否か)は不明。",
+                "daemon側tracebackと失敗モジュール名は不明。",
+                "install経路での__pycache__/pyc許容仕様は不明。",
+                "coreとplugin daemonの実行バージョンおよび応答スキーマ整合性は不明。"
+              ],
+              "next_stage_conditions": [
+                {
+                  "condition": "サーバーログでImportErrorまたはModuleNotFoundErrorが確認される",
+                  "action": "根因1を確定しimport修正をexecuteで優先実施する。"
+                },
+                {
+                  "condition": "サーバーログでpycache/pyc起因の検証失敗が確認される",
+                  "action": "pyc除外パッケージングを恒久化して再配布する。"
+                },
+                {
+                  "condition": "サーバーログで応答スキーマ不整合が確認される",
+                  "action": "core-daemon互換バージョンを固定し再検証する。"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "schema_version": "1.1",
+      "stage_id": "execute",
+      "status": "ok",
+      "output_is_partial": false,
+      "capsule_patch": [
+        {
+          "op": "replace",
+          "path": "/facts",
+          "value": [
+            {
+              "item": "upload/packageエンドポイントでPluginDecodeResponseが発生",
+              "evidence": "インストール要求がplugin/<workspace>/management/install/upload/packageでPluginDaemonBasicResponseへのparse失敗として報告された。",
+              "source": "FACTS INPUT [error] (user report)",
+              "status": "supported"
+            },
+            {
+              "item": "Plugin Aの.difypkgは再生成済み",
+              "evidence": "/home/devuser/workspace/plugins/openai_gpt5_responses.difypkgが存在し、2026-02-09 18:16 JSTに再生成済み。",
+              "source": "FACTS INPUT [build]",
+              "status": "supported"
+            },
+            {
+              "item": "パッケージのモジュール列挙は成功",
+              "evidence": "dify plugin module list plugins/openai_gpt5_responses.difypkg が成功し、models/parametersを列挙できた。",
+              "source": "FACTS INPUT [module-list]",
+              "status": "supported"
+            },
+            {
+              "item": "gpt-5-codex.yamlのhelp多言語キーは定義済み",
+              "evidence": "app/openai_gpt5_responses/models/llm/gpt-5-codex.yaml:18-20にhelp.en_USとhelp.ja_JPがあり、同一スキーマがgpt-5*.yamlにも適用されている。",
+              "source": "FACTS INPUT [yaml]",
+              "status": "supported"
+            },
+            {
+              "item": ".difypkg内に__pycache__/pycが混入",
+              "evidence": "plugins/openai_gpt5_responses.difypkgに__pycache__/main.cpython-312.pyc、internal/__pycache__/*.pyc、models/llm/__pycache__/llm.cpython-312.pyc、provider/__pycache__/openai_gpt5.cpython-312.pycが含まれる。",
+              "source": "FACTS INPUT [package-contents]",
+              "status": "supported"
+            },
+            {
+              "item": "llm.pyはapp.*優先+internal.*フォールバックのimport構成",
+              "evidence": "app/openai_gpt5_responses/models/llm/llm.pyでtry/except ModuleNotFoundErrorによりapp.* importからinternal.* importへフォールバックする実装がある。",
+              "source": "FACTS INPUT [runtime-import-style] llm.py",
+              "status": "supported"
+            },
+            {
+              "item": "openai_gpt5.pyも同様のimport構成",
+              "evidence": "app/openai_gpt5_responses/provider/openai_gpt5.pyでtry/except ModuleNotFoundErrorによりapp.* importからinternal.* importへフォールバックする実装がある。",
+              "source": "FACTS INPUT [runtime-import-style] openai_gpt5.py",
+              "status": "supported"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schema_version": "1.1",
+      "stage_id": "review",
+      "status": "ok",
+      "output_is_partial": false,
+      "capsule_patch": [
+        {
+          "op": "replace",
+          "path": "/critique",
+          "value": {
+            "plugin_scope": "openai_gpt5_responsesのみを対象に評価し、plugin B要素は未使用。",
+            "root_causes_ranked": [
+              {
+                "rank": 1,
+                "cause": "install実行フェーズでのimport解決失敗によりdaemonがPluginDaemonBasicResponse形式を返せなかった可能性。",
+                "confidence": "high",
+                "supporting_evidence": [
+                  {
+                    "evidence": "upload/packageでPluginDaemonBasicResponseへのparse失敗が発生しており、daemon応答が期待形式でない。",
+                    "source": "FACTS INPUT [error]"
+                  },
+                  {
+                    "evidence": "llm.pyとopenai_gpt5.pyにapp.*優先とinternal.*フォールバックの二重import経路がある。",
+                    "source": "FACTS INPUT [runtime-import-style]"
+                  }
+                ],
+                "refuting_evidence": [
+                  {
+                    "evidence": "同一difypkgでdify plugin module listは成功しmodels/parametersを列挙できている。",
+                    "source": "FACTS INPUT [module-list]"
+                  }
+                ]
+              },
+              {
+                "rank": 2,
+                "cause": "difypkgへの__pycache__/pyc混入がinstall経路の検証または展開で異常を誘発した可能性。",
+                "confidence": "medium",
+                "supporting_evidence": [
+                  {
+                    "evidence": "difypkg内に複数の__pycache__/pycが含まれている。",
+                    "source": "FACTS INPUT [package-contents]"
+                  },
+                  {
+                    "evidence": "失敗位置がupload/packageであり、受理直後の処理境界で異常が出ている。",
+                    "source": "FACTS INPUT [error]"
+                  }
+                ],
+                "refuting_evidence": [
+                  {
+                    "evidence": "同一difypkgでmodule listは成功しており、CLI経路の基本読取は成立している。",
+                    "source": "FACTS INPUT [module-list]"
+                  }
+                ]
+              },
+              {
+                "rank": 3,
+                "cause": "coreとplugin daemonの応答スキーマ互換不整合。",
+                "confidence": "low",
+                "supporting_evidence": [
+                  {
+                    "evidence": "エラー文面はPluginDaemonBasicResponseへのdecode失敗を示す。",
+                    "source": "FACTS INPUT [error]"
+                  }
+                ],
+                "refuting_evidence": [
+                  {
+                    "evidence": "互換性不整合を示すバージョン情報やログは提示されておらず直接証拠は不明。",
+                    "source": "FACTS INPUT (no version/log facts)"
+                  },
+                  {
+                    "evidence": "plugin A側にはpyc混入と複雑import構成という代替説明可能な事実がある。",
+                    "source": "FACTS INPUT [package-contents],[runtime-import-style]"
+                  }
+                ]
+              }
+            ],
+            "minimal_mitigation_plan": [
+              {
+                "step": 1,
+                "action": "パッケージ生成前にapp/openai_gpt5_responses配下の__pycache__と*.pycを除外し、plugins/openai_gpt5_responses.difypkgを再生成する。"
+              },
+              {
+                "step": 2,
+                "action": "install時に読み込まれるモジュールのimport経路を単純化し、app.*優先+internal.*フォールバック依存を減らす。"
+              },
+              {
+                "step": 3,
+                "action": "再生成物でmodule listを再確認し、同一アーティファクトでinstall再試行結果を比較する。"
+              }
+            ],
+            "unknowns_requiring_server_logs": [
+              {
+                "item": "upload/package時にdaemonが返した生レスポンス本文(JSON/非JSON)は不明。",
+                "status": "不明"
+              },
+              {
+                "item": "daemon側tracebackおよび失敗モジュール名は不明。",
+                "status": "不明"
+              },
+              {
+                "item": "install経路で__pycache__/pycを許容するかの実装仕様は不明。",
+                "status": "不明"
+              },
+              {
+                "item": "coreとplugin daemonの実行バージョンおよび応答スキーマ整合性は不明。",
+                "status": "不明"
+              }
+            ],
+            "verification_commands": [
+              "dify plugin package app/openai_gpt5_responses -o plugins/openai_gpt5_responses.difypkg",
+              "dify plugin module list plugins/openai_gpt5_responses.difypkg",
+              "pytest tests/openai_gpt5_responses -q"
+            ],
+            "revise_proposal": {
+              "minimal_mitigation_plan": [
+                "パッケージ生成前にapp/openai_gpt5_responses配下の__pycache__と*.pycを除外し、plugins/openai_gpt5_responses.difypkgを再生成する。",
+                "install時に読み込まれるモジュールのimport経路を単純化し、app.*優先+internal.*フォールバック依存を減らす。",
+                "再生成物でmodule listを再確認し、同一アーティファクトでinstall再試行結果を比較する。"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "capsule": {
+    "schema_version": "1.1",
+    "pipeline_run_id": "48b808b0-378e-44c8-8e21-5268d52ebd86",
+    "task": {
+      "goal": "ROLE: Parent agent orchestration for Plugin A install decode error analysis\nDATE: 2026-02-09\n\nSTRICT NO-TOOLS RULE\n- Do NOT call any tools or run commands.\n- Use ONLY FACTS INPUT below.\n- If evidence is insufficient, mark as 不明.\n- Output JSON ONLY (single-line JSON; no extra text).\n\nOUTPUT FORMAT (MANDATORY)\n- Required keys: schema_version, stage_id, status, output_is_partial, capsule_patch.\n- Do NOT include next_stages.\n- /facts is an array of objects; each object includes item, evidence, source, status.\n- /draft /critique /revise must be objects.\n- /open_questions and /assumptions must be arrays.\n- All string values must be single-line and must not contain newline or \\\\n.\n\nOBJECTIVE\n- Analyze root causes for Plugin A install error:\n  Failed to parse response from plugin daemon to PluginDaemonBasicResponse [PluginDecodeResponse]\n  at URL plugin/<workspace>/management/install/upload/package\n\nSCOPE\n- Target plugin: openai_gpt5_responses\n- Target artifact: plugins/openai_gpt5_responses.difypkg\n- Target files: app/openai_gpt5_responses/* and tests/openai_gpt5_responses/*\n\nCONSTRAINTS\n- Fact-based reasoning only.\n- No speculation without evidence.\n- Keep plugin A analysis independent from plugin B.\n\nREQUIRED OUTPUTS\n1) Root causes ranked (high/medium/low confidence).\n2) Supporting evidence and refuting evidence per cause.\n3) Minimal mitigation plan.\n4) Unknowns that still require server logs.\n\nCAPSULE PATCH RULES\n- /facts must be an array of objects with item, evidence, source, status.\n- /draft /critique /revise must be objects.\n- /open_questions and /assumptions must be arrays.\n- capsule_patch should contain only one operation.\n\nPIPELINE DESIGN REQUIREMENT\n- Do not follow generic template blindly.\n- In /draft.proposal, include why draft->execute->review is enough.\n\nTEST DESIGN REQUIREMENT\n- Include verification commands relevant to this plugin package:\n  - dify plugin package\n  - dify plugin module list\n  - pytest target scope\n\nFACTS INPUT (EVIDENCE ONLY)\n- [error] install request failed with PluginDecodeResponse at upload/package endpoint (user report).\n- [build] /home/devuser/workspace/plugins/openai_gpt5_responses.difypkg exists and is regenerated on 2026-02-09 18:16 JST.\n- [module-list] dify plugin module list plugins/openai_gpt5_responses.difypkg succeeds and lists models/parameters.\n- [yaml] app/openai_gpt5_responses/models/llm/gpt-5-codex.yaml:18-20 has help.en_US/help.ja_JP; same schema style applied across gpt-5*.yaml.\n- [package-contents] plugins/openai_gpt5_responses.difypkg contains __pycache__/*.pyc entries:\n  __pycache__/main.cpython-312.pyc, internal/__pycache__/*.pyc, models/llm/__pycache__/llm.cpython-312.pyc, provider/__pycache__/openai_gpt5.cpython-312.pyc.\n- [runtime-import-style] app/openai_gpt5_responses/models/llm/llm.py uses app.* import with fallback to internal.* (try/except ModuleNotFoundError).\n- [runtime-import-style] app/openai_gpt5_responses/provider/openai_gpt5.py uses app.* import with fallback to internal.*.",
+      "constraints": [
+        "read-only"
+      ],
+      "inputs": []
+    },
+    "facts": [
+      {
+        "item": "upload/packageエンドポイントでPluginDecodeResponseが発生",
+        "evidence": "インストール要求がplugin/<workspace>/management/install/upload/packageでPluginDaemonBasicResponseへのparse失敗として報告された。",
+        "source": "FACTS INPUT [error] (user report)",
+        "status": "supported"
+      },
+      {
+        "item": "Plugin Aの.difypkgは再生成済み",
+        "evidence": "/home/devuser/workspace/plugins/openai_gpt5_responses.difypkgが存在し、2026-02-09 18:16 JSTに再生成済み。",
+        "source": "FACTS INPUT [build]",
+        "status": "supported"
+      },
+      {
+        "item": "パッケージのモジュール列挙は成功",
+        "evidence": "dify plugin module list plugins/openai_gpt5_responses.difypkg が成功し、models/parametersを列挙できた。",
+        "source": "FACTS INPUT [module-list]",
+        "status": "supported"
+      },
+      {
+        "item": "gpt-5-codex.yamlのhelp多言語キーは定義済み",
+        "evidence": "app/openai_gpt5_responses/models/llm/gpt-5-codex.yaml:18-20にhelp.en_USとhelp.ja_JPがあり、同一スキーマがgpt-5*.yamlにも適用されている。",
+        "source": "FACTS INPUT [yaml]",
+        "status": "supported"
+      },
+      {
+        "item": ".difypkg内に__pycache__/pycが混入",
+        "evidence": "plugins/openai_gpt5_responses.difypkgに__pycache__/main.cpython-312.pyc、internal/__pycache__/*.pyc、models/llm/__pycache__/llm.cpython-312.pyc、provider/__pycache__/openai_gpt5.cpython-312.pycが含まれる。",
+        "source": "FACTS INPUT [package-contents]",
+        "status": "supported"
+      },
+      {
+        "item": "llm.pyはapp.*優先+internal.*フォールバックのimport構成",
+        "evidence": "app/openai_gpt5_responses/models/llm/llm.pyでtry/except ModuleNotFoundErrorによりapp.* importからinternal.* importへフォールバックする実装がある。",
+        "source": "FACTS INPUT [runtime-import-style] llm.py",
+        "status": "supported"
+      },
+      {
+        "item": "openai_gpt5.pyも同様のimport構成",
+        "evidence": "app/openai_gpt5_responses/provider/openai_gpt5.pyでtry/except ModuleNotFoundErrorによりapp.* importからinternal.* importへフォールバックする実装がある。",
+        "source": "FACTS INPUT [runtime-import-style] openai_gpt5.py",
+        "status": "supported"
+      }
+    ],
+    "open_questions": [],
+    "assumptions": [],
+    "draft": {
+      "proposal": {
+        "summary": "Plugin A(openai_gpt5_responses)のinstall decode errorを事実ベースで3仮説に収束し、executeで最小検証してreviewで採否判定する。",
+        "why_draft_execute_review_is_enough": "対象は単一プラグイン・単一アーティファクト・単一失敗点(upload/package)に限定され、既知事実で仮説形成が可能なため、draftで仮説固定、executeで指定3コマンドと再インストール検証、reviewで根因確定の3段で十分。",
+        "root_causes_ranked": [
+          {
+            "rank": 1,
+            "confidence": "high",
+            "cause": "インストール時のモジュール読み込みでランタイム例外が発生し、daemonがPluginDaemonBasicResponse形式のJSONを返せずdecode失敗した。",
+            "supporting_evidence": [
+              "error: upload/packageでPluginDaemonBasicResponseのparse失敗が報告され、daemon応答が期待形式ではない。",
+              "runtime-import-style: llm.pyとopenai_gpt5.pyにapp.* importとinternal.* fallback分岐があり、実行環境差で分岐失敗が起きうる。"
+            ],
+            "refuting_evidence": [
+              "module-list: 同一.difypkgのdify plugin module listは成功しており、静的メタデータ読み取り自体は成立している。"
+            ]
+          },
+          {
+            "rank": 2,
+            "confidence": "medium",
+            "cause": "difypkgへの__pycache__/*.pyc混入がinstall経路の検証または展開処理を不安定化し、非JSON応答を誘発した。",
+            "supporting_evidence": [
+              "package-contents: .difypkg内に__pycache__/main.cpython-312.pycやinternal/models/provider配下のpycが含まれる。",
+              "error: 失敗箇所がupload/packageであり、パッケージ受理直後の処理境界で失敗している。"
+            ],
+            "refuting_evidence": [
+              "module-list: 同一パッケージでmodels/parameters列挙は成功しており、少なくともCLI経路では致命障害になっていない。"
+            ]
+          },
+          {
+            "rank": 3,
+            "confidence": "low",
+            "cause": "coreとplugin daemon間の応答スキーマ互換性不整合によりdecode失敗した。",
+            "supporting_evidence": [
+              "error文面はPluginDaemonBasicResponseへのparse失敗を直接示している。"
+            ],
+            "refuting_evidence": [
+              "plugin A固有アーティファクトに事実上の特徴(pycache混入、import分岐実装)があり、プラグイン内容起因でも説明可能。",
+              "サーバーログ未取得のため互換性不整合の直接証拠は不明。"
+            ]
+          }
+        ],
+        "minimal_mitigation_plan": [
+          "パッケージ生成前にapp/openai_gpt5_responses配下の__pycache__と*.pycを除外して再パッケージ化する。",
+          "install時に読まれるモジュールのimport経路を単純化し、環境依存のapp.*優先分岐を減らす。",
+          "再生成物でmodule list再確認後にinstall再試行し、結果をreviewで確定する。"
+        ],
+        "verification_commands": [
+          "dify plugin package app/openai_gpt5_responses -o plugins/openai_gpt5_responses.difypkg",
+          "dify plugin module list plugins/openai_gpt5_responses.difypkg",
+          "pytest tests/openai_gpt5_responses -q"
+        ],
+        "unknowns_requiring_server_logs": [
+          "upload/package時のdaemon生レスポンス本文(JSONか否か)は不明。",
+          "daemon側tracebackと失敗モジュール名は不明。",
+          "install経路での__pycache__/pyc許容仕様は不明。",
+          "coreとplugin daemonの実行バージョンおよび応答スキーマ整合性は不明。"
+        ],
+        "next_stage_conditions": [
+          {
+            "condition": "サーバーログでImportErrorまたはModuleNotFoundErrorが確認される",
+            "action": "根因1を確定しimport修正をexecuteで優先実施する。"
+          },
+          {
+            "condition": "サーバーログでpycache/pyc起因の検証失敗が確認される",
+            "action": "pyc除外パッケージングを恒久化して再配布する。"
+          },
+          {
+            "condition": "サーバーログで応答スキーマ不整合が確認される",
+            "action": "core-daemon互換バージョンを固定し再検証する。"
+          }
+        ]
+      }
+    },
+    "critique": {
+      "plugin_scope": "openai_gpt5_responsesのみを対象に評価し、plugin B要素は未使用。",
+      "root_causes_ranked": [
+        {
+          "rank": 1,
+          "cause": "install実行フェーズでのimport解決失敗によりdaemonがPluginDaemonBasicResponse形式を返せなかった可能性。",
+          "confidence": "high",
+          "supporting_evidence": [
+            {
+              "evidence": "upload/packageでPluginDaemonBasicResponseへのparse失敗が発生しており、daemon応答が期待形式でない。",
+              "source": "FACTS INPUT [error]"
+            },
+            {
+              "evidence": "llm.pyとopenai_gpt5.pyにapp.*優先とinternal.*フォールバックの二重import経路がある。",
+              "source": "FACTS INPUT [runtime-import-style]"
+            }
+          ],
+          "refuting_evidence": [
+            {
+              "evidence": "同一difypkgでdify plugin module listは成功しmodels/parametersを列挙できている。",
+              "source": "FACTS INPUT [module-list]"
+            }
+          ]
+        },
+        {
+          "rank": 2,
+          "cause": "difypkgへの__pycache__/pyc混入がinstall経路の検証または展開で異常を誘発した可能性。",
+          "confidence": "medium",
+          "supporting_evidence": [
+            {
+              "evidence": "difypkg内に複数の__pycache__/pycが含まれている。",
+              "source": "FACTS INPUT [package-contents]"
+            },
+            {
+              "evidence": "失敗位置がupload/packageであり、受理直後の処理境界で異常が出ている。",
+              "source": "FACTS INPUT [error]"
+            }
+          ],
+          "refuting_evidence": [
+            {
+              "evidence": "同一difypkgでmodule listは成功しており、CLI経路の基本読取は成立している。",
+              "source": "FACTS INPUT [module-list]"
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "cause": "coreとplugin daemonの応答スキーマ互換不整合。",
+          "confidence": "low",
+          "supporting_evidence": [
+            {
+              "evidence": "エラー文面はPluginDaemonBasicResponseへのdecode失敗を示す。",
+              "source": "FACTS INPUT [error]"
+            }
+          ],
+          "refuting_evidence": [
+            {
+              "evidence": "互換性不整合を示すバージョン情報やログは提示されておらず直接証拠は不明。",
+              "source": "FACTS INPUT (no version/log facts)"
+            },
+            {
+              "evidence": "plugin A側にはpyc混入と複雑import構成という代替説明可能な事実がある。",
+              "source": "FACTS INPUT [package-contents],[runtime-import-style]"
+            }
+          ]
+        }
+      ],
+      "minimal_mitigation_plan": [
+        {
+          "step": 1,
+          "action": "パッケージ生成前にapp/openai_gpt5_responses配下の__pycache__と*.pycを除外し、plugins/openai_gpt5_responses.difypkgを再生成する。"
+        },
+        {
+          "step": 2,
+          "action": "install時に読み込まれるモジュールのimport経路を単純化し、app.*優先+internal.*フォールバック依存を減らす。"
+        },
+        {
+          "step": 3,
+          "action": "再生成物でmodule listを再確認し、同一アーティファクトでinstall再試行結果を比較する。"
+        }
+      ],
+      "unknowns_requiring_server_logs": [
+        {
+          "item": "upload/package時にdaemonが返した生レスポンス本文(JSON/非JSON)は不明。",
+          "status": "不明"
+        },
+        {
+          "item": "daemon側tracebackおよび失敗モジュール名は不明。",
+          "status": "不明"
+        },
+        {
+          "item": "install経路で__pycache__/pycを許容するかの実装仕様は不明。",
+          "status": "不明"
+        },
+        {
+          "item": "coreとplugin daemonの実行バージョンおよび応答スキーマ整合性は不明。",
+          "status": "不明"
+        }
+      ],
+      "verification_commands": [
+        "dify plugin package app/openai_gpt5_responses -o plugins/openai_gpt5_responses.difypkg",
+        "dify plugin module list plugins/openai_gpt5_responses.difypkg",
+        "pytest tests/openai_gpt5_responses -q"
+      ],
+      "revise_proposal": {
+        "minimal_mitigation_plan": [
+          "パッケージ生成前にapp/openai_gpt5_responses配下の__pycache__と*.pycを除外し、plugins/openai_gpt5_responses.difypkgを再生成する。",
+          "install時に読み込まれるモジュールのimport経路を単純化し、app.*優先+internal.*フォールバック依存を減らす。",
+          "再生成物でmodule listを再確認し、同一アーティファクトでinstall再試行結果を比較する。"
+        ]
+      }
+    },
+    "revise": {}
+  },
+  "capsule_hash": "f80dae49d26a98108fc49ba9c6531cb2ef96fff588d5bc25306bbf4c2ecf9f22",
+  "capsule_store": "embed",
+  "capsule_path": null
+}

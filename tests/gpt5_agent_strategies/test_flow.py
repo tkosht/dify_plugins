@@ -23,15 +23,34 @@ def test_build_round_prompt_messages_is_not_mutating_input_history() -> None:
     assert history == ["history-1", "history-2"]
 
 
-def test_should_emit_response_text_suppresses_when_tool_call_exists() -> None:
-    assert not should_emit_response_text(
-        has_tool_calls=True, iteration_step=1, max_iteration_steps=3
+def test_should_emit_response_text_allows_intermediate_when_enabled() -> None:
+    assert should_emit_response_text(
+        has_tool_calls=True,
+        iteration_step=1,
+        max_iteration_steps=3,
+        emit_intermediate_thoughts=True,
     )
 
 
-def test_should_emit_response_text_allows_final_iteration() -> None:
+def test_should_emit_response_text_suppresses_when_disabled_and_not_final() -> (
+    None
+):
+    assert not should_emit_response_text(
+        has_tool_calls=True,
+        iteration_step=1,
+        max_iteration_steps=3,
+        emit_intermediate_thoughts=False,
+    )
+
+
+def test_should_emit_response_text_allows_final_iteration_when_disabled() -> (
+    None
+):
     assert should_emit_response_text(
-        has_tool_calls=True, iteration_step=3, max_iteration_steps=3
+        has_tool_calls=True,
+        iteration_step=3,
+        max_iteration_steps=3,
+        emit_intermediate_thoughts=False,
     )
 
 

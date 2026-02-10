@@ -16,5 +16,8 @@ UNCERTAINTY_POLICY = """<uncertainty_and_ambiguity>
 </uncertainty_and_ambiguity>"""
 
 TOOL_PREAMBLE_POLICY = """<tool_preamble>
-- Before tool calls, give a concise one-line intent update.
+- Before calling tools, emit a short thought block wrapped in <think>...</think>.
+- In Japanese, avoid label-like prefixes such as "意図：".
+- In Japanese, write natural narrative sentences.
+- Keep thought text concise, factual, and action-oriented.
 </tool_preamble>"""
