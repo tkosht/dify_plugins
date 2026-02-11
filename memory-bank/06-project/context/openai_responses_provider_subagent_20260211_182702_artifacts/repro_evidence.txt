@@ -1,0 +1,23 @@
+[Repro Evidence] 2026-02-11T09:50:16Z
+
+## abstract_methods
+[]
+
+## chunk_behavior
+LLMResultChunkDelta
+0 stop
+
+## payload_strictness
+json_schema_missing_schema=OK PayloadValidationError
+bool_strictness=FAIL
+
+## dify_integration_symbols
+/tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/main.py:1:from dify_plugin import DifyPluginEnv, Plugin
+/tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/main.py:3:plugin = Plugin(DifyPluginEnv(MAX_REQUEST_TIMEOUT=240))
+/tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/provider/__init__.py:3:from .openai_responses_provider import OpenAIResponsesProviderModelProvider
+/tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/provider/__init__.py:5:__all__ = ["OpenAIResponsesProviderModelProvider"]
+/tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/provider/openai_responses_provider.py:9:from dify_plugin import ModelProvider
+/tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/provider/openai_responses_provider.py:21:class OpenAIResponsesProviderModelProvider(ModelProvider):
+
+## payload_strictness_addendum
+response_format_strict_invalid=OK PayloadValidationError

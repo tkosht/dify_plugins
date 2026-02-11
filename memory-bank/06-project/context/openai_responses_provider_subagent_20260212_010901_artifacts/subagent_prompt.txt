@@ -1,0 +1,53 @@
+ROLE: Subagent team orchestration for openai_responses_provider implementation
+DATE: 2026-02-12
+
+OBJECTIVE
+- Build a complete Dify plugin named openai_responses_provider for OpenAI Responses API.
+- Produce implementation + tests + packaging metadata that can pass local quality gates.
+
+SCOPE
+- Workdir only (current workspace passed by parent).
+- Write paths:
+  - app/openai_responses_provider/**
+  - tests/openai_responses_provider/**
+- Read-only support doc:
+  - TASK_SPEC.md
+
+HARD CONSTRAINTS
+- External network access is allowed.
+- Forbidden:
+  - git history inspection commands (git log/show/reflog)
+  - access outside current workdir
+  - baseline copy behavior or explicit reference to existing plugin names
+- No speculative claims: if unknown, write 不明 in capsule open_questions.
+- Keep secrets out of outputs.
+
+DELIVERABLES
+1) Implement full plugin scaffold and runtime code under app/openai_responses_provider.
+2) Implement tests under tests/openai_responses_provider.
+3) Run and report gate commands with factual outputs.
+4) If failures remain, iterate only within subagent stages via next_stages (revise->verify) up to 3 loops.
+
+QUALITY BAR
+- No unresolved abstract methods on LLM class.
+- Implement _invoke and _invoke_error_mapping.
+- Implement chunk helper behavior.
+- strict bool validation must reject invalid values.
+- json_schema strict behavior must validate required schema payload.
+- Include README, PRIVACY, requirements, icon, .env.example.
+
+REQUIRED COMMANDS IN EXECUTION
+- uv run ruff check app/openai_responses_provider tests/openai_responses_provider
+- dify plugin package app/openai_responses_provider
+- uv run pytest -q --no-cov tests/openai_responses_provider
+- uv run pytest -q tests/openai_responses_provider
+
+DYNAMIC STAGE POLICY
+- Add next_stages only when evidence requires it.
+- Use:
+  - revise: fix concrete failures from prior stage facts.
+  - verify: rerun failing checks and confirm closure.
+- Stop when all gates pass or when no further progress is possible.
+
+OUTPUT
+- Each stage must return schema-valid stage_result JSON only.

@@ -1,0 +1,412 @@
+===== preflight_ruff_version =====
+CMD: uv run ruff --version
+ruff 0.15.0
+EXIT_CODE: 0
+
+===== preflight_pytest_version =====
+CMD: uv run pytest --version
+pytest 9.0.2
+EXIT_CODE: 0
+
+===== preflight_dify_version =====
+CMD: dify version
+v0.5.3
+EXIT_CODE: 0
+
+===== ruff_check =====
+CMD: uv run ruff check /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider
+I001 [*] Import block is un-sorted or un-formatted
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/errors.py:27:9
+   |
+26 |     try:
+27 |         from openai import APIConnectionError, APIError, AuthenticationError, BadRequestError, RateLimitError
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+28 |     except Exception:
+29 |         return mapping
+   |
+help: Organize imports
+
+E501 Line too long (109 > 88)
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/errors.py:27:89
+   |
+26 |     try:
+27 |         from openai import APIConnectionError, APIError, AuthenticationError, BadRequestError, RateLimitError
+   |                                                                                         ^^^^^^^^^^^^^^^^^^^^^
+28 |     except Exception:
+29 |         return mapping
+   |
+
+B009 [*] Do not call `getattr` with a constant attribute value. It is not any safer than normal property access.
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/messages.py:10:21
+   |
+ 8 | def _enum_or_value(value: Any) -> str:
+ 9 |     if hasattr(value, "value"):
+10 |         candidate = getattr(value, "value")
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^
+11 |         if isinstance(candidate, str):
+12 |             return candidate
+   |
+help: Replace `getattr` with attribute access
+
+B009 [*] Do not call `getattr` with a constant attribute value. It is not any safer than normal property access.
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/messages.py:51:20
+   |
+49 |             return str(value["data"])
+50 |     if hasattr(value, "data"):
+51 |         return str(getattr(value, "data"))
+   |                    ^^^^^^^^^^^^^^^^^^^^^^
+52 |     return str(value)
+   |
+help: Replace `getattr` with attribute access
+
+B009 [*] Do not call `getattr` with a constant attribute value. It is not any safer than normal property access.
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/messages.py:73:40
+   |
+71 |             item_type = _enum_or_value(item.get("type", ""))
+72 |         elif hasattr(item, "type"):
+73 |             item_type = _enum_or_value(getattr(item, "type"))
+   |                                        ^^^^^^^^^^^^^^^^^^^^^
+74 |
+75 |         if item_type in {"text", "input_text", "output_text"}:
+   |
+help: Replace `getattr` with attribute access
+
+E501 Line too long (98 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/messages.py:113:89
+    |
+111 |             continue
+112 |
+113 |         normalized_role = role if role in {"system", "developer", "assistant", "user"} else "user"
+    |                                                                                         ^^^^^^^^^^
+114 |         items.append(
+115 |             {
+    |
+
+E501 Line too long (91 > 88)
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/payloads.py:12:89
+   |
+12 | def _extract_response_format(model_parameters: Mapping[str, Any]) -> dict[str, Any] | None:
+   |                                                                                         ^^^
+13 |     response_format = model_parameters.get("response_format")
+14 |     if response_format is None:
+   |
+
+UP042 Class ModelType inherits from both `str` and `enum.Enum`
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/sdk.py:33:11
+   |
+31 | except Exception:  # pragma: no cover - fallback only used without SDK
+32 |
+33 |     class ModelType(str, Enum):
+   |           ^^^^^^^^^
+34 |         LLM = "llm"
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class FetchFrom inherits from both `str` and `enum.Enum`
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/sdk.py:36:11
+   |
+34 |         LLM = "llm"
+35 |
+36 |     class FetchFrom(str, Enum):
+   |           ^^^^^^^^^
+37 |         CUSTOMIZABLE_MODEL = "customizable-model"
+   |
+help: Inherit from `enum.StrEnum`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/main.py:1:1
+  |
+1 | from dify_plugin import Plugin, DifyPluginEnv
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 |
+3 | plugin = Plugin(DifyPluginEnv(MAX_REQUEST_TIMEOUT=120))
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm/llm.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | import logging
+ 4 | | from collections.abc import Generator, Iterable, Mapping
+ 5 | | from decimal import Decimal
+ 6 | | from typing import Any
+ 7 | |
+ 8 | | from ...internal.credentials import resolve_client_settings
+ 9 | | from ...internal.errors import resolve_invoke_error_mapping
+10 | | from ...internal.messages import prompt_messages_to_text, safe_json_dumps, to_responses_input
+11 | | from ...internal.payloads import build_responses_payload
+12 | | from ...internal.sdk import (
+13 | |     AIModelEntity,
+14 | |     AssistantPromptMessage,
+15 | |     CredentialsValidateFailedError,
+16 | |     FetchFrom,
+17 | |     I18nObject,
+18 | |     LLMResult,
+19 | |     LLMResultChunk,
+20 | |     LLMResultChunkDelta,
+21 | |     LLMUsage,
+22 | |     LargeLanguageModel,
+23 | |     ModelType,
+24 | |     PromptMessage,
+25 | |     PromptMessageTool,
+26 | | )
+   | |_^
+27 |
+28 |   logger = logging.getLogger(__name__)
+   |
+help: Organize imports
+
+E501 Line too long (93 > 88)
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm/llm.py:10:89
+   |
+ 8 | from ...internal.credentials import resolve_client_settings
+ 9 | from ...internal.errors import resolve_invoke_error_mapping
+10 | from ...internal.messages import prompt_messages_to_text, safe_json_dumps, to_responses_input
+   |                                                                                         ^^^^^
+11 | from ...internal.payloads import build_responses_payload
+12 | from ...internal.sdk import (
+   |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm/llm.py:89:17
+   |
+87 |             transform = getattr(self, "_transform_invoke_error", None)
+88 |             if callable(transform):
+89 |                 raise transform(exc)
+   |                 ^^^^^^^^^^^^^^^^^^^^
+90 |             raise
+   |
+
+E501 Line too long (103 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm/llm.py:168:89
+    |
+166 |         text_chunks: list[str] = []
+167 |
+168 |         if not isinstance(output_items, Iterable) or isinstance(output_items, (str, bytes, bytearray)):
+    |                                                                                         ^^^^^^^^^^^^^^^
+169 |             return str(output_items or "")
+    |
+
+E501 Line too long (97 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm/llm.py:173:89
+    |
+171 |         for item in output_items:
+172 |             content = self._field(item, "content", [])
+173 |             if not isinstance(content, Iterable) or isinstance(content, (str, bytes, bytearray)):
+    |                                                                                         ^^^^^^^^^
+174 |                 if content:
+175 |                     text_chunks.append(str(content))
+    |
+
+E501 Line too long (106 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm/llm.py:191:89
+    |
+189 |         prompt_tokens = int(self._field(usage_obj, "input_tokens", 0) or 0)
+190 |         completion_tokens = int(self._field(usage_obj, "output_tokens", 0) or 0)
+191 |         total_tokens = int(self._field(usage_obj, "total_tokens", prompt_tokens + completion_tokens) or 0)
+    |                                                                                         ^^^^^^^^^^^^^^^^^^
+192 |
+193 |         latency = float(getattr(self, "started_at", 0.0) or 0.0)
+    |
+
+E501 Line too long (94 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm/llm.py:257:89
+    |
+255 |             client.responses.create(
+256 |                 model=model,
+257 |                 input=[{"role": "user", "content": [{"type": "input_text", "text": "ping"}]}],
+    |                                                                                         ^^^^^^
+258 |                 max_output_tokens=1,
+259 |                 stream=False,
+    |
+
+E501 Line too long (92 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm/llm.py:264:89
+    |
+262 |             raise CredentialsValidateFailedError(str(exc)) from exc
+263 |
+264 |     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
+    |                                                                                         ^^^^
+265 |         del credentials
+    |
+
+E501 Line too long (94 > 88)
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_payloads.py:24:89
+   |
+22 |     payload = build_responses_payload(
+23 |         model="gpt-4.1-mini",
+24 |         responses_input=[{"role": "user", "content": [{"type": "input_text", "text": "hi"}]}],
+   |                                                                                         ^^^^^^
+25 |         model_parameters={
+26 |             "response_format": "json_schema",
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_schema_runtime.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | from pathlib import Path
+  | |________________________^
+  |
+help: Organize imports
+
+E501 Line too long (92 > 88)
+  --> /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_schema_runtime.py:38:89
+   |
+36 |     assert "provider/openai_responses_provider.yaml" in manifest
+37 |
+38 |     provider_yaml = (PLUGIN_ROOT / "provider" / "openai_responses_provider.yaml").read_text(
+   |                                                                                         ^^^^
+39 |         encoding="utf-8"
+40 |     )
+   |
+
+Found 21 errors.
+[*] 7 fixable with the `--fix` option (2 hidden fixes can be enabled with the `--unsafe-fixes` option).
+EXIT_CODE: 1
+
+===== package =====
+CMD: dify plugin package /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider
+2026/02/12 01:23:17 INFO plugin packaged successfully output_path=openai_responses_provider.difypkg
+EXIT_CODE: 0
+
+===== pytest_no_cov =====
+CMD: uv run pytest -q --no-cov /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider
+.............                                                            [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/dify_plugin/__init__.py:4
+  /home/devuser/workspace/.venv/lib/python3.12/site-packages/dify_plugin/__init__.py:4: MonkeyPatchWarning: Monkey-patching ssl after ssl has already been imported may lead to errors, including RecursionError on Python 3.6. It may also silently lead to incorrect behaviour on Python 3.7. Please monkey-patch earlier. See https://github.com/gevent/gevent/issues/1016. Modules that had direct imports (NOT patched): ['urllib3.util (/home/devuser/workspace/.venv/lib/python3.12/site-packages/urllib3/util/__init__.py)', 'urllib3.util.ssl_ (/home/devuser/workspace/.venv/lib/python3.12/site-packages/urllib3/util/ssl_.py)', 'anyio.streams.tls (/home/devuser/workspace/.venv/lib/python3.12/site-packages/anyio/streams/tls.py)']. 
+    monkey.patch_all(sys=True)
+
+.venv/lib/python3.12/site-packages/dify_plugin/entities/provider_config.py:88
+  /home/devuser/workspace/.venv/lib/python3.12/site-packages/dify_plugin/entities/provider_config.py:88: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class ProviderConfig(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+13 passed, 2 warnings in 0.66s
+EXIT_CODE: 0
+
+===== pytest_with_cov =====
+CMD: uv run pytest -q /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider
+.............                                                            [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/dify_plugin/__init__.py:4
+  /home/devuser/workspace/.venv/lib/python3.12/site-packages/dify_plugin/__init__.py:4: MonkeyPatchWarning: Monkey-patching ssl after ssl has already been imported may lead to errors, including RecursionError on Python 3.6. It may also silently lead to incorrect behaviour on Python 3.7. Please monkey-patch earlier. See https://github.com/gevent/gevent/issues/1016. Modules that had direct imports (NOT patched): ['urllib3.util (/home/devuser/workspace/.venv/lib/python3.12/site-packages/urllib3/util/__init__.py)', 'anyio.streams.tls (/home/devuser/workspace/.venv/lib/python3.12/site-packages/anyio/streams/tls.py)', 'urllib3.util.ssl_ (/home/devuser/workspace/.venv/lib/python3.12/site-packages/urllib3/util/ssl_.py)']. 
+    monkey.patch_all(sys=True)
+
+.venv/lib/python3.12/site-packages/dify_plugin/entities/provider_config.py:88
+  /home/devuser/workspace/.venv/lib/python3.12/site-packages/dify_plugin/entities/provider_config.py:88: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class ProviderConfig(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+13 passed, 2 warnings in 0.62s
+EXIT_CODE: 0
+
+===== diff_plugin =====
+CMD: diff -rq /home/devuser/workspace/app/openai_gpt5_responses /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider: .difyignore
+Only in /home/devuser/workspace/app/openai_gpt5_responses: .env
+Files /home/devuser/workspace/app/openai_gpt5_responses/.env.example and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/.env.example differ
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider: .github
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider: .gitignore
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider: .venv
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider: GUIDE.md
+Files /home/devuser/workspace/app/openai_gpt5_responses/PRIVACY.md and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/PRIVACY.md differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/README.md and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/README.md differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/__init__.py and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/__init__.py differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/__pycache__/__init__.cpython-312.pyc and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/__pycache__/__init__.cpython-312.pyc differ
+Only in /home/devuser/workspace/app/openai_gpt5_responses/__pycache__: main.cpython-312.pyc
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/_assets: icon-dark.svg
+Files /home/devuser/workspace/app/openai_gpt5_responses/_assets/icon.svg and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/_assets/icon.svg differ
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider: icon-dark.svg
+Files /home/devuser/workspace/app/openai_gpt5_responses/icon.svg and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/icon.svg differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/internal/__init__.py and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/__init__.py differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/internal/__pycache__/__init__.cpython-312.pyc and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/__pycache__/__init__.cpython-312.pyc differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/internal/__pycache__/credentials.cpython-312.pyc and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/__pycache__/credentials.cpython-312.pyc differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/internal/__pycache__/errors.cpython-312.pyc and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/__pycache__/errors.cpython-312.pyc differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/internal/__pycache__/messages.cpython-312.pyc and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/__pycache__/messages.cpython-312.pyc differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/internal/__pycache__/payloads.cpython-312.pyc and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/__pycache__/payloads.cpython-312.pyc differ
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/__pycache__: sdk.cpython-312.pyc
+Files /home/devuser/workspace/app/openai_gpt5_responses/internal/credentials.py and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/credentials.py differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/internal/errors.py and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/errors.py differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/internal/messages.py and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/messages.py differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/internal/payloads.py and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/payloads.py differ
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal: sdk.py
+Files /home/devuser/workspace/app/openai_gpt5_responses/main.py and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/main.py differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/manifest.yaml and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/manifest.yaml differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/models/__init__.py and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/__init__.py differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/models/__pycache__/__init__.cpython-312.pyc and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/__pycache__/__init__.cpython-312.pyc differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/models/llm/__init__.py and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm/__init__.py differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/models/llm/__pycache__/__init__.cpython-312.pyc and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm/__pycache__/__init__.cpython-312.pyc differ
+Files /home/devuser/workspace/app/openai_gpt5_responses/models/llm/__pycache__/llm.cpython-312.pyc and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm/__pycache__/llm.cpython-312.pyc differ
+Only in /home/devuser/workspace/app/openai_gpt5_responses/models/llm: _position.yaml
+Only in /home/devuser/workspace/app/openai_gpt5_responses/models/llm: gpt-5-codex.yaml
+Only in /home/devuser/workspace/app/openai_gpt5_responses/models/llm: gpt-5-mini.yaml
+Only in /home/devuser/workspace/app/openai_gpt5_responses/models/llm: gpt-5-nano.yaml
+Only in /home/devuser/workspace/app/openai_gpt5_responses/models/llm: gpt-5.1-codex.yaml
+Only in /home/devuser/workspace/app/openai_gpt5_responses/models/llm: gpt-5.2-pro.yaml
+Only in /home/devuser/workspace/app/openai_gpt5_responses/models/llm: gpt-5.2.yaml
+Only in /home/devuser/workspace/app/openai_gpt5_responses/models/llm: gpt-5.3-codex.yaml
+Only in /home/devuser/workspace/app/openai_gpt5_responses/models/llm: gpt-5.yaml
+Files /home/devuser/workspace/app/openai_gpt5_responses/models/llm/llm.py and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm/llm.py differ
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/models/llm: llm.yaml
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider: openai_responses_provider.difypkg
+Files /home/devuser/workspace/app/openai_gpt5_responses/provider/__init__.py and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/provider/__init__.py differ
+Only in /home/devuser/workspace/app/openai_gpt5_responses/provider: __pycache__
+Only in /home/devuser/workspace/app/openai_gpt5_responses/provider: openai_gpt5.py
+Only in /home/devuser/workspace/app/openai_gpt5_responses/provider: openai_gpt5.yaml
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/provider: openai_responses_provider.py
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/provider: openai_responses_provider.yaml
+Files /home/devuser/workspace/app/openai_gpt5_responses/requirements.txt and /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/requirements.txt differ
+EXIT_CODE: 1
+
+===== diff_tests =====
+CMD: diff -rq /home/devuser/workspace/tests/openai_gpt5_responses /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider: .pytest_cache
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/__pycache__: conftest.cpython-312-pytest-9.0.2.pyc
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/__pycache__: test_credentials.cpython-312-pytest-9.0.2.pyc
+Only in /home/devuser/workspace/tests/openai_gpt5_responses/__pycache__: test_entrypoints_and_errors.cpython-312-pytest-9.0.2.pyc
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/__pycache__: test_llm.cpython-312-pytest-9.0.2.pyc
+Only in /home/devuser/workspace/tests/openai_gpt5_responses/__pycache__: test_llm_stream_flag.cpython-312-pytest-9.0.2.pyc
+Files /home/devuser/workspace/tests/openai_gpt5_responses/__pycache__/test_messages.cpython-312-pytest-9.0.2.pyc and /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/__pycache__/test_messages.cpython-312-pytest-9.0.2.pyc differ
+Files /home/devuser/workspace/tests/openai_gpt5_responses/__pycache__/test_payloads.cpython-312-pytest-9.0.2.pyc and /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/__pycache__/test_payloads.cpython-312-pytest-9.0.2.pyc differ
+Only in /home/devuser/workspace/tests/openai_gpt5_responses/__pycache__: test_payloads_bool_coercion.cpython-312-pytest-9.0.2.pyc
+Only in /home/devuser/workspace/tests/openai_gpt5_responses/__pycache__: test_provider_runtime.cpython-312-pytest-9.0.2.pyc
+Only in /home/devuser/workspace/tests/openai_gpt5_responses/__pycache__: test_provider_schema.cpython-312-pytest-9.0.2.pyc
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/__pycache__: test_schema_runtime.cpython-312-pytest-9.0.2.pyc
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider: conftest.py
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider: pytest
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider: ruff
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider: test_credentials.py
+Only in /home/devuser/workspace/tests/openai_gpt5_responses: test_entrypoints_and_errors.py
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider: test_llm.py
+Only in /home/devuser/workspace/tests/openai_gpt5_responses: test_llm_stream_flag.py
+Files /home/devuser/workspace/tests/openai_gpt5_responses/test_messages.py and /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_messages.py differ
+Files /home/devuser/workspace/tests/openai_gpt5_responses/test_payloads.py and /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_payloads.py differ
+Only in /home/devuser/workspace/tests/openai_gpt5_responses: test_payloads_bool_coercion.py
+Only in /home/devuser/workspace/tests/openai_gpt5_responses: test_provider_runtime.py
+Only in /home/devuser/workspace/tests/openai_gpt5_responses: test_provider_schema.py
+Only in /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider: test_schema_runtime.py
+EXIT_CODE: 1
+
+===== wc_line_count =====
+CMD: bash -lc wc -l '/home/devuser/workspace/tests/openai_gpt5_responses'/*.py '/tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider'/*.py
+  108 /home/devuser/workspace/tests/openai_gpt5_responses/test_entrypoints_and_errors.py
+  842 /home/devuser/workspace/tests/openai_gpt5_responses/test_llm_stream_flag.py
+  246 /home/devuser/workspace/tests/openai_gpt5_responses/test_messages.py
+   74 /home/devuser/workspace/tests/openai_gpt5_responses/test_payloads.py
+  130 /home/devuser/workspace/tests/openai_gpt5_responses/test_payloads_bool_coercion.py
+  155 /home/devuser/workspace/tests/openai_gpt5_responses/test_provider_runtime.py
+  151 /home/devuser/workspace/tests/openai_gpt5_responses/test_provider_schema.py
+    8 /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/conftest.py
+   47 /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_credentials.py
+   96 /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_llm.py
+   20 /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_messages.py
+   54 /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_payloads.py
+   42 /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_schema_runtime.py
+ 1973 total
+EXIT_CODE: 0
+

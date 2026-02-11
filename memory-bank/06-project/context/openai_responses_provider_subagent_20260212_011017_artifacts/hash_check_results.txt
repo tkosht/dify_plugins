@@ -1,0 +1,6 @@
+subagent_result_final.json: OK
+parent_gate_results.txt: OK
+repro_evidence.txt: OK
+subagent_events.jsonl: OK
+subagent_stderr.log: OK
+HASH_CHECK_EXIT_CODE=0

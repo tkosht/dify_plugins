@@ -1,0 +1,24 @@
+{
+  "allow_dynamic_stages": true,
+  "allowed_stage_ids": [
+    "draft",
+    "execute",
+    "review",
+    "revise",
+    "verify"
+  ],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "Define implementation approach and success criteria in capsule. If ambiguity exists, add open_questions."
+    },
+    {
+      "id": "execute",
+      "instructions": "Implement plugin and tests in current workspace. Run required gates. Record command outputs in facts. If any gate fails, add next_stages with revise and verify."
+    },
+    {
+      "id": "review",
+      "instructions": "Perform independent review of outputs and gate results. If unresolved failures remain, add next_stages with revise then verify."
+    }
+  ]
+}

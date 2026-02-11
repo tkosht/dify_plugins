@@ -1,0 +1,55 @@
+{
+  "run_id": "20260211_235302",
+  "isolated_dir": "/tmp/openai_responses_provider_subagent_20260211_235302",
+  "subagent_executor": "codex exec",
+  "attempts": [
+    {
+      "name": "initial_full_run",
+      "status": "interrupted",
+      "event_log": "subagent_events.jsonl",
+      "notes": "Execution was interrupted after scaffold creation due stalled progress output."
+    },
+    {
+      "name": "finalize_rerun",
+      "status": "completed",
+      "event_log": "subagent_events_rerun.jsonl",
+      "stderr_log": "subagent_stderr_rerun.log",
+      "last_message_file": "subagent_last_message.txt"
+    }
+  ],
+  "subagent_output": {
+    "summary": "Created a complete test suite under tests/openai_responses_provider covering provider credential validation, provider YAML structure, payload strictness, message conversion/extraction, LLM stream flag and chunk shape, and entrypoint import/runtime wiring.",
+    "files_created": [
+      "tests/openai_responses_provider/conftest.py",
+      "tests/openai_responses_provider/test_provider_credentials.py",
+      "tests/openai_responses_provider/test_provider_yaml.py",
+      "tests/openai_responses_provider/test_payloads.py",
+      "tests/openai_responses_provider/test_messages.py",
+      "tests/openai_responses_provider/test_llm_streaming.py",
+      "tests/openai_responses_provider/test_entrypoint.py"
+    ],
+    "checks_ran": [
+      "pytest -q tests/openai_responses_provider",
+      "python3 -m pytest -q tests/openai_responses_provider",
+      "python3 -m pytest -q",
+      "python3 -m ruff check app/openai_responses_provider tests/openai_responses_provider",
+      "python3 -m compileall tests/openai_responses_provider"
+    ],
+    "unknowns": [
+      "不明: pytest module is not installed in this environment, so test execution results are unverified.",
+      "不明: ruff module is not installed in this environment, so lint results are unverified.",
+      "不明: dify packaging command/workflow is not available in this workspace context."
+    ],
+    "used_urls": [],
+    "self_report": {
+      "ruff": "fail",
+      "pytest_no_cov": "fail",
+      "pytest": "fail",
+      "dify_package": "not_run"
+    }
+  },
+  "authoritative_policy": {
+    "self_report_is_reference_only": true,
+    "parent_gate_is_authoritative": true
+  }
+}

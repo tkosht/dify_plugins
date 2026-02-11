@@ -1,0 +1,40 @@
+1. Modified files in Round2
+
+- `app/openai_responses_provider/models/llm/llm.py`
+- `app/openai_responses_provider/manifest.yaml`
+- `app/openai_responses_provider/models/llm/gpt-5.yaml`
+- `app/openai_responses_provider/models/llm/gpt-5-mini.yaml`
+- `app/openai_responses_provider/models/llm/gpt-5-nano.yaml`
+- `app/openai_responses_provider/models/llm/gpt-5-codex.yaml`
+- `app/openai_responses_provider/models/llm/gpt-5.1-codex.yaml`
+- `app/openai_responses_provider/models/llm/gpt-5.2.yaml`
+- `app/openai_responses_provider/models/llm/gpt-5.2-pro.yaml`
+- `app/openai_responses_provider/models/llm/gpt-5.3-codex.yaml`
+- `app/openai_responses_provider/_assets/icon.svg` (added)
+- `app/openai_responses_provider/_assets/icon-dark.svg` (added)
+- `tests/openai_responses_provider/test_entrypoints_and_errors.py`
+- `tests/openai_responses_provider/test_llm_stream_flag.py`
+- `tests/openai_responses_provider/test_messages.py`
+- `tests/openai_responses_provider/test_payloads.py`
+- `tests/openai_responses_provider/test_payloads_bool_coercion.py`
+- `tests/openai_responses_provider/test_provider_runtime.py`
+
+2. What was fixed for ruff
+
+- Removed unused import in `llm.py` (`MessageConversionError`).
+- Removed unused `pytest` import in `test_entrypoints_and_errors.py`.
+- Resolved all `E402` in test files by marking deferred imports (after local Dify stub setup) with `# noqa: E402`.
+- Gate result: `UV_CACHE_DIR=.uv-cache uv run --with ruff ruff check app/openai_responses_provider tests/openai_responses_provider` => `All checks passed!`
+
+3. What was fixed for packaging
+
+- Replaced invalid model parameter template usage by removing `stop` entries using `use_template: stop` from all 8 model YAML files (packager did not support this template).
+- Added required manifest field: `created_at: 2026-02-11T00:00:00Z` in `manifest.yaml`.
+- Added required assets directory/files for packager:
+  - `app/openai_responses_provider/_assets/icon.svg`
+  - `app/openai_responses_provider/_assets/icon-dark.svg`
+- Gate result: `dify plugin package app/openai_responses_provider` => success (`openai_responses_provider.difypkg` generated).
+
+4. Remaining `不明`
+
+- `不明: なし`

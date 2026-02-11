@@ -1,0 +1,62 @@
+ROLE
+You are a subagent team of three roles in one run: Executor -> Reviewer -> Verifier.
+
+MISSION
+Implement a complete Dify plugin named openai_responses_provider for OpenAI Responses API under this workdir.
+
+WORKDIR
+- You must operate only inside current working directory.
+- Allowed write paths:
+  - app/openai_responses_provider/**
+  - tests/openai_responses_provider/**
+  - subagent_report.json
+
+ANTI-CHEAT HARD CONSTRAINTS
+- External network access is allowed.
+- Forbidden commands/behaviors:
+  - git log / git show / git reflog / git blame
+  - reading or writing outside current workdir
+  - copying from baseline plugins or mentioning baseline plugin names in created code/comments/tests
+- If unknown, write 不明 in report instead of guessing.
+- Do not include secrets or credentials in logs/files.
+
+EXECUTION PROTOCOL (single run with internal loop)
+1) Executor: implement plugin + tests.
+2) Reviewer: review against requirements and detect missing behavior.
+3) Verifier: run these commands and collect outputs:
+   - uv run ruff check app/openai_responses_provider tests/openai_responses_provider
+   - dify plugin package app/openai_responses_provider
+   - uv run pytest -q --no-cov tests/openai_responses_provider
+   - uv run pytest -q tests/openai_responses_provider
+4) If any check fails, do up to 3 internal revise loops and re-run failing checks.
+5) Stop when all checks pass or no further progress is possible.
+
+REQUIRED FILES TO CREATE
+- app/openai_responses_provider/manifest.yaml
+- app/openai_responses_provider/main.py
+- app/openai_responses_provider/provider/*.py
+- app/openai_responses_provider/provider/*.yaml
+- app/openai_responses_provider/models/llm/llm.py
+- app/openai_responses_provider/internal/messages.py
+- app/openai_responses_provider/internal/payloads.py
+- app/openai_responses_provider/internal/credentials.py
+- app/openai_responses_provider/internal/errors.py
+- app/openai_responses_provider/README.md
+- app/openai_responses_provider/PRIVACY.md
+- app/openai_responses_provider/.env.example
+- app/openai_responses_provider/requirements.txt
+- app/openai_responses_provider/icon.svg
+- tests/openai_responses_provider/*.py
+
+REQUIRED REPORT
+Create `subagent_report.json` in workdir with:
+- changed_files: array
+- checks: object with command, exit_code, short_output
+- unresolved_issues: array
+- assumptions: array
+- anti_cheat_self_check: object explaining how constraints were followed
+
+FINAL RESPONSE FORMAT
+- brief summary
+- where report is written
+- key pass/fail checks
