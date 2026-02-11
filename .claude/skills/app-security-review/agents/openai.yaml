@@ -1,0 +1,4 @@
+interface:
+  display_name: "App Security Review"
+  short_description: "任意 app サブディレクトリのセキュリティ監査を標準準拠で実施する"
+  default_prompt: "Use $app-security-review to audit a specified app/* subdirectory with OWASP/NIST/CWE-mapped controls and produce severity-ranked findings, concrete remediation steps, and a PASS/FAIL gate."
