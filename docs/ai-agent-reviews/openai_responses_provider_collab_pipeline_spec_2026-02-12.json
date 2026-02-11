@@ -1,0 +1,24 @@
+{
+  "allow_dynamic_stages": true,
+  "allowed_stage_ids": [
+    "draft",
+    "execute",
+    "review",
+    "revise",
+    "verify"
+  ],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "目的: openai_responses_provider の品質強化パイプラインを設計する。手順: 1) /draft.proposal に成功条件、hard-fail条件、next_stages追加条件を記録する。2) canonical evidence と artifacts を /facts に列挙する。3) 不明点は /open_questions に残す。"
+    },
+    {
+      "id": "execute",
+      "instructions": "目的: 実装と検証を実行する。手順: 1) fail-fast preflight (ruff/package) を実行する。2) full gates (pytest --no-cov/pytest/diff/wc/hash) を実行する。3) hash は SHA256SUMS と optional handoff_SHA256SUMS の両方を検証する。4) chunk repro は signature-adaptive で実施する。5) diff判定は __pycache__/.pytest_cache/.venv などを除外する。6) 結果を /facts に根拠付きで追記する。7) 重大失敗時は next_stages で revise を追加する。"
+    },
+    {
+      "id": "review",
+      "instructions": "目的: 独立レビューで false-pass を排除する。手順: 1) parent authoritative gate を正本として /critique に記録する。2) self-report と矛盾時は parent verdict を採用する。3) hard-fail 条件（ruff, test-depth<0.40, runtime contract, evidence integrity）を再チェックする。4) 未解消のP0/P1があれば next_stages で verify または revise を追加する。"
+    }
+  ]
+}

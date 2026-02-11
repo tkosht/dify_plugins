@@ -1,0 +1,17 @@
+{
+  "assumptions":[],
+  "critique":{},
+  "draft":{},
+  "facts":[],
+  "open_questions":[],
+  "pipeline_run_id":"05ce3ab0-a4e9-4aa8-9143-917a7ac16475",
+  "revise":{},
+  "schema_version":"1.1",
+  "task":{
+    "constraints":[
+      "read-only"
+    ],
+    "goal":"ROLE: Subagent team orchestration for openai_responses_provider implementation\nDATE: 2026-02-12\n\nOBJECTIVE\n- Build a complete Dify plugin named openai_responses_provider for OpenAI Responses API.\n- Produce implementation + tests + packaging metadata that can pass local quality gates.\n\nSCOPE\n- Workdir only (current workspace passed by parent).\n- Write paths:\n  - app/openai_responses_provider/**\n  - tests/openai_responses_provider/**\n- Read-only support doc:\n  - TASK_SPEC.md\n\nHARD CONSTRAINTS\n- External network access is allowed.\n- Forbidden:\n  - git history inspection commands (git log/show/reflog)\n  - access outside current workdir\n  - baseline copy behavior or explicit reference to existing plugin names\n- No speculative claims: if unknown, write 不明 in capsule open_questions.\n- Keep secrets out of outputs.\n\nDELIVERABLES\n1) Implement full plugin scaffold and runtime code under app/openai_responses_provider.\n2) Implement tests under tests/openai_responses_provider.\n3) Run and report gate commands with factual outputs.\n4) If failures remain, iterate only within subagent stages via next_stages (revise->verify) up to 3 loops.\n\nQUALITY BAR\n- No unresolved abstract methods on LLM class.\n- Implement _invoke and _invoke_error_mapping.\n- Implement chunk helper behavior.\n- strict bool validation must reject invalid values.\n- json_schema strict behavior must validate required schema payload.\n- Include README, PRIVACY, requirements, icon, .env.example.\n\nREQUIRED COMMANDS IN EXECUTION\n- uv run ruff check app/openai_responses_provider tests/openai_responses_provider\n- dify plugin package app/openai_responses_provider\n- uv run pytest -q --no-cov tests/openai_responses_provider\n- uv run pytest -q tests/openai_responses_provider\n\nDYNAMIC STAGE POLICY\n- Add next_stages only when evidence requires it.\n- Use:\n  - revise: fix concrete failures from prior stage facts.\n  - verify: rerun failing checks and confirm closure.\n- Stop when all gates pass or when no further progress is possible.\n\nOUTPUT\n- Each stage must return schema-valid stage_result JSON only.",
+    "inputs":[]
+  }
+}

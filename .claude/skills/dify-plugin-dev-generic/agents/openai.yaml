@@ -1,4 +1,4 @@
 interface:
   display_name: "Dify Plugin Dev Generic"
   short_description: "任意リポジトリ向けにDifyプラグインを開発・検証する"
-  default_prompt: "Use $dify-plugin-dev-generic to build a Dify plugin and require release-readiness-checklist plus baseline-parity-evaluation for final quality judgment."
+  default_prompt: "Use $dify-plugin-dev-generic to run anti-cheat subagent evaluation with parent-authoritative gates, enforce release readiness and baseline parity, and verify rerun artifact hashes before verdict."

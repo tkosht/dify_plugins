@@ -1,0 +1,223 @@
+===== isolation_facts =====
+CMD: bash -lc printf 'ISO_DIR=%s\nTARGET_PLUGIN=%s\nTARGET_TESTS=%s\n' '/tmp/openai_responses_provider_subagent_20260212_011017' '/tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider' '/tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider'
+ISO_DIR=/tmp/openai_responses_provider_subagent_20260212_011017
+TARGET_PLUGIN=/tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider
+TARGET_TESTS=/tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider
+EXIT_CODE: 0
+
+===== baseline_plugin_absent_in_isolated =====
+CMD: test ! -e /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_gpt5_responses
+EXIT_CODE: 0
+
+===== baseline_tests_absent_in_isolated =====
+CMD: test ! -e /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_gpt5_responses
+EXIT_CODE: 0
+
+===== baseline_difypkg_absent_in_isolated =====
+CMD: bash -lc ls -1 '/tmp/openai_responses_provider_subagent_20260212_011017' | rg 'openai_gpt5_responses.*\.difypkg' && exit 1 || true
+EXIT_CODE: 0
+
+===== git_history_absence =====
+CMD: bash -lc cd '/tmp/openai_responses_provider_subagent_20260212_011017' && git rev-list --all --count
+fatal: not a git repository (or any of the parent directories): .git
+EXIT_CODE: 128
+
+===== git_remote_absence =====
+CMD: bash -lc cd '/tmp/openai_responses_provider_subagent_20260212_011017' && git remote -v
+fatal: not a git repository (or any of the parent directories): .git
+EXIT_CODE: 128
+
+===== leakage_scan =====
+CMD: rg -n openai_gpt5_responses|git[[:space:]]+log|git[[:space:]]+show /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider
+EXIT_CODE: 1
+
+===== abstract_methods_check =====
+CMD: bash -lc UV_CACHE_DIR=/tmp/uv-cache uv run python - <<'PY'
+import sys
+from importlib import import_module
+sys.path.insert(0, '/tmp/openai_responses_provider_subagent_20260212_011017/app')
+mod = import_module('openai_responses_provider.models.llm.llm')
+candidates = []
+for name, obj in mod.__dict__.items():
+    if isinstance(obj, type) and 'LanguageModel' in name:
+        candidates.append((name, obj))
+if not candidates:
+    print('NO_LLM_CLASS')
+    raise SystemExit(1)
+name, cls = candidates[0]
+print('LLM_CLASS', name)
+print('ABSTRACTS', sorted(getattr(cls, '__abstractmethods__', set())))
+PY
+LLM_CLASS LargeLanguageModel
+ABSTRACTS ['_invoke', '_invoke_error_mapping', 'get_num_tokens', 'validate_credentials']
+EXIT_CODE: 0
+
+===== chunk_schema_repro =====
+CMD: bash -lc UV_CACHE_DIR=/tmp/uv-cache uv run python - <<'PY'
+import sys
+from importlib import import_module
+sys.path.insert(0, '/tmp/openai_responses_provider_subagent_20260212_011017/app')
+mod = import_module('openai_responses_provider.models.llm.llm')
+cls = None
+for name, obj in mod.__dict__.items():
+    if isinstance(obj, type) and 'LanguageModel' in name:
+        cls = obj
+        break
+if cls is None:
+    print('NO_LLM_CLASS')
+    raise SystemExit(1)
+class Impl(cls):
+    @property
+    def _invoke_error_mapping(self):
+        return {}
+    def get_num_tokens(self, model, credentials, prompt_messages, tools=None):
+        return 0
+obj = object.__new__(Impl)
+if hasattr(obj, '_chunk'):
+    try:
+        chunk = obj._chunk(model='demo', prompt_messages=[], text='ok')
+        print('CHUNK_OK', type(chunk).__name__)
+    except Exception as e:
+        print('CHUNK_FAIL', repr(e))
+        raise
+elif hasattr(obj, '_build_stream_chunk'):
+    try:
+        chunk = obj._build_stream_chunk(model='demo', prompt_messages=[], text='ok')
+        print('CHUNK_OK', type(chunk).__name__)
+    except Exception as e:
+        print('CHUNK_FAIL', repr(e))
+        raise
+else:
+    print('NO_CHUNK_METHOD')
+    raise SystemExit(1)
+PY
+Traceback (most recent call last):
+  File "<stdin>", line 19, in <module>
+TypeError: Can't instantiate abstract class Impl without an implementation for abstract methods '_invoke', 'validate_credentials'
+EXIT_CODE: 1
+
+===== payload_strictness_repro =====
+CMD: bash -lc UV_CACHE_DIR=/tmp/uv-cache uv run python - <<'PY'
+import sys
+from importlib import import_module
+sys.path.insert(0, '/tmp/openai_responses_provider_subagent_20260212_011017/app')
+payloads = import_module('openai_responses_provider.internal.payloads')
+# bool strictness
+ok = False
+try:
+    fn = getattr(payloads, 'coerce_strict_bool', None) or getattr(payloads, 'coerce_bool_strict', None)
+    if fn is None:
+        raise RuntimeError('NO_BOOL_COERCION_FN')
+    try:
+        fn('yes', 'stream')
+    except ValueError:
+        ok = True
+except Exception as e:
+    print('BOOL_STRICT_EXCEPTION', repr(e))
+if ok:
+    print('bool strictness ok')
+else:
+    print('BOOL_STRICT_FAIL')
+
+# json_schema strictness
+try:
+    build = getattr(payloads, 'build_responses_payload', None) or getattr(payloads, 'build_request_payload', None)
+    if build is None:
+        raise RuntimeError('NO_BUILD_PAYLOAD_FN')
+    try:
+        if build.__name__ == 'build_responses_payload':
+            build(model='demo', responses_input=[], model_parameters={'response_format':'json_schema'}, tools=None, stop=None, stream=False, user=None)
+        else:
+            build({'response_format':'json_schema'})
+        print('JSON_SCHEMA_STRICT_FAIL')
+    except Exception:
+        print('json_schema strictness ok')
+except Exception as e:
+    print('JSON_SCHEMA_STRICT_EXCEPTION', repr(e))
+PY
+bool strictness ok
+json_schema strictness ok
+EXIT_CODE: 0
+
+===== line_count_sanity =====
+CMD: bash -lc wc -l '/home/devuser/workspace/tests/openai_gpt5_responses'/*.py '/tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider'/*.py
+  108 /home/devuser/workspace/tests/openai_gpt5_responses/test_entrypoints_and_errors.py
+  842 /home/devuser/workspace/tests/openai_gpt5_responses/test_llm_stream_flag.py
+  246 /home/devuser/workspace/tests/openai_gpt5_responses/test_messages.py
+   74 /home/devuser/workspace/tests/openai_gpt5_responses/test_payloads.py
+  130 /home/devuser/workspace/tests/openai_gpt5_responses/test_payloads_bool_coercion.py
+  155 /home/devuser/workspace/tests/openai_gpt5_responses/test_provider_runtime.py
+  151 /home/devuser/workspace/tests/openai_gpt5_responses/test_provider_schema.py
+    8 /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/conftest.py
+   47 /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_credentials.py
+   96 /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_llm.py
+   20 /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_messages.py
+   54 /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_payloads.py
+   42 /tmp/openai_responses_provider_subagent_20260212_011017/tests/openai_responses_provider/test_schema_runtime.py
+ 1973 total
+EXIT_CODE: 0
+
+===== dify_runtime_integration_check =====
+CMD: rg -n ModelProvider|Plugin\(DifyPluginEnv|DifyPluginEnv /tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider
+/tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/sdk.py:9:    from dify_plugin import LargeLanguageModel, ModelProvider
+/tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/internal/sdk.py:143:    class ModelProvider:
+/tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/main.py:1:from dify_plugin import Plugin, DifyPluginEnv
+/tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/main.py:3:plugin = Plugin(DifyPluginEnv(MAX_REQUEST_TIMEOUT=120))
+/tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/provider/openai_responses_provider.py:7:from ..internal.sdk import CredentialsValidateFailedError, ModelProvider, ModelType
+/tmp/openai_responses_provider_subagent_20260212_011017/app/openai_responses_provider/provider/openai_responses_provider.py:12:class OpenaiResponsesProviderModelProvider(ModelProvider):
+EXIT_CODE: 0
+
+===== abstract_methods_check_rerun_target_class =====
+CMD: bash -lc UV_CACHE_DIR=/tmp/uv-cache uv run python - <<'PY'
+import sys
+from importlib import import_module
+sys.path.insert(0, '/tmp/openai_responses_provider_subagent_20260212_011017/app')
+mod = import_module('openai_responses_provider.models.llm.llm')
+cls = getattr(mod, 'OpenaiResponsesProviderLargeLanguageModel')
+print('LLM_CLASS', cls.__name__)
+print('ABSTRACTS', sorted(getattr(cls, '__abstractmethods__', set())))
+PY
+LLM_CLASS OpenaiResponsesProviderLargeLanguageModel
+ABSTRACTS []
+EXIT_CODE: 0
+
+===== chunk_schema_repro_rerun_target_class =====
+CMD: bash -lc UV_CACHE_DIR=/tmp/uv-cache uv run python - <<'PY'
+import sys
+from importlib import import_module
+sys.path.insert(0, '/tmp/openai_responses_provider_subagent_20260212_011017/app')
+mod = import_module('openai_responses_provider.models.llm.llm')
+base = getattr(mod, 'OpenaiResponsesProviderLargeLanguageModel')
+class Impl(base):
+    @property
+    def _invoke_error_mapping(self):
+        return {}
+    def get_num_tokens(self, model, credentials, prompt_messages, tools=None):
+        return 0
+    def _invoke(self, model, credentials, prompt_messages, model_parameters, tools=None, stop=None, stream=True, user=None):
+        return None
+    def validate_credentials(self, model, credentials):
+        return None
+obj = object.__new__(Impl)
+if hasattr(obj, '_chunk'):
+    chunk = obj._chunk(model='demo', prompt_messages=[], text='ok')
+    print('CHUNK_OK', type(chunk).__name__)
+elif hasattr(obj, '_build_stream_chunk'):
+    chunk = obj._build_stream_chunk(model='demo', prompt_messages=[], text='ok')
+    print('CHUNK_OK', type(chunk).__name__)
+else:
+    print('NO_CHUNK_METHOD')
+    raise SystemExit(1)
+PY
+Traceback (most recent call last):
+  File "<stdin>", line 18, in <module>
+TypeError: OpenaiResponsesProviderLargeLanguageModel._chunk() got an unexpected keyword argument 'prompt_messages'
+EXIT_CODE: 1
+
+===== chunk_schema_repro_rerun_signature_adaptive =====
+CMD: UV_CACHE_DIR=/tmp/uv-cache uv run python <signature adaptive chunk repro>
+CHUNK_METHOD _chunk
+CHUNK_SIGNATURE (*, model: 'str', text: 'str', finish_reason: 'str | None' = None, usage: 'LLMUsage | None' = None, index: 'int' = 0) -> 'LLMResultChunk'
+CHUNK_OK LLMResultChunk
+EXIT_CODE: 0
+

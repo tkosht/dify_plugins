@@ -1,0 +1,16 @@
+subagent_result_final.json: OK
+parent_gate_results.txt: OK
+repro_evidence.txt: OK
+SHA256SUMS.txt: OK
+hash_check_results.txt: OK
+subagent_events.jsonl: OK
+subagent_stderr.log: OK
+run_metadata.env: OK
+subagent_prompt_codex.txt: OK
+TASK_SPEC.md: OK
+subagent_report.json: OK
+subagent_last_message.txt: OK
+subagent_exit_code.txt: OK
+subagent_status.txt: OK
+openai_responses_provider_source_snapshot.tar.gz: OK
+openai_responses_provider.difypkg: OK

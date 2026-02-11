@@ -1,0 +1,24 @@
+# Required authoritative files
+subagent_result_final.json
+parent_gate_results.txt
+repro_evidence.txt
+SHA256SUMS.txt
+hash_check_results.txt
+subagent_events.jsonl
+subagent_stderr.log
+
+# Evaluation summary
+../openai_responses_provider_subagent_parity_evaluation_2026-02-12_011017.md
+
+# Repro context
+run_metadata.env
+subagent_prompt_codex.txt
+TASK_SPEC.md
+subagent_report.json
+subagent_last_message.txt
+subagent_exit_code.txt
+subagent_status.txt
+
+# Persisted payloads
+openai_responses_provider_source_snapshot.tar.gz
+openai_responses_provider.difypkg

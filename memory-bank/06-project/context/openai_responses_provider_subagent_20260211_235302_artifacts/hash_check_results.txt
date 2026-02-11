@@ -1,0 +1,5 @@
+subagent_result_final.json: OK
+parent_gate_results.txt: OK
+repro_evidence.txt: OK
+subagent_events_rerun.jsonl: OK
+subagent_last_message.txt: OK

@@ -1,0 +1,133 @@
+RUN_AT: 2026-02-12 00:06:23 JST
+ISOLATED_DIR: /tmp/openai_responses_provider_subagent_20260211_235302
+
+===== isolated_tree =====
+CMD: bash -lc find '/tmp/openai_responses_provider_subagent_20260211_235302' -maxdepth 3 -type d | sort
+/tmp/openai_responses_provider_subagent_20260211_235302
+/tmp/openai_responses_provider_subagent_20260211_235302/app
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider/__pycache__
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider/_assets
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider/internal
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider/models
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider/provider
+/tmp/openai_responses_provider_subagent_20260211_235302/tests
+/tmp/openai_responses_provider_subagent_20260211_235302/tests/openai_responses_provider
+/tmp/openai_responses_provider_subagent_20260211_235302/tests/openai_responses_provider/.pytest_cache
+/tmp/openai_responses_provider_subagent_20260211_235302/tests/openai_responses_provider/__pycache__
+EXIT_CODE: 0
+
+===== baseline_absent_app =====
+CMD: test ! -e /tmp/openai_responses_provider_subagent_20260211_235302/app/openai_gpt5_responses
+EXIT_CODE: 0
+
+===== baseline_absent_tests =====
+CMD: test ! -e /tmp/openai_responses_provider_subagent_20260211_235302/tests/openai_gpt5_responses
+EXIT_CODE: 0
+
+===== baseline_difypkg_absent =====
+CMD: bash -lc ls -1 '/tmp/openai_responses_provider_subagent_20260211_235302' | rg 'openai_gpt5_responses.*\.difypkg' && exit 1 || true
+EXIT_CODE: 0
+
+===== git_history_absence =====
+CMD: bash -lc cd '/tmp/openai_responses_provider_subagent_20260211_235302' && git rev-list --all --count
+fatal: not a git repository (or any of the parent directories): .git
+EXIT_CODE: 128
+
+===== git_remote_absence =====
+CMD: bash -lc cd '/tmp/openai_responses_provider_subagent_20260211_235302' && git remote -v
+fatal: not a git repository (or any of the parent directories): .git
+EXIT_CODE: 128
+
+===== leakage_scan =====
+CMD: rg -n openai_gpt5_responses|git[[:space:]]+log|git[[:space:]]+show /tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider /tmp/openai_responses_provider_subagent_20260211_235302/tests/openai_responses_provider
+EXIT_CODE: 1
+
+===== abstract_methods_check =====
+CMD: bash -lc UV_CACHE_DIR=/tmp/uv-cache uv run python - <<'PY'
+import sys
+from importlib import import_module
+sys.path.insert(0, '/tmp/openai_responses_provider_subagent_20260211_235302/app')
+mod = import_module('openai_responses_provider.models.llm.llm')
+cls = getattr(mod, 'OpenAIResponsesLargeLanguageModel')
+print(sorted(getattr(cls, '__abstractmethods__', set())))
+PY
+['_invoke', '_invoke_error_mapping']
+EXIT_CODE: 0
+
+===== chunk_schema_repro =====
+CMD: bash -lc UV_CACHE_DIR=/tmp/uv-cache uv run python - <<'PY'
+import sys
+from importlib import import_module
+sys.path.insert(0, '/tmp/openai_responses_provider_subagent_20260211_235302/app')
+mod = import_module('openai_responses_provider.models.llm.llm')
+base = getattr(mod, 'OpenAIResponsesLargeLanguageModel')
+class Impl(base):
+    @property
+    def _invoke_error_mapping(self):
+        return {}
+    def get_num_tokens(self, model, credentials, prompt_messages, tools=None):
+        return 0
+    def _invoke(self, model, credentials, prompt_messages, model_parameters=None, tools=None, stop=None, stream=True, user=None):
+        return None
+obj = object.__new__(Impl)
+if hasattr(obj, '_build_stream_chunk'):
+    chunk = obj._build_stream_chunk('demo', [], 'ok')
+    print(type(chunk).__name__)
+elif hasattr(obj, '_chunk'):
+    chunk = obj._chunk(model='demo', prompt_messages=[], text='ok')
+    print(type(chunk).__name__)
+else:
+    print('NO_CHUNK_METHOD')
+PY
+NO_CHUNK_METHOD
+EXIT_CODE: 0
+
+===== payload_strictness_repro =====
+CMD: bash -lc UV_CACHE_DIR=/tmp/uv-cache uv run python - <<'PY'
+import sys
+from importlib import import_module
+sys.path.insert(0, '/tmp/openai_responses_provider_subagent_20260211_235302/app')
+payloads = import_module('openai_responses_provider.internal.payloads')
+try:
+    payloads.coerce_strict_bool('yes', 'stream')
+    print('BOOL_STRICT_FAIL')
+except ValueError:
+    print('bool strictness ok')
+try:
+    payloads.build_responses_payload(model='demo', prompt_input=[], model_parameters={'response_format': 'json_schema'})
+    print('JSON_SCHEMA_STRICT_FAIL')
+except Exception:
+    print('json_schema strictness ok')
+PY
+BOOL_STRICT_FAIL
+json_schema strictness ok
+EXIT_CODE: 0
+
+===== dify_integration_symbols =====
+CMD: rg -n ModelProvider|Plugin\(DifyPluginEnv|DifyPluginEnv /tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider/main.py:4:    from dify_plugin import DifyPluginEnv, Plugin
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider/main.py:6:    class DifyPluginEnv:  # type: ignore[override]
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider/main.py:11:        def __init__(self, env: DifyPluginEnv) -> None:
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider/main.py:18:plugin = Plugin(DifyPluginEnv(provider_package="openai_responses_provider"))
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider/provider/openai_responses_provider.py:11:    from dify_plugin.interfaces.model_provider import ModelProvider
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider/provider/openai_responses_provider.py:13:    class ModelProvider:  # type: ignore[override]
+/tmp/openai_responses_provider_subagent_20260211_235302/app/openai_responses_provider/provider/openai_responses_provider.py:17:class OpenAIResponsesProvider(ModelProvider):
+EXIT_CODE: 0
+
+===== line_count_ratio =====
+CMD: bash -lc BASE=1706; TARGET=400; python3 - <<PY
+base=float('')
+target=float('')
+print({'baseline_total_lines':base,'target_total_lines':target,'ratio':(target/base if base else 0.0)})
+PY
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ValueError: could not convert string to float: ''
+EXIT_CODE: 1
+
+===== line_count_ratio_fixed =====
+CMD: BASE=1706; TARGET=400
+{'baseline_total_lines': 1706.0, 'target_total_lines': 400.0, 'ratio': 0.23446658851113716}
+EXIT_CODE: 0
+

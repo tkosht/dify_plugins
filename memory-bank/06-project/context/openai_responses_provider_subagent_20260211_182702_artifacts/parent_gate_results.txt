@@ -1,0 +1,574 @@
+[Final Parent Gate + Anti-Cheat] 2026-02-11T09:49:18Z
+ISO=/tmp/openai_responses_provider_subagent_20260211_182702
+ART=/home/devuser/workspace/memory-bank/06-project/context/openai_responses_provider_subagent_20260211_182702_artifacts
+
+## anti_cheat:isolation
+absent_baseline_app_exit=0
+absent_baseline_tests_exit=0
+baseline_difypkg_present_exit=1
+
+## anti_cheat:git
+0
+git_rev_list_exit=0
+git_remote_exit=0
+
+## anti_cheat:leakage_scan
+leakage_scan_exit=1
+
+## quality:ruff
+I001 [*] Import block is un-sorted or un-formatted
+  --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/__init__.py:3:1
+   |
+ 1 |   """Internal helpers for openai_responses_provider."""
+ 2 |
+ 3 | / from .credentials import ProviderCredentials, coerce_strict_bool, mask_secret, sanitize_credentials
+ 4 | | from .errors import (
+ 5 | |     CredentialValidationError,
+ 6 | |     MessageConversionError,
+ 7 | |     OpenAIResponsesProviderError,
+ 8 | |     PayloadValidationError,
+ 9 | |     StreamParseError,
+10 | |     as_credentials_error,
+11 | | )
+12 | | from .messages import (
+13 | |     convert_prompt_messages,
+14 | |     convert_prompt_tools,
+15 | |     extract_output_text,
+16 | |     extract_usage,
+17 | |     iter_response_events,
+18 | |     normalize_tool_call,
+19 | | )
+20 | | from .payloads import build_responses_payload
+   | |_____________________________________________^
+21 |
+22 |   __all__ = [
+   |
+help: Organize imports
+
+E501 Line too long (99 > 88)
+ --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/__init__.py:3:89
+  |
+1 | """Internal helpers for openai_responses_provider."""
+2 |
+3 | from .credentials import ProviderCredentials, coerce_strict_bool, mask_secret, sanitize_credentials
+  |                                                                                         ^^^^^^^^^^^
+4 | from .errors import (
+5 |     CredentialValidationError,
+  |
+
+UP035 [*] Import from `collections.abc` instead: `Mapping`
+ --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/credentials.py:6:1
+  |
+5 | from dataclasses import dataclass
+6 | from typing import Any, Mapping
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 |
+8 | from .errors import CredentialValidationError
+  |
+help: Import from `collections.abc`
+
+UP037 [*] Remove quotes from type annotation
+  --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/credentials.py:26:62
+   |
+25 |     @classmethod
+26 |     def from_mapping(cls, credentials: Mapping[str, Any]) -> "ProviderCredentials":
+   |                                                              ^^^^^^^^^^^^^^^^^^^^^
+27 |         if not isinstance(credentials, Mapping):
+28 |             raise CredentialValidationError("credentials must be a mapping")
+   |
+help: Remove quotes
+
+E501 Line too long (92 > 88)
+  --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/credentials.py:37:89
+   |
+35 |         organization = _clean_optional_string(credentials.get("organization"))
+36 |         project = _clean_optional_string(credentials.get("project"))
+37 |         timeout_seconds = _coerce_timeout(credentials.get("timeout_seconds"), default=120.0)
+   |                                                                                         ^^^^
+38 |         max_retries = _coerce_max_retries(credentials.get("max_retries"), default=2)
+   |
+
+E501 Line too long (108 > 88)
+  --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/messages.py:51:89
+   |
+49 |                 "name": _read_field(tool, "name"),
+50 |                 "description": _read_field(tool, "description", default=""),
+51 |                 "parameters": _read_field(tool, "parameters", default={"type": "object", "properties": {}}),
+   |                                                                                         ^^^^^^^^^^^^^^^^^^^^
+52 |             }
+   |
+
+E501 Line too long (91 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/messages.py:164:89
+    |
+162 |             delta = _read_field(event, "delta", default="")
+163 |             tool = {
+164 |                 "id": _read_field(event, "item_id") or _read_field(event, "call_id") or "",
+    |                                                                                         ^^^
+165 |                 "name": _read_field(event, "name") or _read_field(event, "tool_name") or "function",
+166 |                 "arguments": str(delta or ""),
+    |
+
+E501 Line too long (100 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/messages.py:165:89
+    |
+163 |             tool = {
+164 |                 "id": _read_field(event, "item_id") or _read_field(event, "call_id") or "",
+165 |                 "name": _read_field(event, "name") or _read_field(event, "tool_name") or "function",
+    |                                                                                         ^^^^^^^^^^^^
+166 |                 "arguments": str(delta or ""),
+167 |             }
+    |
+
+E501 Line too long (90 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/messages.py:175:89
+    |
+173 |             if tool is None:
+174 |                 tool = {
+175 |                     "id": _read_field(event, "item_id") or _read_field(event, "id") or "",
+    |                                                                                         ^^
+176 |                     "name": _read_field(event, "name") or "function",
+177 |                     "arguments": _read_field(event, "arguments") or "",
+    |
+
+E501 Line too long (90 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/messages.py:202:89
+    |
+200 |         source = {
+201 |             "id": _read_field(tool_call, "id") or _read_field(tool_call, "call_id"),
+202 |             "name": _read_field(tool_call, "name") or _read_field(tool_call, "tool_name"),
+    |                                                                                         ^^
+203 |             "arguments": _read_field(tool_call, "arguments") or _read_field(tool_call, "input"),
+204 |         }
+    |
+
+E501 Line too long (96 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/messages.py:203:89
+    |
+201 |             "id": _read_field(tool_call, "id") or _read_field(tool_call, "call_id"),
+202 |             "name": _read_field(tool_call, "name") or _read_field(tool_call, "tool_name"),
+203 |             "arguments": _read_field(tool_call, "arguments") or _read_field(tool_call, "input"),
+    |                                                                                         ^^^^^^^^
+204 |         }
+    |
+
+E501 Line too long (91 > 88)
+  --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/payloads.py:45:89
+   |
+44 |     if "max_tokens" in params and params.get("max_tokens") is not None:
+45 |         payload["max_output_tokens"] = _coerce_int(params["max_tokens"], name="max_tokens")
+   |                                                                                         ^^^
+46 |
+47 |     reasoning = _build_reasoning_block(params)
+   |
+
+E501 Line too long (96 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/payloads.py:111:89
+    |
+109 |         if normalized in {"json_object", "json"}:
+110 |             return {"type": "json_object"}
+111 |         raise PayloadValidationError("response_format string must be one of: text, json_object")
+    |                                                                                         ^^^^^^^^
+112 |
+113 |     if not isinstance(value, dict):
+    |
+
+E501 Line too long (95 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/payloads.py:121:89
+    |
+120 |     if fmt_type != "json_schema":
+121 |         raise PayloadValidationError("response_format.type must be json_object or json_schema")
+    |                                                                                         ^^^^^^^
+122 |
+123 |     schema = value.get("json_schema")
+    |
+
+E501 Line too long (92 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/payloads.py:127:89
+    |
+125 |         schema = value.get("schema")
+126 |     if not isinstance(schema, dict):
+127 |         raise PayloadValidationError("response_format json_schema requires a schema object")
+    |                                                                                         ^^^^
+128 |
+129 |     format_payload = {
+    |
+
+E501 Line too long (108 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/payloads.py:136:89
+    |
+135 |     if "strict" in value:
+136 |         format_payload["strict"] = _coerce_bool_or_raise(value.get("strict"), name="response_format.strict")
+    |                                                                                         ^^^^^^^^^^^^^^^^^^^^
+137 |
+138 |     return format_payload
+    |
+
+E501 Line too long (94 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/payloads.py:177:89
+    |
+177 | def _copy_scalar_if_present(source: dict[str, Any], target: dict[str, Any], key: str) -> None:
+    |                                                                                         ^^^^^^
+178 |     if key in source and source[key] is not None:
+179 |         target[key] = source[key]
+    |
+
+E501 Line too long (102 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/llm.py:106:89
+    |
+104 |             raise as_credentials_error(exc) from exc
+105 |
+106 |     def get_customizable_model_schema(self, model: str, credentials: dict[str, Any]) -> AIModelEntity:
+    |                                                                                         ^^^^^^^^^^^^^^
+107 |         del credentials
+108 |         return AIModelEntity(
+    |
+
+E501 Line too long (94 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/llm.py:197:89
+    |
+195 |         return _best_effort_construct(LLMResultChunkDelta, payload)
+196 |
+197 |     def _build_message(self, *, content: str, tool_calls: list[dict[str, Any]] | None) -> Any:
+    |                                                                                         ^^^^^^
+198 |         payload: dict[str, Any] = {"role": "assistant", "content": content}
+199 |         if tool_calls:
+    |
+
+E501 Line too long (93 > 88)
+  --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/provider/openai_responses_provider.py:38:89
+   |
+36 |             raise as_credentials_error(exc) from exc
+37 |
+38 |     def validate_model_credentials(self, model: str, credentials: Mapping[str, Any]) -> None:
+   |                                                                                         ^^^^^
+39 |         """Validate customizable-model credentials using the same policy as provider-level credentials."""
+   |
+
+E501 Line too long (106 > 88)
+  --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/provider/openai_responses_provider.py:39:89
+   |
+38 |     def validate_model_credentials(self, model: str, credentials: Mapping[str, Any]) -> None:
+39 |         """Validate customizable-model credentials using the same policy as provider-level credentials."""
+   |                                                                                         ^^^^^^^^^^^^^^^^^^
+40 |
+41 |         self.validate_provider_credentials(credentials)
+   |
+
+E501 Line too long (100 > 88)
+  --> /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/provider/openai_responses_provider.py:69:89
+   |
+67 |             from openai import OpenAI
+68 |         except Exception as exc:  # pragma: no cover - import environment dependent
+69 |             raise RuntimeError("openai package is required to validate remote credentials") from exc
+   |                                                                                         ^^^^^^^^^^^^
+70 |
+71 |         return OpenAI(**parsed.to_openai_client_kwargs())
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_entrypoints_and_errors.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | import runpy
+4 | | import sys
+5 | | import types
+6 | | from pathlib import Path
+  | |________________________^
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_llm_stream_flag.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | import itertools
+4 | | import sys
+5 | | import types
+6 | | from pathlib import Path
+7 | |
+8 | | import pytest
+  | |_____________^
+  |
+help: Organize imports
+
+E501 Line too long (95 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_llm_stream_flag.py:342:89
+    |
+340 |     llm, client = make_llm_with_client([])
+341 |
+342 |     llm.validate_credentials("gpt-5", {"openai_api_key": "sk-test", "validate_remote": "true"})
+    |                                                                                         ^^^^^^^
+343 |
+344 |     assert client.models.calls == [1]
+    |
+
+E501 Line too long (95 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_llm_stream_flag.py:383:89
+    |
+382 | def test_llm_class_has_no_unresolved_abstract_methods() -> None:
+383 |     abstract_methods = getattr(OpenAIResponsesLargeLanguageModel, "__abstractmethods__", set())
+    |                                                                                         ^^^^^^^
+384 |     assert not abstract_methods
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_messages.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | import sys
+4 | | import types
+5 | | from pathlib import Path
+6 | |
+7 | | import pytest
+  | |_____________^
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_messages.py:115:1
+    |
+115 | / from openai_responses_provider.internal.errors import MessageConversionError  # noqa: E402
+116 | | from openai_responses_provider.internal.messages import (  # noqa: E402
+117 | |     convert_prompt_messages,
+118 | |     convert_prompt_tools,
+119 | |     extract_output_text,
+120 | |     extract_usage,
+121 | |     iter_response_events,
+122 | |     normalize_tool_call,
+123 | | )
+    | |_^
+    |
+help: Organize imports
+
+E501 Line too long (90 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_messages.py:191:89
+    |
+189 |                 "name": "search_docs",
+190 |                 "description": "search",
+191 |                 "parameters": {"type": "object", "properties": {"q": {"type": "string"}}},
+    |                                                                                         ^^
+192 |             },
+193 |         }
+    |
+
+E501 Line too long (89 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_messages.py:283:89
+    |
+282 | def test_extract_usage_defaults_and_totals() -> None:
+283 |     response = Obj(usage={"input_tokens": "10", "output_tokens": "5", "total_tokens": 0})
+    |                                                                                         ^
+284 |     usage = extract_usage(response)
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_payloads.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | import sys
+4 | | import types
+5 | | from pathlib import Path
+6 | |
+7 | | import pytest
+  | |_____________^
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_payloads.py:55:1
+   |
+55 | / from openai_responses_provider.internal.errors import PayloadValidationError  # noqa: E402
+56 | | from openai_responses_provider.internal.payloads import build_responses_payload  # noqa: E402
+   | |_______________________________________________________________________________^
+   |
+help: Organize imports
+
+E501 Line too long (94 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_payloads.py:219:89
+    |
+217 |                     "name": "search",
+218 |                     "description": "search docs",
+219 |                     "parameters": {"type": "object", "properties": {"q": {"type": "string"}}},
+    |                                                                                         ^^^^^^
+220 |                 },
+221 |             }
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_payloads_bool_coercion.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | import sys
+4 | | import types
+5 | | from pathlib import Path
+6 | |
+7 | | import pytest
+  | |_____________^
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_payloads_bool_coercion.py:55:1
+   |
+55 | / from openai_responses_provider.internal.credentials import coerce_strict_bool  # noqa: E402
+56 | | from openai_responses_provider.internal.errors import (  # noqa: E402
+57 | |     CredentialValidationError,
+58 | |     PayloadValidationError,
+59 | | )
+60 | | from openai_responses_provider.internal.payloads import build_responses_payload  # noqa: E402
+   | |_______________________________________________________________________________^
+   |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_provider_runtime.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | import logging
+4 | | import sys
+5 | | import types
+6 | | from pathlib import Path
+7 | |
+8 | | import pytest
+  | |_____________^
+  |
+help: Organize imports
+
+E501 Line too long (92 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_provider_runtime.py:130:89
+    |
+128 |     called = {"probe": 0, "build": 0}
+129 |
+130 |     provider._probe_client = lambda client: called.__setitem__("probe", called["probe"] + 1)
+    |                                                                                         ^^^^
+131 |     provider._build_openai_client = lambda parsed: called.__setitem__("build", called["build"] + 1)
+    |
+
+E501 Line too long (99 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_provider_runtime.py:131:89
+    |
+130 |     provider._probe_client = lambda client: called.__setitem__("probe", called["probe"] + 1)
+131 |     provider._build_openai_client = lambda parsed: called.__setitem__("build", called["build"] + 1)
+    |                                                                                         ^^^^^^^^^^^
+132 |
+133 |     provider.validate_provider_credentials({"openai_api_key": "sk-test"})
+    |
+
+E501 Line too long (95 > 88)
+   --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_provider_runtime.py:222:89
+    |
+222 | def test_audit_validate_attempt_uses_redacted_values(caplog: pytest.LogCaptureFixture) -> None:
+    |                                                                                         ^^^^^^^
+223 |     provider = OpenAIResponsesProviderModelProvider()
+224 |     caplog.set_level(logging.INFO)
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_provider_schema.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | import re
+4 | | from pathlib import Path
+  | |________________________^
+  |
+help: Organize imports
+
+Found 40 errors.
+[*] 13 fixable with the `--fix` option.
+ruff_exit=1
+
+## quality:pytest_no_cov
+........................................................................ [ 72%]
+............................                                             [100%]
+=============================== warnings summary ===============================
+test_entrypoints_and_errors.py::test_main_module_executes_plugin_run
+  <frozen runpy>:128: RuntimeWarning: 'openai_responses_provider.main' found in sys.modules after import of package 'openai_responses_provider', but prior to execution of 'openai_responses_provider.main'; this may result in unpredictable behaviour
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+100 passed, 1 warning in 0.08s
+pytest_no_cov_exit=0
+
+## quality:pytest_cov
+........................................................................ [ 72%]
+............................                                             [100%]
+=============================== warnings summary ===============================
+test_entrypoints_and_errors.py::test_main_module_executes_plugin_run
+  <frozen runpy>:128: RuntimeWarning: 'openai_responses_provider.main' found in sys.modules after import of package 'openai_responses_provider', but prior to execution of 'openai_responses_provider.main'; this may result in unpredictable behaviour
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+100 passed, 1 warning in 0.07s
+pytest_cov_exit=0
+
+## quality:package
+2026/02/11 18:49:19 INFO plugin packaged successfully output_path=openai_responses_provider.difypkg
+package_exit=0
+
+## parity:diff_app
+Only in app/openai_gpt5_responses: .env
+Files app/openai_gpt5_responses/.env.example and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/.env.example differ
+Files app/openai_gpt5_responses/PRIVACY.md and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/PRIVACY.md differ
+Files app/openai_gpt5_responses/README.md and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/README.md differ
+Files app/openai_gpt5_responses/__init__.py and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/__init__.py differ
+Only in /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/_assets: icon-dark.svg
+Files app/openai_gpt5_responses/_assets/icon.svg and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/_assets/icon.svg differ
+Files app/openai_gpt5_responses/icon.svg and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/icon.svg differ
+Files app/openai_gpt5_responses/internal/__init__.py and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/__init__.py differ
+Files app/openai_gpt5_responses/internal/credentials.py and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/credentials.py differ
+Files app/openai_gpt5_responses/internal/errors.py and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/errors.py differ
+Files app/openai_gpt5_responses/internal/messages.py and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/messages.py differ
+Files app/openai_gpt5_responses/internal/payloads.py and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/internal/payloads.py differ
+Files app/openai_gpt5_responses/manifest.yaml and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/manifest.yaml differ
+Files app/openai_gpt5_responses/models/__init__.py and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/__init__.py differ
+Files app/openai_gpt5_responses/models/llm/__init__.py and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/__init__.py differ
+Files app/openai_gpt5_responses/models/llm/_position.yaml and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/_position.yaml differ
+Files app/openai_gpt5_responses/models/llm/gpt-5-codex.yaml and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/gpt-5-codex.yaml differ
+Files app/openai_gpt5_responses/models/llm/gpt-5-mini.yaml and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/gpt-5-mini.yaml differ
+Files app/openai_gpt5_responses/models/llm/gpt-5-nano.yaml and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/gpt-5-nano.yaml differ
+Files app/openai_gpt5_responses/models/llm/gpt-5.1-codex.yaml and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/gpt-5.1-codex.yaml differ
+Files app/openai_gpt5_responses/models/llm/gpt-5.2-pro.yaml and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/gpt-5.2-pro.yaml differ
+Files app/openai_gpt5_responses/models/llm/gpt-5.2.yaml and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/gpt-5.2.yaml differ
+Files app/openai_gpt5_responses/models/llm/gpt-5.3-codex.yaml and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/gpt-5.3-codex.yaml differ
+Files app/openai_gpt5_responses/models/llm/gpt-5.yaml and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/gpt-5.yaml differ
+Files app/openai_gpt5_responses/models/llm/llm.py and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/models/llm/llm.py differ
+Files app/openai_gpt5_responses/provider/__init__.py and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/provider/__init__.py differ
+Only in app/openai_gpt5_responses/provider: openai_gpt5.py
+Only in app/openai_gpt5_responses/provider: openai_gpt5.yaml
+Only in /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/provider: openai_responses_provider.py
+Only in /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/provider: openai_responses_provider.yaml
+Files app/openai_gpt5_responses/requirements.txt and /tmp/openai_responses_provider_subagent_20260211_182702/app/openai_responses_provider/requirements.txt differ
+diff_app_exit=1
+
+## parity:diff_tests
+Only in /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider: .pytest_cache
+Files tests/openai_gpt5_responses/test_entrypoints_and_errors.py and /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_entrypoints_and_errors.py differ
+Files tests/openai_gpt5_responses/test_llm_stream_flag.py and /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_llm_stream_flag.py differ
+Files tests/openai_gpt5_responses/test_messages.py and /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_messages.py differ
+Files tests/openai_gpt5_responses/test_payloads.py and /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_payloads.py differ
+Files tests/openai_gpt5_responses/test_payloads_bool_coercion.py and /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_payloads_bool_coercion.py differ
+Files tests/openai_gpt5_responses/test_provider_runtime.py and /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_provider_runtime.py differ
+Files tests/openai_gpt5_responses/test_provider_schema.py and /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_provider_schema.py differ
+diff_tests_exit=1
+
+## parity:wc_l
+   108 tests/openai_gpt5_responses/test_entrypoints_and_errors.py
+   842 tests/openai_gpt5_responses/test_llm_stream_flag.py
+   246 tests/openai_gpt5_responses/test_messages.py
+    74 tests/openai_gpt5_responses/test_payloads.py
+   130 tests/openai_gpt5_responses/test_payloads_bool_coercion.py
+   155 tests/openai_gpt5_responses/test_provider_runtime.py
+   151 tests/openai_gpt5_responses/test_provider_schema.py
+   260 /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_entrypoints_and_errors.py
+   463 /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_llm_stream_flag.py
+   360 /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_messages.py
+   372 /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_payloads.py
+   200 /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_payloads_bool_coercion.py
+   301 /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_provider_runtime.py
+   192 /tmp/openai_responses_provider_subagent_20260211_182702/tests/openai_responses_provider/test_provider_schema.py
+  3854 total
