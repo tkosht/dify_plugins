@@ -35,6 +35,7 @@ def test_function_calling_strategy_has_required_parameters() -> None:
         "query",
         "maximum_iterations",
         "emit_intermediate_thoughts",
+        "allow_schemaless_tool_args",
     }.issubset(names)
 
 
@@ -48,6 +49,7 @@ def test_react_strategy_has_required_parameters() -> None:
         "query",
         "maximum_iterations",
         "emit_intermediate_thoughts",
+        "allow_schemaless_tool_args",
     }.issubset(names)
 
 
@@ -105,6 +107,7 @@ def test_common_parameters_have_help_in_both_strategies() -> None:
         "query",
         "maximum_iterations",
         "emit_intermediate_thoughts",
+        "allow_schemaless_tool_args",
     )
     for strategy_yaml in ("gpt5_function_calling.yaml", "gpt5_react.yaml"):
         for param_name in expected_help_params:
@@ -124,7 +127,16 @@ def test_common_parameters_have_help_in_both_strategies() -> None:
         thought_help = _parameter(strategy_yaml, "emit_intermediate_thoughts")[
             "help"
         ]
+        thought_default = _parameter(
+            strategy_yaml, "emit_intermediate_thoughts"
+        )["default"]
+        assert thought_default is False
         assert "<think>" in str(thought_help["en_US"])
         assert "true" in str(thought_help["en_US"])
         assert "<think>" in str(thought_help["ja_JP"])
         assert "true" in str(thought_help["ja_JP"])
+
+        schemaless_default = _parameter(
+            strategy_yaml, "allow_schemaless_tool_args"
+        )["default"]
+        assert schemaless_default is False

@@ -156,17 +156,37 @@ parameters:
   - name: emit_intermediate_thoughts
     type: boolean
     required: false
-    default: true
+    default: false
     label:
       en_US: Show Intermediate Thoughts
       ja_JP: 中間思考の表示
     help:
       en_US: |
+        Default is false.
         true: emit intermediate <think> blocks during execution.
         false: hide intermediate thoughts and output only user-facing content.
       ja_JP: |
+        デフォルトは false です。
         true: 実行中に中間 <think> ブロックを表示します。
         false: 中間思考は表示せず、ユーザー向け出力のみ返します。
+  - name: allow_schemaless_tool_args
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Allow Schemaless Tool Args
+      ja_JP: スキーマ未定義ツール引数の許可
+    help:
+      en_US: |
+        Default is false (recommended).
+        false: fail-closed when tool schema is missing and LLM provides tool-call arguments.
+        true: allow tool-call arguments even if schema is missing (compatibility fallback).
+        Note: this override is effective only when GPT5_AGENT_ALLOW_SCHEMELESS_OVERRIDE=true.
+      ja_JP: |
+        デフォルトは false（推奨）です。
+        false: ツールスキーマ未定義で LLM が引数を返した場合は fail-closed で拒否します。
+        true: スキーマ未定義でも引数を許可します（互換性のためのフォールバック）。
+        注記: この上書きは GPT5_AGENT_ALLOW_SCHEMELESS_OVERRIDE=true の場合のみ有効です。
 extra:
   python:
     source: strategies/gpt5_react.py

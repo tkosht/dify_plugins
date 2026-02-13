@@ -151,8 +151,36 @@ jobs:
           fi
         continue-on-error: true
 
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-groups --all-extras
+
+      - name: Enforce schemaless override policy
+        run: |
+          if rg -n "allow_schemaless_tool_args:\\s*true" app/gpt5_agent_strategies; then
+            echo "allow_schemaless_tool_args:true is forbidden in app defaults"
+            exit 1
+          fi
+
+      - name: Run security audits
+        run: |
+          uvx --with pip-audit pip-audit -r app/openai_gpt5_responses/requirements.txt
+          uvx --with pip-audit pip-audit -r app/gpt5_agent_strategies/requirements.txt
+          uvx --with bandit bandit -q -r app/openai_gpt5_responses app/gpt5_agent_strategies -x tests
+
   summary:
-    needs: [test-subsystem, integration-tests]
+    needs: [test-subsystem, integration-tests, security-audit]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -161,4 +189,5 @@ jobs:
           echo "## Test Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "All subsystem tests have been executed." >> $GITHUB_STEP_SUMMARY
+          echo "Security audit gate (pip-audit/bandit) has been executed." >> $GITHUB_STEP_SUMMARY
           echo "Check individual job results for details." >> $GITHUB_STEP_SUMMARY

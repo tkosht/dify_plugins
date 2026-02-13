@@ -85,3 +85,30 @@ tags: review, gpt5, dify-plugin, openai-responses, agent-strategy, round8
 ## Residual Risks / Gaps
 1. 外部サブエージェント実行（OpenAI Responses API 接続）による独立再現は未実施。
 2. 実 API 接続時のネットワーク変動・stream切断ハンドリングは今回のローカルレビュー範囲外。
+
+## Linked Security Records
+- 2026-02-12 の `gpt5_agent_strategies` セキュリティ正本:
+  - `memory-bank/06-project/context/gpt5_agent_strategies_security_review_2026-02-12.md`
+  - `memory-bank/06-project/context/gpt5_agent_strategies_security_review_2026-02-12.json`
+  - `memory-bank/06-project/context/gpt5_agent_strategies_security_review_2026-02-12_handoff.md`
+- 2026-02-13 の `gpt5_agent_strategies` 再レビュー正本（最新）:
+  - `memory-bank/06-project/context/gpt5_agent_strategies_security_review_2026-02-13.md`
+  - `memory-bank/06-project/context/gpt5_agent_strategies_security_review_2026-02-13.json`
+  - `memory-bank/06-project/context/gpt5_agent_strategies_security_review_2026-02-13_handoff.md`
+
+## Security Remediation Follow-up (2026-02-12)
+- 実装修正と回帰検証の記録:
+  - `memory-bank/06-project/context/gpt5_plugins_security_remediation_2026-02-12.md`
+- 要点:
+  - `openai_api_base` の fail-close 検証（https + allowlist + private/meta拒否）を実装。
+  - `gpt5_agent_strategies` のログを metadata-only デフォルトへ変更し、verbose は opt-in 化。
+  - `emit_intermediate_thoughts` の既定を `false` へ変更。
+  - strict tool args 検証（unknown key reject / 基本型検証）を追加。
+
+## Security Remediation Follow-up (2026-02-13)
+- 実装修正と回帰検証の記録:
+  - `memory-bank/06-project/context/gpt5_plugins_security_remediation_2026-02-13.md`
+- 要点:
+  - スキーマ未定義ツール引数を既定拒否（fail-closed）へ変更し、互換用途の opt-in (`allow_schemaless_tool_args`) を追加。
+  - verbose ログの文字列 preview を既定停止し、明示フラグ有効時のみ出力するよう変更。
+  - plugin requirements を pin 化（`dify-plugin==0.7.1` など）し、CI へ `pip-audit` / `bandit` の blocking gate を追加。

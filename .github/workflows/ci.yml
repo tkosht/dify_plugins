@@ -53,6 +53,19 @@ jobs:
         run: |
           uv sync --all-groups --all-extras
 
+      - name: Enforce schemaless override policy
+        run: |
+          if rg -n "allow_schemaless_tool_args:\\s*true" app/gpt5_agent_strategies; then
+            echo "allow_schemaless_tool_args:true is forbidden in app defaults"
+            exit 1
+          fi
+
+      - name: Run security audits
+        run: |
+          uvx --with pip-audit pip-audit -r app/openai_gpt5_responses/requirements.txt
+          uvx --with pip-audit pip-audit -r app/gpt5_agent_strategies/requirements.txt
+          uvx --with bandit bandit -q -r app/openai_gpt5_responses app/gpt5_agent_strategies -x tests
+
       - name: Run linters
         run: |
           uv run ruff check .

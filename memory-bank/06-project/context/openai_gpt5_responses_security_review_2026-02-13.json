@@ -1,0 +1,35 @@
+{
+  "report_id": "openai_gpt5_responses_security_review_2026-02-13",
+  "recorded_at": "2026-02-13T22:39:57+09:00",
+  "target_app_path": "app/openai_gpt5_responses",
+  "review_profile": "standard",
+  "supersedes": "memory-bank/06-project/context/openai_gpt5_responses_security_review_2026-02-12.md",
+  "gate": {
+    "result": "PASS",
+    "reason": "No Critical or High findings."
+  },
+  "checks": {
+    "manual_matrix": "done",
+    "bandit": "done: no issues identified",
+    "pip_audit": "done: no known vulnerabilities found",
+    "security_tests": "done: uv run pytest -q --no-cov tests/openai_gpt5_responses (87 passed)"
+  },
+  "findings": [],
+  "positive_controls": [
+    "openai_api_base validation enforces https, disallows credentials, applies host allowlist, and restricts path to /v1 (app/openai_gpt5_responses/internal/credentials.py:58, :62, :67, :77).",
+    "localhost/private/link-local style hosts are blocked (app/openai_gpt5_responses/internal/credentials.py:29, :40).",
+    "Regression tests cover api_base normalization and rejection behavior (tests/openai_gpt5_responses/test_provider_schema.py:155, :160, :179; tests/openai_gpt5_responses/test_provider_runtime.py:161; tests/openai_gpt5_responses/test_llm_stream_flag.py:625).",
+    "Unexpected error details are sanitized for model credential validation (app/openai_gpt5_responses/models/llm/llm.py:63; tests/openai_gpt5_responses/test_llm_stream_flag.py:641).",
+    "Audit logs are validated not to leak API keys or prompt contents (tests/openai_gpt5_responses/test_llm_stream_flag.py:705, :762).",
+    "Dependencies are pinned to exact versions (app/openai_gpt5_responses/requirements.txt:1, :2, :3)."
+  ],
+  "residual_risks": [
+    "Overly broad OPENAI_GPT5_ALLOWED_BASE_URL_HOSTS configuration can expand outbound destination risk."
+  ],
+  "next_actions": [
+    "Keep bandit, pip-audit, and tests/openai_gpt5_responses in CI release gates.",
+    "Define review/audit policy for OPENAI_GPT5_ALLOWED_BASE_URL_HOSTS changes.",
+    "Repeat this review template for each release cut."
+  ],
+  "authoritative_markdown": "memory-bank/06-project/context/openai_gpt5_responses_security_review_2026-02-13.md"
+}

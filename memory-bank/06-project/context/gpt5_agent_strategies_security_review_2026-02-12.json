@@ -1,0 +1,154 @@
+{
+  "report_id": "gpt5_agent_strategies_security_review_2026-02-12",
+  "recorded_at": "2026-02-12T16:16:29+09:00",
+  "target_app_path": "app/gpt5_agent_strategies",
+  "review_profile": "standard",
+  "gate": {
+    "result": "FAIL",
+    "reason": "High finding exists: raw tool/LLM response logging without redaction (CWE-532)"
+  },
+  "checks": {
+    "manual_matrix": "done",
+    "bandit": "not_executed: command not found",
+    "pip_audit": "not_executed: command not found",
+    "pytest_no_cov": "done: 36 passed (tests/gpt5_agent_strategies/test_strategy_safety.py + test_strategy_invoke_paths.py)"
+  },
+  "findings": [
+    {
+      "id": "F-001",
+      "title": "Raw tool inputs/outputs and llm_response are logged without redaction",
+      "severity": "High",
+      "confidence": "High",
+      "cwe": "CWE-532",
+      "standard_refs": [
+        "OWASP Top 10 2021 - A09",
+        "OWASP API Security Top 10 2023 - API3",
+        "OWASP ASVS v4 - V9",
+        "NIST SP 800-218 SSDF - PW.4"
+      ],
+      "evidence": [
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:494 tool_input is logged as-is",
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:877 tool_response is logged as output payload",
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:910 llm_response and tool_responses are logged in round output",
+        "tests/gpt5_agent_strategies/test_strategy_invoke_paths.py:657 think-block content remains in log output context"
+      ],
+      "impact": [
+        "If sensitive data exists in tool args/outputs, it can leak through logs.",
+        "Internal reasoning fragments can be retained beyond intended user-visible scope."
+      ],
+      "remediation": [
+        "Add centralized redaction for sensitive keys and values before any log emission.",
+        "Default to metadata-only logging for model/tool payloads.",
+        "Allow detailed payload logging only in explicitly enabled debug mode with short retention."
+      ],
+      "verification_steps": [
+        "Run strategy with synthetic secrets in tool response and verify logs contain only redacted values.",
+        "Confirm llm_response/tool_responses raw bodies are omitted under default settings."
+      ]
+    },
+    {
+      "id": "F-002",
+      "title": "Intermediate <think> output is enabled by default",
+      "severity": "Medium",
+      "confidence": "High",
+      "cwe": "CWE-200",
+      "standard_refs": [
+        "OWASP API Security Top 10 2023 - API3",
+        "OWASP Top 10 2021 - A04",
+        "OWASP ASVS v4 - V1/V9"
+      ],
+      "evidence": [
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.yaml:159 default emit_intermediate_thoughts is true",
+        "app/gpt5_agent_strategies/strategies/gpt5_react.yaml:159 default emit_intermediate_thoughts is true",
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:333 think text is wrapped and emitted",
+        "tests/gpt5_agent_strategies/test_strategy_invoke_paths.py:1565 verifies think block is visible"
+      ],
+      "impact": [
+        "Internal planning text may be exposed to end users by default.",
+        "Exposed chain-of-thought style fragments expand prompt abuse and data exposure surface."
+      ],
+      "remediation": [
+        "Change default emit_intermediate_thoughts to false.",
+        "Restrict think output to admin/debug-only flows."
+      ],
+      "verification_steps": [
+        "Verify default configuration does not emit <think> blocks.",
+        "Verify debug-enabled mode still works with explicit opt-in."
+      ]
+    },
+    {
+      "id": "F-003",
+      "title": "Tool argument validation is partial and does not enforce strict allowlist schemas",
+      "severity": "Medium",
+      "confidence": "Medium",
+      "cwe": "CWE-20",
+      "standard_refs": [
+        "OWASP API Security Top 10 2023 - API8",
+        "OWASP Top 10 2021 - A03",
+        "OWASP ASVS v4 - V5"
+      ],
+      "evidence": [
+        "app/gpt5_agent_strategies/internal/tooling.py:36 validation ensures JSON object type but not strict key schema",
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:704 tool runtime params and model args are merged directly",
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:1100 only option-constrained params are validated",
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:746 normalized parameters are passed to invoke"
+      ],
+      "impact": [
+        "Unexpected keys and shapes can reach downstream tools if those tools are weakly validated.",
+        "Input abuse risk depends on each tool's own validation quality."
+      ],
+      "remediation": [
+        "Introduce per-tool strict schemas (allowed keys, types, required fields).",
+        "Reject unknown keys by default.",
+        "Add regression tests for unknown-key and invalid-type rejection."
+      ],
+      "verification_steps": [
+        "Send unknown keys and verify invoke is blocked.",
+        "Send mismatched types and verify fail-closed error path."
+      ]
+    },
+    {
+      "id": "F-004",
+      "title": "Dependency ranges are broad and can drift",
+      "severity": "Low",
+      "confidence": "High",
+      "cwe": "CWE-1104",
+      "standard_refs": [
+        "OWASP Top 10 2021 - A06",
+        "NIST SP 800-218 SSDF - PS.3/RV.1"
+      ],
+      "evidence": [
+        "app/gpt5_agent_strategies/requirements.txt:1 dify-plugin>=0.6.0,<0.7.0",
+        "app/gpt5_agent_strategies/requirements.txt:2 pydantic>=2.0.0,<3"
+      ],
+      "impact": [
+        "Unpinned updates can introduce behavior drift or vulnerabilities over time."
+      ],
+      "remediation": [
+        "Adopt lockfile or tighter pinning strategy.",
+        "Run dependency audit in CI on a schedule."
+      ],
+      "verification_steps": [
+        "Confirm deterministic dependency resolution across environments.",
+        "Track and triage newly reported CVEs continuously."
+      ]
+    }
+  ],
+  "positive_controls": [
+    "Non-string tool argument payloads are rejected (app/gpt5_agent_strategies/internal/tooling.py:20, tests/gpt5_agent_strategies/test_strategy_safety.py:39).",
+    "Path traversal guard exists for local file blob reads (app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:1300, tests/gpt5_agent_strategies/test_strategy_invoke_paths.py:1170).",
+    "Oversized local files are rejected before blob emission (app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:1325).",
+    "Internal file path from image conversion exceptions is not exposed to user text output (tests/gpt5_agent_strategies/test_strategy_invoke_paths.py:1250)."
+  ],
+  "residual_risks": [
+    "Static and dependency scanners are unavailable in the current environment (bandit, pip-audit not installed).",
+    "Operational exploitability of logging-related findings depends on production log retention and RBAC settings."
+  ],
+  "next_actions": [
+    "Implement redaction and metadata-only default logging for model/tool payloads.",
+    "Flip emit_intermediate_thoughts default to false.",
+    "Enforce strict tool argument schemas with unknown-key rejection.",
+    "Introduce dependency lock/pinning policy and add pip-audit to CI."
+  ],
+  "source_markdown": "memory-bank/06-project/context/gpt5_agent_strategies_security_review_2026-02-12.md"
+}
