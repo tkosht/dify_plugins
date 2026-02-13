@@ -332,6 +332,7 @@ def _build_tool_entity(name: str = "lookup", **kwargs: Any) -> Any:
     interfaces_mod = sys.modules["dify_plugin.interfaces.agent"]
     payload = {
         "identity": {"name": name, "provider": "provider"},
+        "parameters": [{"name": "q", "type": "string"}],
         "runtime_parameters": {},
         "provider_type": "builtin",
     }
@@ -579,7 +580,7 @@ def test_invoke_streaming_plain_text_emits_each_chunk(
         for m in messages
         if isinstance(m, dict) and m.get("kind") == "text"
     ]
-    assert text_messages == ["stream ", "hello"]
+    assert text_messages == ["stream hello"]
 
 
 def test_invoke_streaming_hides_think_blocks_when_disabled_but_keeps_internal_response(
@@ -649,14 +650,15 @@ def test_invoke_streaming_hides_think_blocks_when_disabled_but_keeps_internal_re
         if isinstance(m, dict)
         and m.get("kind") == "log_finish"
         and isinstance(m.get("data"), dict)
-        and isinstance(m["data"].get("output"), dict)
-        and "llm_response" in m["data"]["output"]
+        and isinstance(m["data"].get("output_summary"), dict)
+        and "llm_response_chars" in m["data"]["output_summary"]
     ]
     assert round_log_finishes
-    llm_response = str(round_log_finishes[0]["data"]["output"]["llm_response"])
-    assert "<think>" in llm_response
-    assert "</think>" in llm_response
-    assert "ユーザー向け回答です。" in llm_response
+    assert "output" not in round_log_finishes[0]["data"]
+    assert (
+        round_log_finishes[0]["data"]["output_summary"]["llm_response_chars"]
+        > 0
+    )
 
 
 def test_invoke_streaming_does_not_duplicate_emitted_thought_with_late_tool_call(
@@ -716,6 +718,7 @@ def test_invoke_streaming_does_not_duplicate_emitted_thought_with_late_tool_call
                 "model": _build_model_config(strategy_module, stream=True),
                 "tools": [_build_tool_entity()],
                 "maximum_iterations": 1,
+                "emit_intermediate_thoughts": True,
             }
         )
     )
@@ -900,6 +903,7 @@ def test_invoke_streaming_tool_call_thought_is_wrapped(
                 "model": _build_model_config(strategy_module, stream=True),
                 "tools": [_build_tool_entity()],
                 "maximum_iterations": 3,
+                "emit_intermediate_thoughts": True,
             }
         )
     )
@@ -1007,9 +1011,18 @@ def test_invoke_max_iteration_limit_skips_tool_execution(
         )
     )
 
-    finished_logs = [m for m in messages if m.get("kind") == "log_finish"]
-    rendered = str(finished_logs)
-    assert "Maximum iteration limit (2) reached" in rendered
+    finished_logs = [
+        m
+        for m in messages
+        if m.get("kind") == "log_finish"
+        and isinstance(m.get("data"), dict)
+        and isinstance(m["data"].get("output_summary"), dict)
+    ]
+    assert finished_logs
+    assert any(
+        log["data"]["output_summary"].get("is_error") is True
+        for log in finished_logs
+    )
     assert llm.calls == 2
 
 
@@ -1441,6 +1454,265 @@ def test_invoke_validates_option_parameter_before_tool_call(
     assert call_count == 0
 
 
+def test_invoke_rejects_unknown_tool_argument_when_schema_exists(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool_call = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_unknown_arg",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"q":"hello","unexpected":"x"}',
+        ),
+    )
+    llm_result = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="need tool",
+            tool_calls=[tool_call],
+        ),
+        usage=None,
+    )
+    llm = _SequenceLLM([llm_result])
+    call_count = 0
+
+    def _tool_invoke(**_: Any) -> list[Any]:
+        nonlocal call_count
+        call_count += 1
+        return []
+
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=_tool_invoke),
+    )
+
+    messages = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=False),
+                "tools": [
+                    _build_tool_entity(
+                        parameters=[
+                            {"name": "q", "type": "string"},
+                        ]
+                    )
+                ],
+                "maximum_iterations": 1,
+            }
+        )
+    )
+
+    rendered = "\n".join(
+        m["text"]
+        for m in messages
+        if isinstance(m, dict) and m.get("kind") == "text"
+    )
+    assert "unknown parameters" in rendered
+    assert call_count == 0
+
+
+def test_invoke_rejects_tool_argument_when_schema_missing_by_default(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool_call = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_no_schema_default",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"q":"hello"}',
+        ),
+    )
+    llm_result = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="need tool",
+            tool_calls=[tool_call],
+        ),
+        usage=None,
+    )
+    llm = _SequenceLLM([llm_result])
+    call_count = 0
+
+    def _tool_invoke(**_: Any) -> list[Any]:
+        nonlocal call_count
+        call_count += 1
+        return []
+
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=_tool_invoke),
+    )
+
+    messages = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=False),
+                "tools": [
+                    _build_tool_entity(
+                        name="lookup",
+                        parameters=[],
+                    )
+                ],
+                "maximum_iterations": 1,
+            }
+        )
+    )
+
+    rendered = "\n".join(
+        m["text"]
+        for m in messages
+        if isinstance(m, dict) and m.get("kind") == "text"
+    )
+    assert "schema is required for tool 'lookup'" in rendered
+    assert call_count == 0
+
+
+def test_invoke_rejects_opt_in_without_override_env(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool_call = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_no_schema_opt_in_no_env",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"q":"hello"}',
+        ),
+    )
+    llm_result = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="need tool",
+            tool_calls=[tool_call],
+        ),
+        usage=None,
+    )
+    llm = _SequenceLLM([llm_result])
+    call_count = 0
+
+    def _tool_invoke(**_: Any) -> list[Any]:
+        nonlocal call_count
+        call_count += 1
+        return []
+
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=_tool_invoke),
+    )
+
+    messages = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=False),
+                "tools": [
+                    _build_tool_entity(
+                        name="lookup",
+                        parameters=[],
+                    )
+                ],
+                "maximum_iterations": 1,
+                "allow_schemaless_tool_args": True,
+            }
+        )
+    )
+
+    rendered = "\n".join(
+        m["text"]
+        for m in messages
+        if isinstance(m, dict) and m.get("kind") == "text"
+    )
+    assert "schema is required for tool 'lookup'" in rendered
+    assert call_count == 0
+
+
+def test_invoke_allows_tool_argument_when_schema_missing_with_opt_in(
+    strategy_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    monkeypatch.setenv("GPT5_AGENT_ALLOW_SCHEMELESS_OVERRIDE", "true")
+    tool_call = strategy_module.AssistantPromptMessage.ToolCall(
+        id="call_no_schema_opt_in",
+        type="function",
+        function=strategy_module.AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup",
+            arguments='{"q":"hello"}',
+        ),
+    )
+    llm_result = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="need tool",
+            tool_calls=[tool_call],
+        ),
+        usage=None,
+    )
+    llm = _SequenceLLM([llm_result])
+    call_count = 0
+
+    def _tool_invoke(**_: Any) -> list[Any]:
+        nonlocal call_count
+        call_count += 1
+        return [strategy_module.ToolInvokeMessage.TextMessage("done")]
+
+    strategy.session = types.SimpleNamespace(
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=_tool_invoke),
+    )
+
+    list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=False),
+                "tools": [
+                    _build_tool_entity(
+                        name="lookup",
+                        parameters=[],
+                    )
+                ],
+                "maximum_iterations": 1,
+                "allow_schemaless_tool_args": True,
+            }
+        )
+    )
+
+    assert call_count == 1
+
+
+def test_normalize_tool_invoke_parameters_rejects_large_schemaless_args(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool = types.SimpleNamespace(
+        identity=types.SimpleNamespace(name="lookup"),
+        parameters=[],
+    )
+    oversized_args = {
+        f"k{i}": "x" for i in range(strategy._MAX_SCHEMELESS_ARG_KEYS + 1)
+    }
+    _normalized, error = strategy._normalize_tool_invoke_parameters(
+        tool_instance=tool,
+        runtime_parameters={},
+        tool_call_args=oversized_args,
+        allow_schemaless_tool_args=True,
+    )
+    assert "too many arguments without schema" in str(error)
+
+
 def test_invoke_skips_repeated_failed_tool_invocation(
     strategy_module: Any,
 ) -> None:
@@ -1496,11 +1768,17 @@ def test_invoke_skips_repeated_failed_tool_invocation(
         )
     )
 
-    finished_logs = [m for m in messages if m.get("kind") == "log_finish"]
-    rendered = str(finished_logs)
-    assert (
-        "tool invoke error: repeated failure detected; skipped duplicate call"
-        in rendered
+    finished_logs = [
+        m
+        for m in messages
+        if m.get("kind") == "log_finish"
+        and isinstance(m.get("data"), dict)
+        and isinstance(m["data"].get("output_summary"), dict)
+    ]
+    assert finished_logs
+    assert any(
+        log["data"]["output_summary"].get("is_error") is True
+        for log in finished_logs
     )
     assert call_count == 1
 
@@ -1553,6 +1831,7 @@ def test_invoke_emits_intermediate_thought_with_tool_calls_by_default(
                 "model": _build_model_config(strategy_module, stream=False),
                 "tools": [_build_tool_entity()],
                 "maximum_iterations": 3,
+                "emit_intermediate_thoughts": True,
             }
         )
     )
@@ -1680,6 +1959,7 @@ def test_invoke_emits_tool_thought_fallback_when_content_is_empty(
                 "model": _build_model_config(strategy_module, stream=False),
                 "tools": [_build_tool_entity()],
                 "maximum_iterations": 3,
+                "emit_intermediate_thoughts": True,
             }
         )
     )
@@ -1730,3 +2010,125 @@ def test_strip_think_blocks_for_display_removes_complete_and_dangling_blocks(
     assert "</think>" not in cleaned
     assert "内部検討" not in cleaned
     assert "公開文。" in cleaned
+
+
+def test_log_data_defaults_to_metadata_only(strategy_module: Any) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    data = strategy._build_model_log_data(
+        response="hello",
+        tool_call_names=["lookup"],
+        tool_calls=[("call_1", "lookup", {"q": "hello"}, None)],
+    )
+
+    assert "output_summary" in data
+    assert "debug_output" not in data
+    assert data["output_summary"]["response_chars"] == 5
+    assert data["tool_input_summary"][0]["arg_keys"] == ["q"]
+
+
+def test_log_data_redacts_sensitive_keys_in_verbose_mode(
+    strategy_module: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    monkeypatch.setenv("GPT5_AGENT_VERBOSE_LOGGING", "true")
+
+    data = strategy._build_tool_call_log_data(
+        {
+            "tool_call_id": "call_1",
+            "tool_call_name": "lookup",
+            "tool_call_input": {
+                "api_key": "sk-secret",
+                "query": "hello",
+            },
+            "tool_response": "tool invoke error: failed to execute tool",
+            "meta": {"error": "failed"},
+        }
+    )
+
+    assert data["output_summary"]["is_error"] is True
+    assert "debug_output" in data
+    assert (
+        data["debug_output"]["tool_call_input"]["api_key"] == "***REDACTED***"
+    )
+    assert data["debug_output"]["tool_call_input"]["query"] == {"chars": 5}
+    assert "preview" not in data["debug_output"]["tool_call_input"]["query"]
+
+
+def test_log_data_includes_preview_only_with_explicit_flag(
+    strategy_module: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    monkeypatch.setenv("GPT5_AGENT_VERBOSE_LOGGING", "true")
+    monkeypatch.setenv("GPT5_AGENT_VERBOSE_LOG_PREVIEW", "true")
+
+    data = strategy._build_model_log_data(
+        response="hello world",
+        tool_call_names=["lookup"],
+        tool_calls=[("call_1", "lookup", {"q": "hello"}, None)],
+    )
+
+    debug_response = data["debug_output"]["response"]
+    assert debug_response["chars"] == 11
+    assert "preview" in debug_response
+
+
+def test_round_log_data_counts_tool_errors(strategy_module: Any) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    data = strategy._build_round_log_data(
+        llm_response="assistant response",
+        tool_responses=[
+            {
+                "tool_call_name": "lookup",
+                "tool_response": "ok",
+            },
+            {
+                "tool_call_name": "lookup",
+                "tool_response": "tool arguments validation error: invalid",
+                "meta": {"error": "invalid"},
+            },
+        ],
+    )
+    assert data["output_summary"]["tool_response_count"] == 2
+    assert data["output_summary"]["tool_error_count"] == 1
+
+
+def test_normalize_tool_invoke_parameters_validates_required_and_types(
+    strategy_module: Any,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    tool = types.SimpleNamespace(
+        parameters=[
+            types.SimpleNamespace(
+                name="count", type="integer", required=True, options=[]
+            ),
+            types.SimpleNamespace(
+                name="enabled",
+                type="boolean",
+                required=False,
+                options=[],
+            ),
+        ]
+    )
+
+    _normalized, error = strategy._normalize_tool_invoke_parameters(
+        tool_instance=tool,
+        runtime_parameters={},
+        tool_call_args={"enabled": "true"},
+    )
+    assert "missing required parameter 'count'" in str(error)
+
+    normalized, error = strategy._normalize_tool_invoke_parameters(
+        tool_instance=tool,
+        runtime_parameters={},
+        tool_call_args={"count": "12", "enabled": "true"},
+    )
+    assert error is None
+    assert normalized["count"] == 12
+    assert normalized["enabled"] is True
+
+    _normalized, error = strategy._normalize_tool_invoke_parameters(
+        tool_instance=tool,
+        runtime_parameters={},
+        tool_call_args={"count": "abc"},
+    )
+    assert "requires integer" in str(error)

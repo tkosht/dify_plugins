@@ -622,6 +622,43 @@ def test_validate_credentials_calls_responses_create(
     assert captured["store"] is False
 
 
+def test_validate_credentials_rejects_invalid_api_base(
+    llm_module: Any,
+) -> None:
+    model = llm_module.OpenAIGPT5LargeLanguageModel()
+    with pytest.raises(llm_module.CredentialsValidateFailedError) as exc:
+        model.validate_credentials(
+            "gpt-5.2",
+            {
+                "openai_api_key": "k",
+                "openai_api_base": "http://127.0.0.1:8000",
+            },
+        )
+
+    assert "openai_api_base must use https" in str(exc.value)
+
+
+def test_validate_credentials_wraps_unexpected_error_with_safe_message(
+    llm_module: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _Responses:
+        def create(self, **_: Any) -> Any:
+            raise RuntimeError("unexpected sensitive detail")
+
+    class _OpenAI:
+        def __init__(self, **_: Any) -> None:
+            self.responses = _Responses()
+
+    monkeypatch.setattr(llm_module, "OpenAI", _OpenAI)
+    model = llm_module.OpenAIGPT5LargeLanguageModel()
+
+    with pytest.raises(llm_module.CredentialsValidateFailedError) as exc:
+        model.validate_credentials("gpt-5.2", {"openai_api_key": "k"})
+
+    assert "OpenAI model credential validation failed." in str(exc.value)
+    assert "unexpected sensitive detail" not in str(exc.value)
+
+
 def test_invoke_sets_user_and_stop_truncation(
     llm_module: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -694,6 +731,7 @@ def test_invoke_emits_safe_audit_logs_on_success(
     )
     monkeypatch.setattr(model, "_to_llm_result", lambda **_: llm_result)
     monkeypatch.setenv("OPENAI_GPT5_AUDIT_LOG", "true")
+    monkeypatch.setenv("OPENAI_GPT5_ALLOWED_BASE_URL_HOSTS", "example.test")
 
     caplog.set_level("INFO")
 

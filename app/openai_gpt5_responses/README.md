@@ -13,9 +13,15 @@
 
 - `openai_api_key`（必須）
 - `openai_organization`（任意）
-- `openai_api_base`（任意、内部で `/v1` 正規化）
+- `openai_api_base`（任意、`https` + allowlist 検証後に `/v1` 正規化）
 - `request_timeout_seconds`（任意、30〜900 に clamp）
 - `max_retries`（任意、0〜5 に clamp）
+
+`openai_api_base` の安全制約:
+- `https` のみ許可
+- `localhost` / private IP / link-local / metadata endpoint は拒否
+- 既定許可ホストは `api.openai.com`
+- 追加許可は `OPENAI_GPT5_ALLOWED_BASE_URL_HOSTS`（カンマ区切り）で設定
 
 ## LLM パラメータ
 

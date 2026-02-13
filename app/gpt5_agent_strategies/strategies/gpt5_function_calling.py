@@ -121,7 +121,8 @@ class GPT5FunctionCallingParams(BaseModel):
     model: AgentModelConfig
     tools: list[ToolEntity] | None
     maximum_iterations: int = 3
-    emit_intermediate_thoughts: bool = True
+    emit_intermediate_thoughts: bool = False
+    allow_schemaless_tool_args: bool = False
     context: list[ContextItem] | None = None
 
 
@@ -132,6 +133,23 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
     _REPEATED_TOOL_INVOKE_ERROR_MESSAGE = (
         "tool invoke error: repeated failure detected; skipped duplicate call"
     )
+    _VERBOSE_LOG_ENV = "GPT5_AGENT_VERBOSE_LOGGING"
+    _VERBOSE_LOG_PREVIEW_ENV = "GPT5_AGENT_VERBOSE_LOG_PREVIEW"
+    _SCHEMELESS_OVERRIDE_ENV = "GPT5_AGENT_ALLOW_SCHEMELESS_OVERRIDE"
+    _MAX_SCHEMELESS_ARG_KEYS = 16
+    _MAX_SCHEMELESS_ARG_KEY_CHARS = 64
+    _MAX_SCHEMELESS_ARG_VALUE_CHARS = 2048
+    _SENSITIVE_LOG_KEYS = {
+        "token",
+        "secret",
+        "authorization",
+        "password",
+        "api_key",
+        "apikey",
+        "access_key",
+        "private_key",
+        "credential",
+    }
 
     query: str = ""
     instruction: str | None = ""
@@ -198,6 +216,22 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
             else []
         )
         emit_intermediate_thoughts = fc_params.emit_intermediate_thoughts
+        requested_schemaless_override = fc_params.allow_schemaless_tool_args
+        allow_schemaless_tool_args = (
+            requested_schemaless_override
+            and self._is_schemaless_override_enabled()
+        )
+        if requested_schemaless_override and not allow_schemaless_tool_args:
+            self._emit_security_event(
+                "compat_mode_blocked",
+                reason="override_env_missing_or_disabled",
+                env=self._SCHEMELESS_OVERRIDE_ENV,
+            )
+        elif allow_schemaless_tool_args:
+            self._emit_security_event(
+                "compat_mode_enabled",
+                env=self._SCHEMELESS_OVERRIDE_ENV,
+            )
 
         # init function calling state
         iteration_step = 1
@@ -488,14 +522,11 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
 
             yield self.finish_log_message(
                 log=model_log,
-                data={
-                    "output": response,
-                    "tool_name": tool_call_names,
-                    "tool_input": [
-                        {"name": tool_call[1], "args": tool_call[2]}
-                        for tool_call in tool_calls
-                    ],
-                },
+                data=self._build_model_log_data(
+                    response=response,
+                    tool_call_names=tool_call_names,
+                    tool_calls=tool_calls,
+                ),
                 metadata={
                     LogMetadata.STARTED_AT: model_started_at,
                     LogMetadata.FINISHED_AT: time.perf_counter(),
@@ -699,11 +730,19 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                         # invoke tool
                         normalized_tool_input, validation_error = (
                             self._normalize_tool_invoke_parameters(
-                                tool_instance,
-                                {
-                                    **tool_instance.runtime_parameters,
-                                    **tool_call_args,
-                                },
+                                tool_instance=tool_instance,
+                                runtime_parameters=dict(
+                                    getattr(
+                                        tool_instance,
+                                        "runtime_parameters",
+                                        {},
+                                    )
+                                    or {}
+                                ),
+                                tool_call_args=dict(tool_call_args),
+                                allow_schemaless_tool_args=(
+                                    allow_schemaless_tool_args
+                                ),
                             )
                         )
                         tool_signature = self._tool_invocation_signature(
@@ -873,9 +912,7 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
 
                     yield self.finish_log_message(
                         log=tool_call_log,
-                        data={
-                            "output": tool_response,
-                        },
+                        data=self._build_tool_call_log_data(tool_response),
                         metadata={
                             LogMetadata.STARTED_AT: tool_call_started_at,
                             LogMetadata.PROVIDER: tool_provider,
@@ -905,12 +942,10 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
                 )
             yield self.finish_log_message(
                 log=round_log,
-                data={
-                    "output": {
-                        "llm_response": response,
-                        "tool_responses": tool_responses,
-                    },
-                },
+                data=self._build_round_log_data(
+                    llm_response=response,
+                    tool_responses=tool_responses,
+                ),
                 metadata={
                     LogMetadata.STARTED_AT: round_started_at,
                     LogMetadata.FINISHED_AT: time.perf_counter(),
@@ -1091,29 +1126,271 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
 
         return normalized or "まず、必要な情報を確認して進めます。"
 
+    def _is_verbose_logging_enabled(self) -> bool:
+        raw = str(os.getenv(self._VERBOSE_LOG_ENV, "") or "").strip().lower()
+        return raw in {"1", "true", "yes", "on"}
+
+    def _is_schemaless_override_enabled(self) -> bool:
+        raw = str(os.getenv(self._SCHEMELESS_OVERRIDE_ENV, "") or "").strip()
+        return raw.lower() in {"1", "true", "yes", "on"}
+
+    def _emit_security_event(self, event_type: str, **payload: Any) -> None:
+        event_payload = {"event": event_type, **payload}
+        logger.warning(
+            "security_event %s",
+            json.dumps(event_payload, ensure_ascii=False, sort_keys=True),
+        )
+
+    def _is_verbose_preview_enabled(self) -> bool:
+        raw = str(os.getenv(self._VERBOSE_LOG_PREVIEW_ENV, "") or "").strip()
+        return raw.lower() in {"1", "true", "yes", "on"}
+
+    def _is_sensitive_log_key(self, key: str) -> bool:
+        normalized = key.lower()
+        return any(token in normalized for token in self._SENSITIVE_LOG_KEYS)
+
+    @staticmethod
+    def _truncate_text(text: str, max_chars: int = 160) -> str:
+        if len(text) <= max_chars:
+            return text
+        return f"{text[:max_chars]}..."
+
+    def _sanitize_for_log(self, value: Any, *, key: str = "") -> Any:
+        if key and self._is_sensitive_log_key(key):
+            return "***REDACTED***"
+
+        if isinstance(value, Mapping):
+            sanitized: dict[str, Any] = {}
+            for item_key, item_value in value.items():
+                key_str = str(item_key)
+                sanitized[key_str] = self._sanitize_for_log(
+                    item_value, key=key_str
+                )
+            return sanitized
+
+        if isinstance(value, (list, tuple, set)):
+            return [self._sanitize_for_log(item) for item in value]
+
+        if isinstance(value, str):
+            sanitized: dict[str, Any] = {"chars": len(value)}
+            if self._is_verbose_preview_enabled():
+                sanitized["preview"] = self._truncate_text(value)
+            return sanitized
+
+        return value
+
+    @staticmethod
+    def _tool_input_summary(
+        tool_calls: list[tuple[str, str, dict[str, Any], str | None]],
+    ) -> list[dict[str, Any]]:
+        summaries: list[dict[str, Any]] = []
+        for _tool_call_id, tool_name, tool_args, _parse_error in tool_calls:
+            arg_keys = sorted(str(key) for key in tool_args.keys())
+            summaries.append(
+                {
+                    "name": tool_name,
+                    "arg_count": len(arg_keys),
+                    "arg_keys": arg_keys,
+                }
+            )
+        return summaries
+
+    def _tool_response_summary(
+        self, tool_responses: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        summary: list[dict[str, Any]] = []
+        for response in tool_responses:
+            text = str(response.get("tool_response") or "")
+            has_meta_error = isinstance(
+                response.get("meta"), Mapping
+            ) and bool(response["meta"].get("error"))
+            has_known_error_text = (
+                text.startswith("tool invoke error")
+                or "validation error" in text
+            )
+            summary.append(
+                {
+                    "tool_call_name": str(
+                        response.get("tool_call_name") or ""
+                    ),
+                    "response_chars": len(text),
+                    "is_error": has_meta_error or has_known_error_text,
+                }
+            )
+        return summary
+
+    def _build_model_log_data(
+        self,
+        *,
+        response: str,
+        tool_call_names: list[str],
+        tool_calls: list[tuple[str, str, dict[str, Any], str | None]],
+    ) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "output_summary": {
+                "response_chars": len(response),
+                "tool_call_count": len(tool_calls),
+            },
+            "tool_name": list(tool_call_names),
+            "tool_input_summary": self._tool_input_summary(tool_calls),
+        }
+        if self._is_verbose_logging_enabled():
+            data["debug_output"] = self._sanitize_for_log(
+                {
+                    "response": response,
+                    "tool_input": [
+                        {"name": tool_call[1], "args": tool_call[2]}
+                        for tool_call in tool_calls
+                    ],
+                }
+            )
+        return data
+
+    def _build_round_log_data(
+        self, *, llm_response: str, tool_responses: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        tool_summary = self._tool_response_summary(tool_responses)
+        data: dict[str, Any] = {
+            "output_summary": {
+                "llm_response_chars": len(llm_response),
+                "tool_response_count": len(tool_responses),
+                "tool_error_count": sum(
+                    1 for item in tool_summary if item["is_error"]
+                ),
+            },
+            "tool_responses_summary": tool_summary,
+        }
+        if self._is_verbose_logging_enabled():
+            data["debug_output"] = self._sanitize_for_log(
+                {
+                    "llm_response": llm_response,
+                    "tool_responses": tool_responses,
+                }
+            )
+        return data
+
+    def _build_tool_call_log_data(
+        self, tool_response: dict[str, Any]
+    ) -> dict[str, Any]:
+        response_text = str(tool_response.get("tool_response") or "")
+        has_meta_error = isinstance(
+            tool_response.get("meta"), Mapping
+        ) and bool(tool_response["meta"].get("error"))
+        data: dict[str, Any] = {
+            "output_summary": {
+                "tool_call_id": str(tool_response.get("tool_call_id") or ""),
+                "tool_call_name": str(
+                    tool_response.get("tool_call_name") or ""
+                ),
+                "response_chars": len(response_text),
+                "is_error": has_meta_error
+                or response_text.startswith("tool invoke error")
+                or "validation error" in response_text,
+            }
+        }
+        if self._is_verbose_logging_enabled():
+            data["debug_output"] = self._sanitize_for_log(tool_response)
+        return data
+
     def _normalize_tool_invoke_parameters(
         self,
         tool_instance: ToolEntity,
-        merged_parameters: dict[str, Any],
+        runtime_parameters: dict[str, Any],
+        tool_call_args: dict[str, Any],
+        allow_schemaless_tool_args: bool = False,
     ) -> tuple[dict[str, Any], str | None]:
-        normalized = dict(merged_parameters)
-        for parameter in getattr(tool_instance, "parameters", []) or []:
-            parameter_name = str(getattr(parameter, "name", "") or "")
-            if not parameter_name or parameter_name not in normalized:
+        normalized = {
+            **runtime_parameters,
+            **tool_call_args,
+        }
+        parameter_defs = {
+            str(getattr(parameter, "name", "") or ""): parameter
+            for parameter in getattr(tool_instance, "parameters", []) or []
+            if str(getattr(parameter, "name", "") or "")
+        }
+
+        if (
+            not parameter_defs
+            and tool_call_args
+            and not allow_schemaless_tool_args
+        ):
+            tool_name = self._tool_instance_name(tool_instance)
+            self._emit_security_event(
+                "tool_schema_missing_blocked",
+                tool_name=tool_name,
+                arg_keys=sorted(str(key) for key in tool_call_args.keys()),
+                arg_count=len(tool_call_args),
+            )
+            return (
+                normalized,
+                (
+                    "tool arguments validation error: schema is required "
+                    f"for tool '{tool_name}'"
+                ),
+            )
+
+        if (
+            not parameter_defs
+            and tool_call_args
+            and allow_schemaless_tool_args
+        ):
+            tool_name = self._tool_instance_name(tool_instance)
+            schemaless_error = self._validate_schemaless_tool_args(
+                tool_name=tool_name,
+                tool_call_args=tool_call_args,
+            )
+            if schemaless_error is not None:
+                return normalized, schemaless_error
+
+        if parameter_defs:
+            unknown_keys = sorted(
+                str(key)
+                for key in tool_call_args
+                if str(key) not in parameter_defs
+            )
+            if unknown_keys:
+                return (
+                    normalized,
+                    (
+                        "tool arguments validation error: unknown parameters "
+                        f"{unknown_keys}"
+                    ),
+                )
+
+        for parameter_name, parameter in parameter_defs.items():
+            required = bool(getattr(parameter, "required", False))
+            if parameter_name not in normalized:
+                if required:
+                    return (
+                        normalized,
+                        (
+                            "tool arguments validation error: missing required "
+                            f"parameter '{parameter_name}'"
+                        ),
+                    )
                 continue
+
+            raw_value = normalized[parameter_name]
+            normalized_value, type_error = self._coerce_parameter_value(
+                parameter_name=parameter_name,
+                parameter=parameter,
+                raw_value=raw_value,
+            )
+            if type_error:
+                return normalized, type_error
+
+            normalized[parameter_name] = normalized_value
 
             options = self._parameter_option_values(parameter)
             if not options:
                 continue
 
             raw_value = normalized[parameter_name]
-            normalized_value: str
-            if isinstance(raw_value, bool):
-                normalized_value = "true" if raw_value else "false"
-            elif isinstance(raw_value, str):
-                normalized_value = raw_value
-            else:
-                normalized_value = str(raw_value)
+            normalized_value = (
+                "true"
+                if isinstance(raw_value, bool) and raw_value
+                else "false" if isinstance(raw_value, bool) else str(raw_value)
+            )
 
             if normalized_value not in options:
                 return (
@@ -1128,6 +1405,127 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
             normalized[parameter_name] = normalized_value
 
         return normalized, None
+
+    def _tool_instance_name(self, tool_instance: ToolEntity) -> str:
+        tool_name = str(
+            getattr(getattr(tool_instance, "identity", None), "name", "") or ""
+        )
+        if tool_name:
+            return tool_name
+        return str(getattr(tool_instance, "name", "") or "unknown-tool")
+
+    def _validate_schemaless_tool_args(
+        self, *, tool_name: str, tool_call_args: dict[str, Any]
+    ) -> str | None:
+        arg_keys = sorted(str(key) for key in tool_call_args.keys())
+        arg_count = len(arg_keys)
+        if arg_count > self._MAX_SCHEMELESS_ARG_KEYS:
+            self._emit_security_event(
+                "tool_schema_missing_compat_rejected",
+                tool_name=tool_name,
+                reason="too_many_keys",
+                arg_count=arg_count,
+                arg_keys=arg_keys[: self._MAX_SCHEMELESS_ARG_KEYS],
+            )
+            return (
+                "tool arguments validation error: too many arguments without "
+                f"schema for tool '{tool_name}' (max {self._MAX_SCHEMELESS_ARG_KEYS})"
+            )
+
+        for raw_key, raw_value in tool_call_args.items():
+            key = str(raw_key)
+            if len(key) > self._MAX_SCHEMELESS_ARG_KEY_CHARS:
+                self._emit_security_event(
+                    "tool_schema_missing_compat_rejected",
+                    tool_name=tool_name,
+                    reason="key_too_long",
+                    key=key[: self._MAX_SCHEMELESS_ARG_KEY_CHARS],
+                )
+                return (
+                    "tool arguments validation error: argument key is too long "
+                    f"without schema for tool '{tool_name}'"
+                )
+            value_chars = len(
+                json.dumps(raw_value, ensure_ascii=False, default=str)
+            )
+            if value_chars > self._MAX_SCHEMELESS_ARG_VALUE_CHARS:
+                self._emit_security_event(
+                    "tool_schema_missing_compat_rejected",
+                    tool_name=tool_name,
+                    reason="value_too_large",
+                    key=key,
+                    value_chars=value_chars,
+                    max_chars=self._MAX_SCHEMELESS_ARG_VALUE_CHARS,
+                )
+                return (
+                    "tool arguments validation error: argument value is too large "
+                    f"without schema for tool '{tool_name}'"
+                )
+
+        self._emit_security_event(
+            "tool_schema_missing_compat_allowed",
+            tool_name=tool_name,
+            arg_count=arg_count,
+            arg_keys=arg_keys,
+        )
+        return None
+
+    def _coerce_parameter_value(
+        self,
+        *,
+        parameter_name: str,
+        parameter: Any,
+        raw_value: Any,
+    ) -> tuple[Any, str | None]:
+        parameter_type = str(getattr(parameter, "type", "") or "").lower()
+        if parameter_type in {"", "string", "text", "select"}:
+            return raw_value, None
+
+        if parameter_type in {"number", "integer"}:
+            if isinstance(raw_value, (int, float)):
+                return raw_value, None
+            if isinstance(raw_value, str):
+                try:
+                    return (
+                        int(raw_value)
+                        if parameter_type == "integer"
+                        else float(raw_value)
+                    ), None
+                except ValueError:
+                    pass
+            return (
+                raw_value,
+                (
+                    "tool arguments validation error: parameter "
+                    f"'{parameter_name}' requires {parameter_type}"
+                ),
+            )
+
+        if parameter_type in {"boolean", "bool"}:
+            if isinstance(raw_value, bool):
+                return raw_value, None
+            if isinstance(raw_value, str) and raw_value.lower() in {
+                "true",
+                "false",
+            }:
+                return raw_value.lower() == "true", None
+            return (
+                raw_value,
+                (
+                    "tool arguments validation error: parameter "
+                    f"'{parameter_name}' requires boolean"
+                ),
+            )
+
+        if parameter_type in {"array", "list"} and isinstance(raw_value, list):
+            return raw_value, None
+
+        if parameter_type in {"object", "json"} and isinstance(
+            raw_value, Mapping
+        ):
+            return raw_value, None
+
+        return raw_value, None
 
     def _parameter_option_values(self, parameter: Any) -> list[str]:
         values: list[str] = []

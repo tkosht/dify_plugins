@@ -13,6 +13,13 @@ try:
 except ModuleNotFoundError:
     from internal.credentials import normalize_api_base
 
+_PROVIDER_CREDENTIALS_FAILED_MESSAGE = (
+    "OpenAI provider credential validation failed."
+)
+_PROVIDER_CREDENTIALS_CONNECTION_FAILED_MESSAGE = (
+    "OpenAI provider connection failed. Check network and API base settings."
+)
+
 
 def _safe_int(value: object, default: int) -> int:
     try:
@@ -56,11 +63,15 @@ class OpenAIGPT5ResponsesProvider(ModelProvider):
             _ = client.models.list()
         except APIStatusError as exc:
             raise CredentialsValidateFailedError(
-                f"API status error ({exc.status_code}): {exc.message}"
+                f"OpenAI API status error ({exc.status_code})."
             ) from exc
         except APIConnectionError as exc:
             raise CredentialsValidateFailedError(
-                f"API connection failed: {exc}"
+                _PROVIDER_CREDENTIALS_CONNECTION_FAILED_MESSAGE
             ) from exc
-        except Exception as exc:  # noqa: BLE001
+        except ValueError as exc:
             raise CredentialsValidateFailedError(str(exc)) from exc
+        except Exception as exc:  # noqa: BLE001
+            raise CredentialsValidateFailedError(
+                _PROVIDER_CREDENTIALS_FAILED_MESSAGE
+            ) from exc

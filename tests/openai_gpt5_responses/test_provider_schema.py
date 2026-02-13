@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 from app.openai_gpt5_responses.internal.credentials import (
@@ -149,3 +150,53 @@ def test_api_base_normalization_is_v1_idempotent() -> None:
     expected = "https://api.openai.com/v1"
     assert normalize_api_base("https://api.openai.com") == expected
     assert normalize_api_base("https://api.openai.com/v1") == expected
+
+
+def test_api_base_normalization_rejects_non_https() -> None:
+    with pytest.raises(ValueError, match="https"):
+        normalize_api_base("http://api.openai.com")
+
+
+def test_api_base_normalization_rejects_private_or_local_hosts() -> None:
+    candidates = [
+        "https://127.0.0.1",
+        "https://10.0.0.10",
+        "https://169.254.169.254",
+        "https://localhost",
+    ]
+    for candidate in candidates:
+        with pytest.raises(ValueError, match="not allowed"):
+            normalize_api_base(candidate)
+
+
+def test_api_base_normalization_rejects_missing_host_or_userinfo() -> None:
+    with pytest.raises(ValueError, match="host is required"):
+        normalize_api_base("https://")
+    with pytest.raises(ValueError, match="must not include credentials"):
+        normalize_api_base("https://user:pass@api.openai.com")
+
+
+def test_api_base_normalization_rejects_non_allowlisted_host_by_default() -> (
+    None
+):
+    with pytest.raises(ValueError, match="not allowed"):
+        normalize_api_base("https://example.test")
+
+
+def test_api_base_normalization_rejects_invalid_path() -> None:
+    with pytest.raises(ValueError, match="path must be /v1"):
+        normalize_api_base("https://api.openai.com/v2")
+
+
+def test_api_base_normalization_rejects_localhost_subdomain() -> None:
+    with pytest.raises(ValueError, match="not allowed"):
+        normalize_api_base("https://service.localhost")
+
+
+def test_api_base_normalization_allows_configured_host(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_GPT5_ALLOWED_BASE_URL_HOSTS", "example.test")
+    assert (
+        normalize_api_base("https://example.test") == "https://example.test/v1"
+    )

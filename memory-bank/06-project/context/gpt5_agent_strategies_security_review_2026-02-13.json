@@ -1,0 +1,72 @@
+{
+  "report_id": "gpt5_agent_strategies_security_review_2026-02-13",
+  "recorded_at": "2026-02-13T23:02:55+09:00",
+  "target_app_path": "app/gpt5_agent_strategies",
+  "review_profile": "standard",
+  "supersedes": "memory-bank/06-project/context/gpt5_agent_strategies_security_review_2026-02-12.md",
+  "gate": {
+    "result": "PASS",
+    "reason": "No Critical or High findings. Low 1."
+  },
+  "checks": {
+    "manual_matrix": "done",
+    "bandit": "done: uvx --with bandit bandit -q -r app/openai_gpt5_responses app/gpt5_agent_strategies -x tests (exit code 0)",
+    "pip_audit": "done: uvx --with pip-audit pip-audit -r app/gpt5_agent_strategies/requirements.txt (No known vulnerabilities found)",
+    "security_tests": "done: uv run pytest -q --no-cov tests/gpt5_agent_strategies (73 passed)"
+  },
+  "findings": [
+    {
+      "id": "F-001",
+      "title": "互換モード有効化時の設定統制リスク（限定的）",
+      "severity": "Low",
+      "confidence": "Medium",
+      "cwe": "CWE-16",
+      "standard_refs": [
+        "OWASP API Security Top 10 2023 - API8",
+        "OWASP Top 10 2021 - A05",
+        "OWASP ASVS v4 - V5"
+      ],
+      "evidence": [
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.yaml:172 allow_schemaless_tool_args が公開設定として定義されている",
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.yaml:184 override は GPT5_AGENT_ALLOW_SCHEMELESS_OVERRIDE=true の場合のみ有効",
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:138 GPT5_AGENT_ALLOW_SCHEMELESS_OVERRIDE を導入",
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:226 override 無効時 compat_mode_blocked を記録",
+        "app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:1314 スキーマ未定義は既定 fail-closed",
+        "tests/gpt5_agent_strategies/test_strategy_invoke_paths.py:1643 override 有効時のみ opt-in 許可を確認"
+      ],
+      "impact": [
+        "管理者が override 環境変数を有効化した場合のみ、スキーマ未定義ツール引数が許可される。",
+        "運用統制が弱い環境では入力検証水準が下流実装依存になる。"
+      ],
+      "remediation": [
+        "allow_schemaless_tool_args を既定 false のまま維持し、override 環境変数を管理者限定運用に制約する。",
+        "CI で allow_schemaless_tool_args:true を禁止するゲートを維持する。",
+        "互換要件が解消した時点で allow_schemaless_tool_args 廃止を検討する。"
+      ],
+      "verification_steps": [
+        "設定監査で allow_schemaless_tool_args が既定 false のまま運用されていることを確認する。",
+        "allow_schemaless_tool_args=true かつ override 無効時に compat_mode_blocked が記録されることを確認する。",
+        "CI の allow_schemaless_tool_args:true 禁止ゲートが有効であることを確認する。"
+      ]
+    }
+  ],
+  "positive_controls": [
+    "emit_intermediate_thoughts の既定値は false（app/gpt5_agent_strategies/strategies/gpt5_function_calling.yaml:159, app/gpt5_agent_strategies/strategies/gpt5_react.yaml:159, tests/gpt5_agent_strategies/test_strategy_schema.py:133）。",
+    "既定ログは metadata-only（app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:1221, tests/gpt5_agent_strategies/test_strategy_invoke_paths.py:2014）。",
+    "verbose ログでも機密キーは伏字化される（app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:1158, tests/gpt5_agent_strategies/test_strategy_invoke_paths.py:2028）。",
+    "文字列 preview は明示フラグ時のみ有効（app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:1144, tests/gpt5_agent_strategies/test_strategy_invoke_paths.py:2060）。",
+    "スキーマ未定義ツールは既定 fail-closed（app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:1314, tests/gpt5_agent_strategies/test_strategy_invoke_paths.py:1573）。",
+    "互換モードは管理者 override 環境変数がある場合のみ有効（app/gpt5_agent_strategies/strategies/gpt5_function_calling.py:138, :226）。",
+    "CI policy gate で allow_schemaless_tool_args:true を禁止（.github/workflows/ci.yml:58, .github/workflows/test-all-subsystems.yml:171）。",
+    "CI security gate で pip-audit/bandit を実行（.github/workflows/ci.yml:63, .github/workflows/test-all-subsystems.yml:176）。"
+  ],
+  "residual_risks": [
+    "allow_schemaless_tool_args=true と override 環境変数を同時に有効化した場合の安全性は運用統制に依存する。"
+  ],
+  "next_actions": [
+    "GPT5_AGENT_ALLOW_SCHEMELESS_OVERRIDE の利用を管理者限定で監査する。",
+    "互換要件の整理後に allow_schemaless_tool_args 廃止を検討する。",
+    "現行 CI security gates（pip-audit / bandit / policy check）を release gate として維持する。"
+  ],
+  "authoritative_markdown": "memory-bank/06-project/context/gpt5_agent_strategies_security_review_2026-02-13.md"
+}

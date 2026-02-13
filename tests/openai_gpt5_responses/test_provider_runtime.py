@@ -114,7 +114,7 @@ def test_validate_provider_credentials_wraps_api_status_error(
     with pytest.raises(provider_module.CredentialsValidateFailedError) as exc:
         provider.validate_provider_credentials({"openai_api_key": "k"})
 
-    assert "API status error (403): forbidden" in str(exc.value)
+    assert "OpenAI API status error (403)." in str(exc.value)
 
 
 def test_validate_provider_credentials_wraps_connection_error(
@@ -133,7 +133,10 @@ def test_validate_provider_credentials_wraps_connection_error(
     with pytest.raises(provider_module.CredentialsValidateFailedError) as exc:
         provider.validate_provider_credentials({"openai_api_key": "k"})
 
-    assert "API connection failed" in str(exc.value)
+    assert (
+        "OpenAI provider connection failed. Check network and API base settings."
+        in str(exc.value)
+    )
 
 
 def test_validate_provider_credentials_wraps_unexpected_error(
@@ -152,4 +155,19 @@ def test_validate_provider_credentials_wraps_unexpected_error(
     with pytest.raises(provider_module.CredentialsValidateFailedError) as exc:
         provider.validate_provider_credentials({"openai_api_key": "k"})
 
-    assert "unexpected" in str(exc.value)
+    assert "OpenAI provider credential validation failed." in str(exc.value)
+
+
+def test_validate_provider_credentials_rejects_invalid_api_base(
+    provider_module: Any,
+) -> None:
+    provider = provider_module.OpenAIGPT5ResponsesProvider()
+    with pytest.raises(provider_module.CredentialsValidateFailedError) as exc:
+        provider.validate_provider_credentials(
+            {
+                "openai_api_key": "k",
+                "openai_api_base": "http://127.0.0.1:8000",
+            }
+        )
+
+    assert "openai_api_base must use https" in str(exc.value)

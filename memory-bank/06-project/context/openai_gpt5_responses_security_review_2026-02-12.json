@@ -1,0 +1,98 @@
+{
+  "report_id": "openai_gpt5_responses_security_review_2026-02-12",
+  "recorded_at": "2026-02-12T14:57:34+09:00",
+  "target_app_path": "app/openai_gpt5_responses",
+  "review_profile": "standard",
+  "gate": {
+    "result": "FAIL",
+    "reason": "High finding exists: unrestricted openai_api_base (CWE-918)"
+  },
+  "checks": {
+    "manual_matrix": "done",
+    "bandit": "not_executed: command not found",
+    "pip_audit": "not_executed: command not found"
+  },
+  "findings": [
+    {
+      "id": "F-001",
+      "title": "Unrestricted openai_api_base enables SSRF-style outbound destination abuse",
+      "severity": "High",
+      "confidence": "High",
+      "cwe": "CWE-918",
+      "standard_refs": [
+        "OWASP API Security Top 10 2023 - API7",
+        "OWASP Top 10 2021 - A10",
+        "NIST SP 800-53 Rev.5 - SC-7"
+      ],
+      "evidence": [
+        "app/openai_gpt5_responses/provider/openai_gpt5.yaml:45 openai_api_base is free text-input",
+        "app/openai_gpt5_responses/provider/openai_gpt5.yaml:80 openai_api_base is free text-input in provider credential schema",
+        "app/openai_gpt5_responses/internal/credentials.py:4 normalize_api_base only appends /v1",
+        "app/openai_gpt5_responses/provider/openai_gpt5.py:25 provider accepts openai_api_base",
+        "app/openai_gpt5_responses/provider/openai_gpt5.py:39 provider sets kwargs[base_url] directly",
+        "app/openai_gpt5_responses/models/llm/llm.py:188 llm path accepts openai_api_base",
+        "app/openai_gpt5_responses/models/llm/llm.py:203 llm path sets kwargs[base_url] directly"
+      ],
+      "impact": [
+        "If credential editor is compromised, requests can be redirected to attacker-controlled or internal hosts.",
+        "Prompt/tool metadata may be exfiltrated to unauthorized destinations."
+      ],
+      "remediation": [
+        "Require https-only openai_api_base.",
+        "Reject loopback, private, link-local, and metadata endpoint destinations.",
+        "Add allowlist validation for approved domains.",
+        "Enforce the same validation in both provider and model credential paths."
+      ],
+      "verification_steps": [
+        "Set openai_api_base=http://127.0.0.1:8000 and verify validation rejects it.",
+        "Set openai_api_base=http://169.254.169.254 and verify validation rejects it.",
+        "Set openai_api_base=https://api.openai.com and verify it is accepted and normalized to /v1."
+      ]
+    },
+    {
+      "id": "F-002",
+      "title": "Raw exception text propagation may leak internals",
+      "severity": "Medium",
+      "confidence": "Medium",
+      "cwe": "CWE-209",
+      "standard_refs": [
+        "OWASP Top 10 2021 - A09",
+        "OWASP API Security Top 10 2023 - API8",
+        "NIST SP 800-53 Rev.5 - SI-11"
+      ],
+      "evidence": [
+        "app/openai_gpt5_responses/provider/openai_gpt5.py:66 returns CredentialsValidateFailedError(str(exc))",
+        "app/openai_gpt5_responses/models/llm/llm.py:239 returns CredentialsValidateFailedError(str(exc))"
+      ],
+      "impact": [
+        "Internal error details can surface to caller/UI.",
+        "Information leakage can assist reconnaissance."
+      ],
+      "remediation": [
+        "Replace raw exception text with safe fixed user-facing messages.",
+        "Keep details in audit logs only.",
+        "Implement exception-type to safe-message mapping."
+      ],
+      "verification_steps": [
+        "Trigger connectivity error and verify UI does not expose internal exception details.",
+        "Verify operational logs still retain actionable diagnostics without secrets."
+      ]
+    }
+  ],
+  "positive_controls": [
+    "Timeout and retry values are clamped in runtime credential conversion (provider/openai_gpt5.py:26, models/llm/llm.py:192).",
+    "Audit logging behavior is tested to avoid API key and prompt leakage (tests/openai_gpt5_responses/test_llm_stream_flag.py:668, tests/openai_gpt5_responses/test_llm_stream_flag.py:724).",
+    "Strict bool-like coercion rejects invalid values for enable_stream and parallel_tool_calls (internal/payloads.py:20, internal/payloads.py:169)."
+  ],
+  "residual_risks": [
+    "Static/dependency scans are not executed because bandit and pip-audit are unavailable in the environment.",
+    "Actual exploitability of F-001 depends on production RBAC around credential editing."
+  ],
+  "next_actions": [
+    "Implement outbound destination validation for openai_api_base (https-only, private/meta reject, allowlist).",
+    "Replace str(exc) propagation with safe error mapping.",
+    "Add bandit and pip-audit into CI.",
+    "Add regression tests for blocked base_url destinations."
+  ],
+  "source_markdown": "memory-bank/06-project/context/openai_gpt5_responses_security_review_2026-02-12.md"
+}

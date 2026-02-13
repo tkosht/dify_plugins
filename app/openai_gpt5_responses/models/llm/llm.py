@@ -60,6 +60,13 @@ audit_logger = logging.getLogger(AUDIT_LOGGER_NAME)
 audit_logger.setLevel(logging.INFO)
 audit_logger.propagate = True
 
+_MODEL_CREDENTIALS_FAILED_MESSAGE = (
+    "OpenAI model credential validation failed."
+)
+_MODEL_CREDENTIALS_CONNECTION_FAILED_MESSAGE = (
+    "OpenAI model connection failed. Check network and API base settings."
+)
+
 
 class _FunctionToolCallState:
     __slots__ = ("item_id", "call_id", "name", "arguments")
@@ -235,8 +242,20 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
             )
             payload["store"] = False
             client.responses.create(**payload)
-        except Exception as exc:  # noqa: BLE001
+        except APIStatusError as exc:
+            raise CredentialsValidateFailedError(
+                f"OpenAI API status error ({exc.status_code})."
+            ) from exc
+        except APIConnectionError as exc:
+            raise CredentialsValidateFailedError(
+                _MODEL_CREDENTIALS_CONNECTION_FAILED_MESSAGE
+            ) from exc
+        except ValueError as exc:
             raise CredentialsValidateFailedError(str(exc)) from exc
+        except Exception as exc:  # noqa: BLE001
+            raise CredentialsValidateFailedError(
+                _MODEL_CREDENTIALS_FAILED_MESSAGE
+            ) from exc
 
     def get_num_tokens(
         self,
