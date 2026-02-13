@@ -2,9 +2,10 @@
 
 export PATH="$HOME/.local/bin:$PATH"
 
-uvx migrate-to-uv
-uv python install 3.12
-uv venv --python 3.12
-uv lock
-uv sync
+uv sync --python 3.12
+# uvx migrate-to-uv
+# uv python install 3.12
+# uv venv --python 3.12
+# uv lock
+# uv sync
 
