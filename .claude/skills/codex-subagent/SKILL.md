@@ -27,7 +27,7 @@ codex-subagent は `codex exec` を「サブエージェント」として複数
 # SINGLE: 1回実行（小さく速い）
 uv run python .claude/skills/codex-subagent/scripts/codex_exec.py \
   --mode single --task-type analysis --sandbox read-only \
-  --prompt "$PROMPT"
+  --model gpt-5.3-codex --prompt "$PROMPT"
 
 # PARALLEL: N回実行→マージ（情報収集・列挙）
 uv run python .claude/skills/codex-subagent/scripts/codex_exec.py \
@@ -53,6 +53,7 @@ uv run python .claude/skills/codex-subagent/scripts/codex_exec.py \
 
 代表的なパラメータ:
 - `--task-type`: `code_gen|code_review|analysis|documentation`
+- `--model`: `codex exec --model` に渡すモデル名（例: `gpt-5.3-codex-spark`）
 - `--merge`: `concat|dedup|priority|consensus`（parallel）
 - `--strategy`: `best_single|voting|hybrid|conservative`（competition）
 

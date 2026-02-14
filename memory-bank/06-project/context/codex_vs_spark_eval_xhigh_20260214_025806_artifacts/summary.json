@@ -1,0 +1,191 @@
+{
+  "artifact_dir": "/home/devuser/workspace/memory-bank/06-project/context/codex_vs_spark_eval_xhigh_20260214_025806_artifacts",
+  "run_count": 36,
+  "model_metrics": {
+    "codex": {
+      "model": "gpt-5.3-codex",
+      "model_quality": 84.2,
+      "model_time": 113.84166666666667,
+      "hard_fail_rate": 0.1111111111111111
+    },
+    "spark": {
+      "model": "gpt-5.3-codex-spark",
+      "model_quality": 86.27,
+      "model_time": 20.439777777777778,
+      "hard_fail_rate": 0.05555555555555555
+    }
+  },
+  "quality_ratio": 1.02458432304038,
+  "time_ratio": 0.1795456652758461,
+  "decision": "SUBSTITUTABLE",
+  "per_task_model": [
+    {
+      "task_id": "DEV-01",
+      "model_alias": "codex",
+      "model": "gpt-5.3-codex",
+      "runs": [
+        "DEV-01__codex__r1",
+        "DEV-01__codex__r2",
+        "DEV-01__codex__r3"
+      ],
+      "median_quality": 84.34,
+      "mean_quality": 84.82000000000001,
+      "mean_time_sec": 73.58033333333333,
+      "hard_fail_rate": 0.0
+    },
+    {
+      "task_id": "DEV-01",
+      "model_alias": "spark",
+      "model": "gpt-5.3-codex-spark",
+      "runs": [
+        "DEV-01__spark__r1",
+        "DEV-01__spark__r2",
+        "DEV-01__spark__r3"
+      ],
+      "median_quality": 85.96,
+      "mean_quality": 86.44,
+      "mean_time_sec": 15.756333333333332,
+      "hard_fail_rate": 0.0
+    },
+    {
+      "task_id": "DEV-02",
+      "model_alias": "codex",
+      "model": "gpt-5.3-codex",
+      "runs": [
+        "DEV-02__codex__r1",
+        "DEV-02__codex__r2",
+        "DEV-02__codex__r3"
+      ],
+      "median_quality": 85.66,
+      "mean_quality": 85.58,
+      "mean_time_sec": 121.36866666666667,
+      "hard_fail_rate": 0.0
+    },
+    {
+      "task_id": "DEV-02",
+      "model_alias": "spark",
+      "model": "gpt-5.3-codex-spark",
+      "runs": [
+        "DEV-02__spark__r1",
+        "DEV-02__spark__r2",
+        "DEV-02__spark__r3"
+      ],
+      "median_quality": 85.96,
+      "mean_quality": 85.96,
+      "mean_time_sec": 17.231666666666666,
+      "hard_fail_rate": 0.0
+    },
+    {
+      "task_id": "BUG-01",
+      "model_alias": "codex",
+      "model": "gpt-5.3-codex",
+      "runs": [
+        "BUG-01__codex__r1",
+        "BUG-01__codex__r2",
+        "BUG-01__codex__r3"
+      ],
+      "median_quality": 83.26,
+      "mean_quality": 55.50666666666667,
+      "mean_time_sec": 129.11766666666668,
+      "hard_fail_rate": 0.3333333333333333
+    },
+    {
+      "task_id": "BUG-01",
+      "model_alias": "spark",
+      "model": "gpt-5.3-codex-spark",
+      "runs": [
+        "BUG-01__spark__r1",
+        "BUG-01__spark__r2",
+        "BUG-01__spark__r3"
+      ],
+      "median_quality": 85.42,
+      "mean_quality": 56.946666666666665,
+      "mean_time_sec": 28.292,
+      "hard_fail_rate": 0.3333333333333333
+    },
+    {
+      "task_id": "BUG-02",
+      "model_alias": "codex",
+      "model": "gpt-5.3-codex",
+      "runs": [
+        "BUG-02__codex__r1",
+        "BUG-02__codex__r2",
+        "BUG-02__codex__r3"
+      ],
+      "median_quality": 84.34,
+      "mean_quality": 83.98,
+      "mean_time_sec": 104.98733333333332,
+      "hard_fail_rate": 0.0
+    },
+    {
+      "task_id": "BUG-02",
+      "model_alias": "spark",
+      "model": "gpt-5.3-codex-spark",
+      "runs": [
+        "BUG-02__spark__r1",
+        "BUG-02__spark__r2",
+        "BUG-02__spark__r3"
+      ],
+      "median_quality": 88.36,
+      "mean_quality": 87.56,
+      "mean_time_sec": 17.115,
+      "hard_fail_rate": 0.0
+    },
+    {
+      "task_id": "RES-01",
+      "model_alias": "codex",
+      "model": "gpt-5.3-codex",
+      "runs": [
+        "RES-01__codex__r1",
+        "RES-01__codex__r2",
+        "RES-01__codex__r3"
+      ],
+      "median_quality": 84.34,
+      "mean_quality": 84.34,
+      "mean_time_sec": 105.89133333333332,
+      "hard_fail_rate": 0.0
+    },
+    {
+      "task_id": "RES-01",
+      "model_alias": "spark",
+      "model": "gpt-5.3-codex-spark",
+      "runs": [
+        "RES-01__spark__r1",
+        "RES-01__spark__r2",
+        "RES-01__spark__r3"
+      ],
+      "median_quality": 85.96,
+      "mean_quality": 85.96,
+      "mean_time_sec": 21.48,
+      "hard_fail_rate": 0.0
+    },
+    {
+      "task_id": "RES-02",
+      "model_alias": "codex",
+      "model": "gpt-5.3-codex",
+      "runs": [
+        "RES-02__codex__r1",
+        "RES-02__codex__r2",
+        "RES-02__codex__r3"
+      ],
+      "median_quality": 83.26,
+      "mean_quality": 56.30666666666667,
+      "mean_time_sec": 148.10466666666665,
+      "hard_fail_rate": 0.3333333333333333
+    },
+    {
+      "task_id": "RES-02",
+      "model_alias": "spark",
+      "model": "gpt-5.3-codex-spark",
+      "runs": [
+        "RES-02__spark__r1",
+        "RES-02__spark__r2",
+        "RES-02__spark__r3"
+      ],
+      "median_quality": 85.96,
+      "mean_quality": 85.96,
+      "mean_time_sec": 22.763666666666666,
+      "hard_fail_rate": 0.0
+    }
+  ]
+}
