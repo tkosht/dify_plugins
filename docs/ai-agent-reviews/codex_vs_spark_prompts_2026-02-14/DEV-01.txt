@@ -1,0 +1,28 @@
+You are a senior plugin engineer.
+
+Task ID: DEV-01
+Goal: Propose the minimum implementation plan to support model `gpt-5.3-codex-spark` in openai_gpt5_responses.
+
+Allowed files ONLY:
+- app/openai_gpt5_responses/models/llm/_position.yaml
+- app/openai_gpt5_responses/models/llm/gpt-5.3-codex.yaml
+- tests/openai_gpt5_responses/test_provider_schema.py
+
+Rules:
+- Do not mention files outside the list.
+- Fact-based only. If unknown, write "UNKNOWN".
+- Output JSON only.
+
+Required JSON schema:
+{
+  "task_id": "DEV-01",
+  "summary": "string",
+  "proposed_changes": [
+    {"path": "string", "change": "string", "reason": "string"}
+  ],
+  "evidence": [
+    {"path": "string", "quote": "string", "why_it_matters": "string"}
+  ],
+  "validation_commands": ["string"],
+  "risks": ["string"]
+}

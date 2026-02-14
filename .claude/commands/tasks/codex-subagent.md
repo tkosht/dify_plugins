@@ -23,6 +23,7 @@ description: Codex exec subagent for parallel code generation, review, and analy
 | `-n N` | Set count (default 3) | `/codex-subagent gen "test" -c -n 5` | More candidates |
 | `--json` | JSON output | `/codex-subagent gen "util" --json` | Automation |
 | `-v` | Verbose (show scores) | `/codex-subagent gen "api" -c -v` | Debugging |
+| `--model MODEL` | codex model override | `/codex-subagent analyze "task" --model gpt-5.3-codex-spark` | A/B evaluation |
 
 ## Task Types
 
@@ -88,6 +89,7 @@ You are a codex-subagent orchestrator. For each request:
 # Single mode
 uv run python .claude/skills/codex-subagent/scripts/codex_exec.py \
   --mode single \
+  --model gpt-5.3-codex \
   --prompt "$PROMPT" \
   --sandbox read-only
 

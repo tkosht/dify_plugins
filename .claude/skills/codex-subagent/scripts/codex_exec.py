@@ -571,6 +571,7 @@ def build_stage_log(
         "capsule_hash": compute_capsule_hash(capsule_state),
         "exec": {
             "agent_id": exec_result.agent_id,
+            "model": exec_result.metadata.get("model"),
             "output": truncate_output(exec_result.output),
             "stderr": truncate_output(exec_result.stderr),
             "tokens_used": exec_result.tokens_used,
@@ -613,9 +614,11 @@ def build_pipeline_output_payload(
     final_capsule: dict[str, Any],
     capsule_store: str,
     capsule_path: str | Path | None,
+    model: str | None = None,
 ) -> dict[str, Any]:
     return {
         "pipeline_run_id": pipeline_run_id,
+        "model": model,
         "success": success,
         "stage_results": stage_results,
         "capsule": final_capsule,
@@ -1090,6 +1093,7 @@ async def evaluate_with_llm(
     task_type: TaskType,
     timeout: int = 60,
     profile: str | None = None,
+    model: str | None = None,
 ) -> dict[str, Any] | None:
     """codex exec を使った LLM 評価"""
     eval_prompt = f"""You are an expert code evaluator. Evaluate the following output.
@@ -1124,6 +1128,7 @@ Respond in JSON format ONLY (no explanation):
             timeout=timeout,
             agent_id="llm_judge",
             profile=profile,
+            model=model,
         )
 
         if result.success and result.output:
@@ -1170,6 +1175,7 @@ def run_codex_exec(
     agent_id: str = "agent_0",
     workdir: str | None = None,
     profile: str | None = None,
+    model: str | None = None,
 ) -> CodexResult:
     """単一の codex exec を実行"""
     start_time = time.time()
@@ -1177,6 +1183,8 @@ def run_codex_exec(
     cmd = ["codex", "exec", "--sandbox", sandbox.value]
     if profile:
         cmd.extend(["--profile", profile])
+    if model:
+        cmd.extend(["--model", model])
     if workdir:
         cmd.extend(["--cd", workdir])
     cmd.append(prompt)
@@ -1238,6 +1246,7 @@ def run_codex_exec(
             timed_out=timed_out,
             timeout_seconds=timeout if timed_out else None,
             output_is_partial=output_is_partial,
+            metadata={"model": model},
         )
     except Exception as e:
         if proc is not None:
@@ -1252,6 +1261,7 @@ def run_codex_exec(
             timed_out=False,
             timeout_seconds=None,
             output_is_partial=False,
+            metadata={"model": model},
         )
 
 
@@ -1262,6 +1272,7 @@ async def run_codex_exec_async(
     agent_id: str = "agent_0",
     workdir: str | None = None,
     profile: str | None = None,
+    model: str | None = None,
 ) -> CodexResult:
     """非同期で codex exec を実行"""
     start_time = time.time()
@@ -1269,6 +1280,8 @@ async def run_codex_exec_async(
     cmd = ["codex", "exec", "--sandbox", sandbox.value]
     if profile:
         cmd.extend(["--profile", profile])
+    if model:
+        cmd.extend(["--model", model])
     if workdir:
         cmd.extend(["--cd", workdir])
     cmd.append(prompt)
@@ -1326,6 +1339,7 @@ async def run_codex_exec_async(
             timed_out=timed_out,
             timeout_seconds=timeout if timed_out else None,
             output_is_partial=output_is_partial,
+            metadata={"model": model},
         )
     except Exception as e:
         if process is not None:
@@ -1344,6 +1358,7 @@ async def run_codex_exec_async(
             timed_out=False,
             timeout_seconds=None,
             output_is_partial=False,
+            metadata={"model": model},
         )
 
 
@@ -1353,6 +1368,7 @@ async def execute_parallel(
     timeout: int = 360,
     workdir: str | None = None,
     profile: str | None = None,
+    model: str | None = None,
 ) -> list[CodexResult]:
     """複数のプロンプトを並列実行"""
     tasks = [
@@ -1363,6 +1379,7 @@ async def execute_parallel(
             agent_id=f"agent_{i}",
             workdir=workdir,
             profile=profile,
+            model=model,
         )
         for i, p in enumerate(prompts)
     ]
@@ -1378,12 +1395,18 @@ async def execute_competition(
     strategy: SelectionStrategy = SelectionStrategy.BEST_SINGLE,
     workdir: str | None = None,
     profile: str | None = None,
+    model: str | None = None,
 ) -> CompetitionOutcome:
     """コンペモード: 複数実行 → 評価 → 最良選択"""
     # 同一プロンプトで複数回実行
     prompts = [prompt] * count
     results = await execute_parallel(
-        prompts, sandbox, timeout, workdir, profile=profile
+        prompts,
+        sandbox,
+        timeout,
+        workdir,
+        profile=profile,
+        model=model,
     )
 
     # 成功した結果のみ評価
@@ -1706,6 +1729,12 @@ def main() -> int:
         help="codex exec の --profile を指定",
     )
     parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="codex exec の --model を指定",
+    )
+    parser.add_argument(
         "--task-type",
         type=str,
         choices=[t.value for t in TaskType],
@@ -1850,6 +1879,7 @@ def main() -> int:
             timeout=args.timeout,
             workdir=args.workdir,
             profile=args.profile,
+            model=args.model,
         )
 
         # ヒューリスティック評価
@@ -1878,6 +1908,7 @@ def main() -> int:
                     task_type,
                     timeout=60,
                     profile=args.profile,
+                    model=args.model,
                 )
             )
 
@@ -1892,10 +1923,12 @@ def main() -> int:
                     "count": 1,
                     "timeout_seconds": args.timeout,
                     "profile": args.profile,
+                    "model": args.model,
                 },
                 results=[
                     {
                         "agent_id": result.agent_id,
+                        "model": result.metadata.get("model"),
                         "output": truncate_output(result.output),
                         "stderr": truncate_output(result.stderr),
                         "tokens_used": result.tokens_used,
@@ -1934,6 +1967,7 @@ def main() -> int:
                         "timeout_seconds": result.timeout_seconds,
                         "output_is_partial": result.output_is_partial,
                         "error_message": result.error_message,
+                        "model": result.metadata.get("model"),
                         "evaluation": {
                             "heuristic": heuristic_eval,
                             "llm": llm_eval,
@@ -1963,6 +1997,7 @@ def main() -> int:
                 timeout=args.timeout,
                 workdir=args.workdir,
                 profile=args.profile,
+                model=args.model,
             )
         )
         merged = merge_outputs(results, merge_strat)
@@ -1990,10 +2025,12 @@ def main() -> int:
                     "merge_strategy": merge_strat.value,
                     "timeout_seconds": args.timeout,
                     "profile": args.profile,
+                    "model": args.model,
                 },
                 results=[
                     {
                         "agent_id": r.agent_id,
+                        "model": r.metadata.get("model"),
                         "output": truncate_output(r.output),
                         "stderr": truncate_output(r.stderr),
                         "tokens_used": r.tokens_used,
@@ -2025,6 +2062,7 @@ def main() -> int:
                         "results": [
                             {
                                 "agent_id": r.agent_id,
+                                "model": r.metadata.get("model"),
                                 "output": r.output,
                                 "stderr": r.stderr,
                                 "success": r.success,
@@ -2076,6 +2114,7 @@ def main() -> int:
                 strategy=strategy,
                 workdir=args.workdir,
                 profile=args.profile,
+                model=args.model,
             )
         )
         best = outcome.best
@@ -2104,6 +2143,7 @@ def main() -> int:
                     task_type,
                     timeout=60,
                     profile=args.profile,
+                    model=args.model,
                 )
             )
 
@@ -2119,11 +2159,13 @@ def main() -> int:
                     "strategy": strategy.value,
                     "timeout_seconds": args.timeout,
                     "profile": args.profile,
+                    "model": args.model,
                 },
                 results=[
                     (
                         {
                             "agent_id": r.agent_id,
+                            "model": r.metadata.get("model"),
                             "output": truncate_output(r.output),
                             "stderr": truncate_output(r.stderr),
                             "tokens_used": r.tokens_used,
@@ -2155,6 +2197,7 @@ def main() -> int:
                 json.dumps(
                     {
                         "agent_id": best.result.agent_id,
+                        "model": best.result.metadata.get("model"),
                         "output": best.result.output,
                         "stderr": best.result.stderr,
                         "combined_score": best.combined_score,
@@ -2259,6 +2302,7 @@ def main() -> int:
                 timeout=args.timeout,
                 workdir=args.workdir,
                 profile=args.profile,
+                model=args.model,
             )
 
             if not result.success:
@@ -2374,6 +2418,7 @@ def main() -> int:
                     "max_stages": args.max_stages,
                     "timeout_seconds": args.timeout,
                     "profile": args.profile,
+                    "model": args.model,
                 },
                 results=stage_logs,
                 evaluation={
@@ -2395,6 +2440,7 @@ def main() -> int:
                 final_capsule=final_capsule,
                 capsule_store=final_store_mode,
                 capsule_path=final_capsule_path,
+                model=args.model,
             )
             print(
                 json.dumps(

@@ -1,0 +1,28 @@
+You are a bugfix investigator.
+
+Task ID: BUG-01
+Goal: Identify likely select/validation mismatch and propose a minimal bugfix plan.
+
+Allowed files ONLY:
+- app/sharepoint_list/internal/validators.py
+- app/sharepoint_list/internal/request_builders.py
+- tests/sharepoint_list/test_validators.py
+- tests/sharepoint_list/test_operations_select.py
+
+Rules:
+- Do not mention files outside the list.
+- Fact-based only. If unknown, write "UNKNOWN".
+- Output JSON only.
+
+Required JSON schema:
+{
+  "task_id": "BUG-01",
+  "summary": "string",
+  "root_cause": "string",
+  "minimal_fix_steps": ["string"],
+  "regression_tests": ["string"],
+  "evidence": [
+    {"path": "string", "quote": "string", "why_it_matters": "string"}
+  ],
+  "risk_notes": ["string"]
+}

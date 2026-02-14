@@ -1,0 +1,29 @@
+You are a safety analyst.
+
+Task ID: RES-02
+Goal: Compare strategy safety controls and produce operational recommendations.
+
+Allowed files ONLY:
+- app/gpt5_agent_strategies/internal/policy.py
+- app/gpt5_agent_strategies/internal/flow.py
+- app/gpt5_agent_strategies/strategies/gpt5_function_calling.py
+- tests/gpt5_agent_strategies/test_strategy_safety.py
+
+Rules:
+- Do not mention files outside the list.
+- Fact-based only. If unknown, write "UNKNOWN".
+- Output JSON only.
+
+Required JSON schema:
+{
+  "task_id": "RES-02",
+  "summary": "string",
+  "findings": [
+    {"title": "string", "severity": "low|medium|high", "impact": "string"}
+  ],
+  "evidence": [
+    {"path": "string", "quote": "string", "why_it_matters": "string"}
+  ],
+  "recommendations": ["string"],
+  "confidence": "high|medium|low"
+}

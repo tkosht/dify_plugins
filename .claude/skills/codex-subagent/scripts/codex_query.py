@@ -109,6 +109,7 @@ def filter_logs(
     logs: Iterator[dict[str, Any]],
     task_type: str | None = None,
     mode: str | None = None,
+    model: str | None = None,
     min_score: float | None = None,
     max_score: float | None = None,
     has_human_feedback: bool | None = None,
@@ -126,6 +127,9 @@ def filter_logs(
             continue
 
         if mode and exec_data.get("mode") != mode:
+            continue
+
+        if model and exec_data.get("model") != model:
             continue
 
         heuristic = eval_data.get("heuristic") or {}
@@ -183,6 +187,7 @@ def format_log_row(log: dict[str, Any]) -> dict[str, Any]:
         "run_id": log.get("run_id", "")[:8],
         "timestamp": log.get("timestamp", ""),
         "mode": mode,
+        "model": exec_data.get("model", ""),
         "task_type": exec_data.get("task_type", ""),
         "prompt": exec_data.get("prompt", "")[:50],
         "success": first_exec.get("success", False),
@@ -205,11 +210,11 @@ def print_table(logs: list[dict[str, Any]], limit: int = 10) -> None:
 
     # ヘッダー
     header = (
-        f"{'Run ID':<10} {'Timestamp':<25} {'Mode':<12} "
+        f"{'Run ID':<10} {'Timestamp':<25} {'Mode':<12} {'Model':<22} "
         f"{'Task':<15} {'TO':<3} {'Score':<8} {'Human':<6} {'LLM':<6}"
     )
     print(header)
-    print("-" * 90)
+    print("-" * 120)
 
     for i, log in enumerate(logs):
         if i >= limit:
@@ -224,6 +229,7 @@ def print_table(logs: list[dict[str, Any]], limit: int = 10) -> None:
             f"{row['run_id']:<10} "
             f"{row['timestamp'][:23]:<25} "
             f"{row['mode']:<12} "
+            f"{(row['model'] or '-'): <22} "
             f"{row['task_type']:<15} "
             f"{timed_out:<3} "
             f"{row['heuristic_score']:<8.2f} "
@@ -245,6 +251,7 @@ def export_csv(logs: list[dict[str, Any]], output=sys.stdout) -> None:
         "run_id",
         "timestamp",
         "mode",
+        "model",
         "task_type",
         "prompt",
         "success",
@@ -279,6 +286,7 @@ def print_stats(logs: list[dict[str, Any]]) -> None:
     human_scores = []
     llm_scores = []
     modes = {}
+    models = {}
     task_types = {}
 
     for log in logs:
@@ -302,6 +310,9 @@ def print_stats(logs: list[dict[str, Any]]) -> None:
 
         mode = exec_data.get("mode", "unknown")
         modes[mode] = modes.get(mode, 0) + 1
+
+        model = exec_data.get("model", "unknown") or "unknown"
+        models[model] = models.get(model, 0) + 1
 
         task_type = exec_data.get("task_type", "unknown")
         task_types[task_type] = task_types.get(task_type, 0) + 1
@@ -332,6 +343,10 @@ def print_stats(logs: list[dict[str, Any]]) -> None:
     print("\nBy Mode:")
     for mode, count in sorted(modes.items(), key=lambda x: -x[1]):
         print(f"  {mode}: {count}")
+
+    print("\nBy Model:")
+    for model, count in sorted(models.items(), key=lambda x: -x[1]):
+        print(f"  {model}: {count}")
 
     print("\nBy Task Type:")
     for task_type, count in sorted(task_types.items(), key=lambda x: -x[1]):
@@ -382,6 +397,11 @@ def main():
         type=str,
         choices=["single", "parallel", "competition", "pipeline"],
         help="実行モード",
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        help="モデル名（execution.model と一致するもの）",
     )
     parser.add_argument(
         "--min-score",
@@ -460,6 +480,7 @@ def main():
         logs,
         task_type=args.task_type,
         mode=args.mode,
+        model=args.model,
         min_score=args.min_score,
         max_score=args.max_score,
         has_human_feedback=args.has_human if args.has_human else None,
