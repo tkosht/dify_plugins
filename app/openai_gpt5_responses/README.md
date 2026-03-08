@@ -5,7 +5,7 @@
 ## 主な特徴
 
 - API パラメータ名を Dify UI へほぼそのまま公開
-- `gpt-5.2` / `gpt-5.2-pro` を含む predefined model を同梱
+- `gpt-5.4` / `gpt-5.4-pro` / `gpt-5.2` / `gpt-5.2-pro` を含む predefined model を同梱
 - `gpt-5-codex` / `gpt-5.1-codex` / `gpt-5.3-codex` を選択可能
 - モデル可用性は実行時 API エラーで検知（事前遮断しない）
 

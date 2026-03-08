@@ -40,6 +40,8 @@ def test_provider_supports_predefined_and_customizable_models() -> None:
 def test_required_models_exist() -> None:
     llm_dir = PLUGIN_DIR / "models" / "llm"
     required = {
+        "gpt-5.4.yaml",
+        "gpt-5.4-pro.yaml",
         "gpt-5.2.yaml",
         "gpt-5.2-pro.yaml",
         "gpt-5.3-codex.yaml",
@@ -47,6 +49,17 @@ def test_required_models_exist() -> None:
     actual = {p.name for p in llm_dir.glob("*.yaml")}
 
     assert required.issubset(actual)
+
+
+def test_predefined_model_position_prioritizes_latest_gpt54_variants() -> None:
+    position = _load_yaml(PLUGIN_DIR / "models" / "llm" / "_position.yaml")
+
+    assert position[:4] == [
+        "gpt-5.4",
+        "gpt-5.4-pro",
+        "gpt-5.2",
+        "gpt-5.2-pro",
+    ]
 
 
 def test_llm_models_expose_api_exact_parameter_names() -> None:
