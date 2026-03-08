@@ -1,4 +1,4 @@
-version: 0.1.1
+version: 0.1.2
 type: plugin
 author: tkosht
 name: openai_gpt5_responses
@@ -20,7 +20,7 @@ plugins:
   models:
     - provider/openai_gpt5.yaml
 meta:
-  version: 0.0.3
+  version: 0.0.4
   arch:
     - amd64
     - arm64
