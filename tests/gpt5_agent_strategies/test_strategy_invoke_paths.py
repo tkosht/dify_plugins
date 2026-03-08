@@ -526,6 +526,48 @@ def test_invoke_applies_prompt_policy_overrides_to_system_prompt(
     )
 
 
+@pytest.mark.parametrize(
+    ("requested_timeout", "expected_timeout"),
+    [(30, 60), (1200, 1200), (9999, 1800)],
+)
+def test_invoke_updates_session_invocation_timeout(
+    strategy_module: Any,
+    requested_timeout: int,
+    expected_timeout: int,
+) -> None:
+    strategy = strategy_module.GPT5FunctionCallingStrategy()
+    llm_result = strategy_module.LLMResult(
+        model="gpt-5.2",
+        prompt_messages=[],
+        message=strategy_module.AssistantPromptMessage(
+            content="answer",
+            tool_calls=[],
+        ),
+        usage=None,
+    )
+    llm = _SequenceLLM([llm_result])
+    strategy.session = types.SimpleNamespace(
+        max_invocation_timeout=250,
+        model=types.SimpleNamespace(llm=llm),
+        tool=types.SimpleNamespace(invoke=lambda **_: []),
+    )
+
+    _ = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "",
+                "model": _build_model_config(strategy_module, stream=False),
+                "tools": [],
+                "maximum_iterations": 1,
+                "invocation_timeout_seconds": requested_timeout,
+            }
+        )
+    )
+
+    assert strategy.session.max_invocation_timeout == expected_timeout
+
+
 def test_invoke_streaming_plain_text_emits_each_chunk(
     strategy_module: Any,
 ) -> None:

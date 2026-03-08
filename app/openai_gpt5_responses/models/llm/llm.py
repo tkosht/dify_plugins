@@ -53,6 +53,8 @@ except ModuleNotFoundError:
 
 logger = logging.getLogger(__name__)
 AUDIT_LOGGER_NAME = "dify_plugin.plugin.audit.openai_gpt5_responses"
+_REQUEST_TIMEOUT_DEFAULT_SECONDS = 600
+_REQUEST_TIMEOUT_MAX_SECONDS = 1200
 audit_logger = logging.getLogger(AUDIT_LOGGER_NAME)
 
 # Emit audit logs through the plugin logger hierarchy.
@@ -194,9 +196,12 @@ class OpenAIGPT5LargeLanguageModel(LargeLanguageModel):
     ) -> dict[str, Any]:
         api_base = normalize_api_base(credentials.get("openai_api_base"))
         timeout_seconds = self._safe_int(
-            credentials.get("request_timeout_seconds"), 300
+            credentials.get("request_timeout_seconds"),
+            _REQUEST_TIMEOUT_DEFAULT_SECONDS,
         )
-        timeout_seconds = max(30, min(900, timeout_seconds))
+        timeout_seconds = max(
+            30, min(_REQUEST_TIMEOUT_MAX_SECONDS, timeout_seconds)
+        )
         max_retries = self._safe_int(credentials.get("max_retries"), 1)
         max_retries = max(0, min(5, max_retries))
 

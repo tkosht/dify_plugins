@@ -14,8 +14,16 @@
 - `openai_api_key`（必須）
 - `openai_organization`（任意）
 - `openai_api_base`（任意、`https` + allowlist 検証後に `/v1` 正規化）
-- `request_timeout_seconds`（任意、30〜900 に clamp）
+- `request_timeout_seconds`（任意、30〜1200 に clamp。既定 `600`）
 - `max_retries`（任意、0〜5 に clamp）
+
+## Plugin Runtime Timeout
+
+- plugin 起動時の既定値:
+  - `MAX_REQUEST_TIMEOUT=1200`
+  - `MAX_INVOCATION_TIMEOUT=1200`
+- どちらも OS 環境変数で上書き可能です。
+- `request_timeout_seconds` は OpenAI API リクエストの待機時間であり、plugin runtime の timeout とは別です。
 
 `openai_api_base` の安全制約:
 - `https` のみ許可

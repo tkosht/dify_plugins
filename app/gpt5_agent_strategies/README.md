@@ -18,7 +18,18 @@
 - `context`: 実行時コンテキストデータ（構造化オブジェクト）
 - `query`: ユーザー入力
 - `maximum_iterations`: ツール呼び出しループ上限（既定 6）
+- `invocation_timeout_seconds`: strategy 内部呼び出しの待機時間（既定 1200）
 - `emit_intermediate_thoughts`: 中間 `<think>` 表示制御（既定 `true`）
+
+## タイムアウト層
+
+- `invocation_timeout_seconds`
+  - strategy 内で行う model/tool の backwards invocation 待機時間です。
+- plugin 起動時の既定値
+  - `MAX_REQUEST_TIMEOUT=1800`
+  - `MAX_INVOCATION_TIMEOUT=1200`
+- `MAX_REQUEST_TIMEOUT` は plugin process 全体の outer timeout、`invocation_timeout_seconds` は strategy 内部待機です。
+- 起動時 timeout は OS 環境変数で上書き可能です。
 
 ## プロンプトのカスタマイズ（`prompt_policy_overrides`）
 

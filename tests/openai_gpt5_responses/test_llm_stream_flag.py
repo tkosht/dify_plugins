@@ -505,7 +505,7 @@ def test_safe_int_and_credential_kwargs_bounds(llm_module: Any) -> None:
             "openai_organization": " org ",
         }
     )
-    assert kwargs["timeout"] == 900.0
+    assert kwargs["timeout"] == 1200.0
     assert kwargs["max_retries"] == 5
     assert kwargs["base_url"] == "https://api.openai.com/v1"
     assert kwargs["organization"] == "org"

@@ -50,11 +50,27 @@ def test_agent_main_and_provider_entrypoint() -> None:
         "app.gpt5_agent_strategies.provider.gpt5_agent"
     )
 
-    assert main_module.plugin.env.kwargs["MAX_REQUEST_TIMEOUT"] == 240
+    assert main_module.plugin.env.kwargs["MAX_REQUEST_TIMEOUT"] == 1800
+    assert main_module.plugin.env.kwargs["MAX_INVOCATION_TIMEOUT"] == 1200
     assert (
         provider_module.GPT5AgentProvider.__mro__[1].__name__
         == "AgentProvider"
     )
+
+
+def test_agent_main_and_provider_entrypoint_env_override(
+    monkeypatch: Any,
+) -> None:
+    _install_main_provider_stub()
+    monkeypatch.setenv("MAX_REQUEST_TIMEOUT", "9999")
+    monkeypatch.setenv("MAX_INVOCATION_TIMEOUT", "1")
+    sys.modules.pop("app.gpt5_agent_strategies.main", None)
+    sys.modules.pop("app.gpt5_agent_strategies.provider.gpt5_agent", None)
+
+    main_module = importlib.import_module("app.gpt5_agent_strategies.main")
+
+    assert main_module.plugin.env.kwargs["MAX_REQUEST_TIMEOUT"] == 3600
+    assert main_module.plugin.env.kwargs["MAX_INVOCATION_TIMEOUT"] == 60
 
 
 def test_gpt5_react_reuses_function_calling_strategy(monkeypatch: Any) -> None:
