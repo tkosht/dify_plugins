@@ -34,6 +34,7 @@ def test_function_calling_strategy_has_required_parameters() -> None:
         "prompt_policy_overrides",
         "query",
         "maximum_iterations",
+        "invocation_timeout_seconds",
         "emit_intermediate_thoughts",
         "allow_schemaless_tool_args",
     }.issubset(names)
@@ -48,6 +49,7 @@ def test_react_strategy_has_required_parameters() -> None:
         "prompt_policy_overrides",
         "query",
         "maximum_iterations",
+        "invocation_timeout_seconds",
         "emit_intermediate_thoughts",
         "allow_schemaless_tool_args",
     }.issubset(names)
@@ -106,6 +108,7 @@ def test_common_parameters_have_help_in_both_strategies() -> None:
         "context",
         "query",
         "maximum_iterations",
+        "invocation_timeout_seconds",
         "emit_intermediate_thoughts",
         "allow_schemaless_tool_args",
     )
@@ -140,3 +143,17 @@ def test_common_parameters_have_help_in_both_strategies() -> None:
             strategy_yaml, "allow_schemaless_tool_args"
         )["default"]
         assert schemaless_default is False
+
+
+def test_invocation_timeout_parameter_contract_in_both_strategies() -> None:
+    for strategy_yaml in ("gpt5_function_calling.yaml", "gpt5_react.yaml"):
+        param = _parameter(strategy_yaml, "invocation_timeout_seconds")
+        help_i18n = param.get("help", {})
+
+        assert param["default"] == 1200
+        assert param["min"] == 60
+        assert param["max"] == 1800
+        assert "en_US" in help_i18n
+        assert "ja_JP" in help_i18n
+        assert "backwards invocation" in str(help_i18n["en_US"])
+        assert "別レイヤー" in str(help_i18n["ja_JP"])

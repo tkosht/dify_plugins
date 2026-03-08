@@ -36,7 +36,21 @@ def test_openai_main_plugin_entrypoint() -> None:
     sys.modules.pop("app.openai_gpt5_responses.main", None)
 
     module = importlib.import_module("app.openai_gpt5_responses.main")
-    assert module.plugin.env.kwargs["MAX_REQUEST_TIMEOUT"] == 240
+    assert module.plugin.env.kwargs["MAX_REQUEST_TIMEOUT"] == 1200
+    assert module.plugin.env.kwargs["MAX_INVOCATION_TIMEOUT"] == 1200
+
+
+def test_openai_main_plugin_entrypoint_env_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_dify_plugin_stub()
+    monkeypatch.setenv("MAX_REQUEST_TIMEOUT", "7200")
+    monkeypatch.setenv("MAX_INVOCATION_TIMEOUT", "bad")
+    sys.modules.pop("app.openai_gpt5_responses.main", None)
+
+    module = importlib.import_module("app.openai_gpt5_responses.main")
+    assert module.plugin.env.kwargs["MAX_REQUEST_TIMEOUT"] == 3600
+    assert module.plugin.env.kwargs["MAX_INVOCATION_TIMEOUT"] == 1200
 
 
 def test_format_runtime_error() -> None:

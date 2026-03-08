@@ -55,7 +55,7 @@ model_credential_schema:
         ja_JP: リクエストタイムアウト（秒）
       type: text-input
       required: false
-      default: "300"
+      default: "600"
     - variable: max_retries
       label:
         en_US: Max Retries
@@ -90,7 +90,7 @@ provider_credential_schema:
         ja_JP: リクエストタイムアウト（秒）
       type: text-input
       required: false
-      default: "300"
+      default: "600"
     - variable: max_retries
       label:
         en_US: Max Retries

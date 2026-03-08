@@ -122,7 +122,7 @@ def test_provider_schema_has_documented_defaults() -> None:
     by_name = {schema["variable"]: schema for schema in schemas}
 
     assert by_name["openai_api_base"]["default"] == ""
-    assert by_name["request_timeout_seconds"]["default"] == "300"
+    assert by_name["request_timeout_seconds"]["default"] == "600"
     assert by_name["max_retries"]["default"] == "1"
 
 

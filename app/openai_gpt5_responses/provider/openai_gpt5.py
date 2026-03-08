@@ -19,6 +19,8 @@ _PROVIDER_CREDENTIALS_FAILED_MESSAGE = (
 _PROVIDER_CREDENTIALS_CONNECTION_FAILED_MESSAGE = (
     "OpenAI provider connection failed. Check network and API base settings."
 )
+_REQUEST_TIMEOUT_DEFAULT_SECONDS = 600
+_REQUEST_TIMEOUT_MAX_SECONDS = 1200
 
 
 def _safe_int(value: object, default: int) -> int:
@@ -32,7 +34,13 @@ def _to_credential_kwargs(credentials: Mapping) -> dict:
     api_base = normalize_api_base(credentials.get("openai_api_base"))
     timeout_seconds = max(
         30,
-        min(900, _safe_int(credentials.get("request_timeout_seconds"), 300)),
+        min(
+            _REQUEST_TIMEOUT_MAX_SECONDS,
+            _safe_int(
+                credentials.get("request_timeout_seconds"),
+                _REQUEST_TIMEOUT_DEFAULT_SECONDS,
+            ),
+        ),
     )
     max_retries = max(0, min(5, _safe_int(credentials.get("max_retries"), 1)))
 

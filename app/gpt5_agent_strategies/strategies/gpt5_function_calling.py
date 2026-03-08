@@ -121,6 +121,7 @@ class GPT5FunctionCallingParams(BaseModel):
     model: AgentModelConfig
     tools: list[ToolEntity] | None
     maximum_iterations: int = 3
+    invocation_timeout_seconds: int = 1200
     emit_intermediate_thoughts: bool = False
     allow_schemaless_tool_args: bool = False
     context: list[ContextItem] | None = None
@@ -215,6 +216,11 @@ class GPT5FunctionCallingStrategy(AgentStrategy):
             if fc_params.model.completion_params
             else []
         )
+        invocation_timeout_seconds = max(
+            60, min(1800, int(fc_params.invocation_timeout_seconds))
+        )
+        if getattr(self, "session", None) is not None:
+            self.session.max_invocation_timeout = invocation_timeout_seconds
         emit_intermediate_thoughts = fc_params.emit_intermediate_thoughts
         requested_schemaless_override = fc_params.allow_schemaless_tool_args
         allow_schemaless_tool_args = (

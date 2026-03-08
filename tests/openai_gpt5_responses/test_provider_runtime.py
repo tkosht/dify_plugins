@@ -79,7 +79,7 @@ def test_provider_safe_int_and_credential_kwargs(provider_module: Any) -> None:
         }
     )
     assert kwargs["api_key"] == "k"
-    assert kwargs["timeout"] == 900.0
+    assert kwargs["timeout"] == 1200.0
     assert kwargs["max_retries"] == 5
     assert kwargs["base_url"] == "https://api.openai.com/v1"
     assert kwargs["organization"] == "org"

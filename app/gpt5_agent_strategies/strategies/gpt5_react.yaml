@@ -153,6 +153,22 @@ parameters:
       ja_JP: |
         1ターン内のツール呼び出しループ上限です。
         小さすぎると探索不足になり、大きすぎると応答遅延が増える可能性があります。
+  - name: invocation_timeout_seconds
+    type: number
+    required: false
+    default: 1200
+    min: 60
+    max: 1800
+    label:
+      en_US: Invocation Timeout Seconds
+      ja_JP: 内部呼び出しタイムアウト（秒）
+    help:
+      en_US: |
+        Timeout for inner backwards invocations made by this strategy.
+        This controls strategy-internal model/tool waits and is separate from the plugin process timeout.
+      ja_JP: |
+        この strategy が内部で行う backwards invocation の待機時間です。
+        model/tool の内部待機に効き、plugin process 全体の timeout とは別レイヤーです。
   - name: emit_intermediate_thoughts
     type: boolean
     required: false
