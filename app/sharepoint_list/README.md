@@ -109,4 +109,4 @@ Manage SharePoint list items (create/update/read) via Microsoft Graph using Dele
 
 ## デバッグ
 - Remote Debug で接続し、Create→Read→Update→Read の最小動線で確認してください。
-- デバッグログ（NDJSON）を有効化する場合は環境変数 `SHAREPOINT_LIST_DEBUG_LOG=1` を設定してください（既定OFF）。出力先は `SHAREPOINT_LIST_DEBUG_LOG_PATH` で指定できます（未指定時のデフォルトは `/tmp/sharepoint_list.debug.ndjson`）。不要時はフラグを外すか、パスを共有ボリュームに向けるなど運用に合わせて設定してください。
+- デバッグログを有効化する場合は環境変数 `SHAREPOINT_LIST_DEBUG_LOG=1` を設定してください（既定OFF）。ログは Dify の plugin logging 経路に出力されるため、self-host 環境では `plugin_daemon` のコンテナログから参照できます。`SHAREPOINT_LIST_DEBUG_LOG_PATH` は deprecated で、設定されていても無視されます。

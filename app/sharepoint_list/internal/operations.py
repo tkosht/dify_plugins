@@ -1,18 +1,11 @@
 from __future__ import annotations
 
-import json
 import os
 import urllib.parse
 from datetime import UTC, datetime
 from typing import Any
 
-from . import filters, http_client, request_builders, validators
-
-LOG_PATH_DEFAULT = "/tmp/sharepoint_list.debug.ndjson"
-
-
-def _get_debug_log_path() -> str:
-    return os.getenv("SHAREPOINT_LIST_DEBUG_LOG_PATH", LOG_PATH_DEFAULT)
+from . import debug_logging, filters, http_client, request_builders, validators
 
 
 class GraphError(http_client.GraphAPIError):
@@ -67,7 +60,12 @@ def _is_debug_log_enabled() -> bool:
     return val in {"1", "true", "yes", "on"}
 
 
-def _log_debug(location: str, message: str, data: dict[str, Any]) -> None:
+def _log_debug(
+    location: str,
+    message: str,
+    data: dict[str, Any],
+    extra: dict[str, Any] | None = None,
+) -> None:
     if not _is_debug_log_enabled():
         return
     try:
@@ -85,8 +83,9 @@ def _log_debug(location: str, message: str, data: dict[str, Any]) -> None:
             "message": message,
             "data": data,
         }
-        with open(_get_debug_log_path(), "a") as f:
-            f.write(json.dumps(log_payload, ensure_ascii=False) + "\n")
+        if extra:
+            log_payload.update(extra)
+        debug_logging.emit_debug_payload(log_payload)
     except Exception:
         # fail silently to avoid impacting main flow
         pass
@@ -501,45 +500,35 @@ def get_choice_field_info(
     columns_data = _send_request(columns_spec, access_token)
 
     if _is_debug_log_enabled():
-        # region agent log
-        try:
-            log_payload = {
-                "sessionId": "debug-session",
-                "runId": "run1",
-                "hypothesisId": "H1",
-                "location": "operations.py:get_choice_field_info",
-                "message": "columns fetched",
-                "data": {
-                    "field_identifier": field_identifier,
-                    "columns_count": (
-                        len(columns_data.get("value", []))
+        _log_debug(
+            location="operations.py:get_choice_field_info",
+            message="columns fetched",
+            data={
+                "field_identifier": field_identifier,
+                "columns_count": (
+                    len(columns_data.get("value", []))
+                    if isinstance(columns_data, dict)
+                    else None
+                ),
+                "names": [
+                    c.get("name")
+                    for c in (
+                        columns_data.get("value", [])
                         if isinstance(columns_data, dict)
-                        else None
-                    ),
-                    "names": [
-                        c.get("name")
-                        for c in (
-                            columns_data.get("value", [])
-                            if isinstance(columns_data, dict)
-                            else []
-                        )
-                    ],
-                    "displayNames": [
-                        c.get("displayName")
-                        for c in (
-                            columns_data.get("value", [])
-                            if isinstance(columns_data, dict)
-                            else []
-                        )
-                    ],
-                },
-                "timestamp": int(__import__("time").time() * 1000),
-            }
-            with open(_get_debug_log_path(), "a") as f:
-                f.write(json.dumps(log_payload, ensure_ascii=False) + "\n")
-        except Exception:
-            pass
-        # endregion
+                        else []
+                    )
+                ],
+                "displayNames": [
+                    c.get("displayName")
+                    for c in (
+                        columns_data.get("value", [])
+                        if isinstance(columns_data, dict)
+                        else []
+                    )
+                ],
+            },
+            extra={"hypothesisId": "H1"},
+        )
 
     target_col = None
     lowered = field_identifier.lower()
@@ -559,30 +548,18 @@ def get_choice_field_info(
         )
 
     if _is_debug_log_enabled():
-        # region agent log
-        try:
-            log_payload = {
-                "sessionId": "debug-session",
-                "runId": "run1",
-                "hypothesisId": "H2",
-                "location": "operations.py:get_choice_field_info",
-                "message": "column matched",
-                "data": {
-                    "field_identifier": field_identifier,
-                    "name": target_col.get("name"),
-                    "displayName": target_col.get("displayName"),
-                    "columnType": target_col.get("columnType"),
-                    "choice_keys": list(
-                        (target_col.get("choice") or {}).keys()
-                    ),
-                },
-                "timestamp": int(__import__("time").time() * 1000),
-            }
-            with open(_get_debug_log_path(), "a") as f:
-                f.write(json.dumps(log_payload, ensure_ascii=False) + "\n")
-        except Exception:
-            pass
-        # endregion
+        _log_debug(
+            location="operations.py:get_choice_field_info",
+            message="column matched",
+            data={
+                "field_identifier": field_identifier,
+                "name": target_col.get("name"),
+                "displayName": target_col.get("displayName"),
+                "columnType": target_col.get("columnType"),
+                "choice_keys": list((target_col.get("choice") or {}).keys()),
+            },
+            extra={"hypothesisId": "H2"},
+        )
 
     column_type = target_col.get("columnType")
     choice = target_col.get("choice") or {}
@@ -595,30 +572,20 @@ def get_choice_field_info(
         raise GraphError(err_msg)
 
     if _is_debug_log_enabled():
-        # region agent log
-        try:
-            log_payload = {
-                "sessionId": "debug-session",
-                "runId": "run1",
-                "hypothesisId": "H3",
-                "location": "operations.py:get_choice_field_info",
-                "message": "choice payload",
-                "data": {
-                    "displayName": target_col.get("displayName"),
-                    "name": target_col.get("name"),
-                    "allowMultipleSelections": choice.get(
-                        "allowMultipleSelections"
-                    ),
-                    "defaultValue": choice.get("defaultValue"),
-                    "choices_len": len(choice.get("choices") or []),
-                },
-                "timestamp": int(__import__("time").time() * 1000),
-            }
-            with open(_get_debug_log_path(), "a") as f:
-                f.write(json.dumps(log_payload, ensure_ascii=False) + "\n")
-        except Exception:
-            pass
-        # endregion
+        _log_debug(
+            location="operations.py:get_choice_field_info",
+            message="choice payload",
+            data={
+                "displayName": target_col.get("displayName"),
+                "name": target_col.get("name"),
+                "allowMultipleSelections": choice.get(
+                    "allowMultipleSelections"
+                ),
+                "defaultValue": choice.get("defaultValue"),
+                "choices_len": len(choice.get("choices") or []),
+            },
+            extra={"hypothesisId": "H3"},
+        )
 
     return {
         "displayName": target_col.get("displayName"),
@@ -669,60 +636,6 @@ def list_items(
     )
 
     if _is_debug_log_enabled():
-        # region agent log
-        try:
-            mapping: list[dict[str, Any]] = []
-            for raw in parsed_select or []:
-                lower = raw.lower()
-                if lower in (name_set or set()):
-                    mapped = raw
-                    source = "internal"
-                elif lower in (display_to_name or {}):
-                    mapped = (display_to_name or {})[lower]
-                    source = "display"
-                else:
-                    mapped = raw
-                    source = "unknown"
-                mapping.append(
-                    {"raw": raw, "mapped": mapped, "source": source}
-                )
-            with open(
-                "/home/devuser/workspace/.cursor/debug.log",
-                "a",
-                encoding="utf-8",
-            ) as _f:
-                _f.write(
-                    json.dumps(
-                        {
-                            "sessionId": "debug-session",
-                            "runId": os.getenv(
-                                "SHAREPOINT_LIST_DEBUG_RUN_ID", "run1"
-                            ),
-                            "hypothesisId": "H1",
-                            "location": "operations.py:list_items",
-                            "message": "select_fields_mapping",
-                            "data": {
-                                "select_fields_raw": select_fields,
-                                "parsed_select": parsed_select,
-                                "mapped_select": mapped_select,
-                                "mapping": mapping,
-                                "columns_count": (
-                                    len(columns_data.get("value", []))
-                                    if isinstance(columns_data, dict)
-                                    else None
-                                ),
-                            },
-                            "timestamp": int(__import__("time").time() * 1000),
-                        },
-                        ensure_ascii=False,
-                    )
-                    + "\n"
-                )
-        except Exception:
-            pass
-        # endregion
-
-    if _is_debug_log_enabled():
         mapping: list[dict[str, Any]] = []
         for raw in parsed_select or []:
             lower = raw.lower()
@@ -750,6 +663,7 @@ def list_items(
                     else None
                 ),
             },
+            extra={"hypothesisId": "H1"},
         )
 
     clauses: list[str] = []
@@ -813,68 +727,6 @@ def list_items(
     data = _send_request(req, access_token, extra_headers=extra_headers)
 
     if _is_debug_log_enabled():
-        # region agent log
-        try:
-            items = data.get("value", []) if isinstance(data, dict) else []
-            first_item = (
-                items[0] if items and isinstance(items[0], dict) else None
-            )
-            fields_obj = (
-                first_item.get("fields")
-                if isinstance(first_item, dict)
-                else None
-            )
-            fields_key_set = (
-                {k for k in fields_obj.keys() if isinstance(k, str)}
-                if isinstance(fields_obj, dict)
-                else set()
-            )
-            requested = [
-                s for s in (mapped_select or []) if isinstance(s, str)
-            ]
-            requested_presence = {s: (s in fields_key_set) for s in requested}
-            missing_requested = [
-                s for s, ok in requested_presence.items() if not ok
-            ]
-            with open(
-                "/home/devuser/workspace/.cursor/debug.log",
-                "a",
-                encoding="utf-8",
-            ) as _f:
-                _f.write(
-                    json.dumps(
-                        {
-                            "sessionId": "debug-session",
-                            "runId": os.getenv(
-                                "SHAREPOINT_LIST_DEBUG_RUN_ID", "run1"
-                            ),
-                            "hypothesisId": "H2",
-                            "location": "operations.py:list_items",
-                            "message": "response_fields_presence",
-                            "data": {
-                                "items_count": len(items),
-                                "first_item_has_fields": isinstance(
-                                    fields_obj, dict
-                                ),
-                                "first_item_fields_keys_count": (
-                                    len(fields_key_set)
-                                    if isinstance(fields_obj, dict)
-                                    else None
-                                ),
-                                "requested_presence": requested_presence,
-                                "missing_requested": missing_requested,
-                            },
-                            "timestamp": int(__import__("time").time() * 1000),
-                        },
-                        ensure_ascii=False,
-                    )
-                    + "\n"
-                )
-        except Exception:
-            pass
-        # endregion
-
-    if _is_debug_log_enabled():
         items = data.get("value", []) if isinstance(data, dict) else []
         first_item = items[0] if items and isinstance(items[0], dict) else None
         fields_obj = (
@@ -903,6 +755,7 @@ def list_items(
                 "requested_presence": requested_presence,
                 "missing_requested": missing_requested,
             },
+            extra={"hypothesisId": "H2"},
         )
 
     # Normalize: ensure requested select fields exist in each item's fields.
@@ -1014,39 +867,6 @@ def list_items(
             next_token = tokens[0]
 
     if _is_debug_log_enabled():
-        # region agent log
-        try:
-            items = data.get("value", []) if isinstance(data, dict) else []
-            with open(
-                "/home/devuser/workspace/.cursor/debug.log",
-                "a",
-                encoding="utf-8",
-            ) as _f:
-                _f.write(
-                    json.dumps(
-                        {
-                            "sessionId": "debug-session",
-                            "runId": os.getenv(
-                                "SHAREPOINT_LIST_DEBUG_RUN_ID", "run1"
-                            ),
-                            "hypothesisId": "H3",
-                            "location": "operations.py:list_items",
-                            "message": "return_summary",
-                            "data": {
-                                "returned_items_count": len(items),
-                                "next_page_token_present": bool(next_token),
-                            },
-                            "timestamp": int(__import__("time").time() * 1000),
-                        },
-                        ensure_ascii=False,
-                    )
-                    + "\n"
-                )
-        except Exception:
-            pass
-        # endregion
-
-    if _is_debug_log_enabled():
         items = data.get("value", []) if isinstance(data, dict) else []
         _log_debug(
             location="operations.py:list_items",
@@ -1055,6 +875,7 @@ def list_items(
                 "returned_items_count": len(items),
                 "next_page_token_present": bool(next_token),
             },
+            extra={"hypothesisId": "H3"},
         )
 
     items = data.get("value", []) if isinstance(data, dict) else []
