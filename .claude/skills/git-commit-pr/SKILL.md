@@ -43,6 +43,8 @@ description: "コミット・プッシュ・プルリクエスト作成を一気
      - `uv run black --check .`
    - `black --check` が失敗した場合はコミットを中断する。
    - 失敗したファイルへ `uv run black <path...>` を実行し、再度 gate を通す。
+   - 失敗箇所が `.codex/skills/.system/**` のみであれば、local system skill の未整形が原因なので対象ファイルをローカル整形してから再実行する。
+   - `.codex/*` は `.gitignore` 対象のため、`.codex/skills/.system/**` の整形結果は通常コミットに含めない。
    - `lint_status=pass` を確認するまでコミットしない。
 
 5. ステージングしてコミットする。
