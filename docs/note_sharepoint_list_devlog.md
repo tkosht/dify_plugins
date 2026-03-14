@@ -298,7 +298,8 @@ Agent からツールを呼ぶ前提だと、OData の `$filter` 文字列をそ
 - `list_items.filters` は JSON配列/単体オブジェクト（文字列として渡す）
 - `list_items` は `createdDateTime desc` 固定（安定したページングのため）
 - デバッグログは `plugin_daemon` の環境変数 `SHAREPOINT_LIST_DEBUG_LOG=1` を設定し、コンテナ再起動で有効化
-  - 出力先は `SHAREPOINT_LIST_DEBUG_LOG_PATH`（未指定時 `/tmp/sharepoint_list.debug.ndjson`）で調整できます。
+  - ログは Dify の plugin logging 経路に出力されるため、self-host 環境では `plugin_daemon` のコンテナログから参照できます。
+  - `SHAREPOINT_LIST_DEBUG_LOG_PATH` は deprecated で、設定されていても無視されます。
 
 例（一覧）:
 
@@ -351,4 +352,3 @@ Agent からツールを呼ぶ前提だと、OData の `$filter` 文字列をそ
 ## おわりに
 業務プラグイン開発は「APIを叩く」よりも、**OAuthと配布形態（packaging）と業務システム固有の癖**で時間が溶けがちです。  
 逆に言えば、ここを“型”にしてしまうと、次のプラグインは驚くほど速く作れます。
-

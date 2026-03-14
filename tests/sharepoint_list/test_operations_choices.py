@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 from unittest.mock import Mock, patch
 
 import pytest
@@ -140,40 +139,41 @@ class TestGetChoiceFieldInfo:
         assert result["defaultValue"] == "未着手"
 
     @patch("app.sharepoint_list.internal.http_client.requests.request")
-    def test_emits_debug_logs_when_enabled(self, mock_request: Mock) -> None:
+    @patch("app.sharepoint_list.internal.debug_logging.get_debug_logger")
+    def test_emits_debug_logs_when_enabled(
+        self,
+        mock_get_debug_logger: Mock,
+        mock_request: Mock,
+    ) -> None:
         """デバッグ有効時に get_choice_field_info のログが書かれる"""
+        mock_logger = Mock()
+        mock_get_debug_logger.return_value = mock_logger
+
         mock_resp = Mock()
         mock_resp.status_code = 200
         mock_resp.text = "{}"
         mock_resp.json.return_value = _mock_columns_with_choice()
         mock_request.return_value = mock_resp
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", delete=False, suffix=".ndjson"
-        ) as f:
-            log_path = f.name
+        with patch.dict(
+            os.environ,
+            {
+                "SHAREPOINT_LIST_DEBUG_LOG": "1",
+                "SHAREPOINT_LIST_DEBUG_LOG_PATH": "/ignored/path.ndjson",
+            },
+        ):
+            operations.get_choice_field_info(
+                access_token="test-token",
+                site_identifier=SITE_ID,
+                list_identifier=LIST_ID,
+                field_identifier="Status",
+            )
 
-        try:
-            with patch.dict(
-                os.environ,
-                {
-                    "SHAREPOINT_LIST_DEBUG_LOG": "1",
-                    "SHAREPOINT_LIST_DEBUG_LOG_PATH": log_path,
-                },
-            ):
-                operations.get_choice_field_info(
-                    access_token="test-token",
-                    site_identifier=SITE_ID,
-                    list_identifier=LIST_ID,
-                    field_identifier="Status",
-                )
-
-                with open(log_path) as lf:
-                    lines = [ln for ln in lf.read().splitlines() if ln.strip()]
-
-                # debug NDJSON should include at least one entry from get_choice_field_info
-                parsed = [json.loads(ln) for ln in lines]
-                locations = {e.get("location") for e in parsed}
-                assert "operations.py:get_choice_field_info" in locations
-        finally:
-            os.unlink(log_path)
+        parsed = [
+            json.loads(call.args[0])
+            for call in mock_logger.info.call_args_list
+        ]
+        locations = {e.get("location") for e in parsed}
+        hypothesis_ids = {e.get("hypothesisId") for e in parsed}
+        assert "operations.py:get_choice_field_info" in locations
+        assert {"H1", "H2", "H3"} <= hypothesis_ids
