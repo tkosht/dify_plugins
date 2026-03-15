@@ -42,3 +42,5 @@ Verify: <テスト／確認方法 もしくは "n/a">
   - `uv run ruff check .`
   - `uv run black --check .`
 - `black --check` 失敗時は対象ファイルを `uv run black <path...>` で整形し、再チェック後にコミットする。
+- 失敗が `.codex/skills/.system/**` のみなら、local system skill の未整形としてローカルで整形して再チェックする。
+- `.codex/*` は `.gitignore` 対象なので、`.codex/skills/.system/**` の整形結果は通常コミット対象に含めない。
