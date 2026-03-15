@@ -1,5 +1,7 @@
 # SharePoint List: ドキュメント・テストレビュー
 
+日付: 2025-12-26
+
 ## 対象
 - 対象機能: `app/sharepoint_list`
 - 対象テスト: `tests/sharepoint_list/*`

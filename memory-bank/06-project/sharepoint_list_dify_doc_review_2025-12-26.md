@@ -6,7 +6,8 @@ Review app/sharepoint_list implementation vs local docs to find mismatches or ga
 ## Research
 - Docs: app/sharepoint_list/README.md, app/sharepoint_list/PRIVACY.md,
   docs/03.detail_design/sharepoint_list_list_items_filters.md,
-  app/sharepoint_list/tools/*.yaml, review_sharepoint_list_tests.md
+  app/sharepoint_list/tools/*.yaml,
+  docs/ai-agent-reviews/sharepoint_list_test_review_2025-12-26.md
 - Impl: app/sharepoint_list/internal/*.py, app/sharepoint_list/tools/*.py,
   app/sharepoint_list/provider/sharepoint_list.py
 - Example commands:
@@ -21,7 +22,7 @@ Review app/sharepoint_list implementation vs local docs to find mismatches or ga
 - createdDateTime case sensitivity documented in list_items.yaml.
 - operator alias removed; parse_filters now requires op only, tests updated.
 - privacy doc updated to describe optional debug logging and metadata scope.
-- review_sharepoint_list_tests.md updated to reflect array/object support.
+- sharepoint_list_test_review_2025-12-26.md updated to reflect array/object support.
 - list_items ordering (createdDateTime desc) documented in README/list_items.yaml.
 
 ## Verification
