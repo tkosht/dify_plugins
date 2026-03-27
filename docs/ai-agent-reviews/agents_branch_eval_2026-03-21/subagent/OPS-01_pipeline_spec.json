@@ -1,0 +1,22 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": [
+    "draft",
+    "review",
+    "verify"
+  ],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "監査対象、確認したい currentness claim、使うべき公式ソース制約を /draft に記録。"
+    },
+    {
+      "id": "review",
+      "instructions": "read-only で currentness 監査を行い、/critique に stale/current/unknown の観点で整理。"
+    },
+    {
+      "id": "verify",
+      "instructions": "使った根拠、未確認点、禁止事項順守状況を /facts と /revise に記録。"
+    }
+  ]
+}

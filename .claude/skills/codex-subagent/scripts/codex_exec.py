@@ -631,13 +631,14 @@ def build_pipeline_output_payload(
 def build_initial_capsule(
     prompt: str,
     pipeline_run_id: str,
+    sandbox: SandboxMode,
 ) -> dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
         "pipeline_run_id": pipeline_run_id,
         "task": {
             "goal": prompt,
-            "constraints": ["read-only"],
+            "constraints": [str(sandbox)],
             "inputs": [],
         },
         "facts": [],
@@ -2264,7 +2265,7 @@ def main() -> int:
             print(f"[error] {exc}", file=sys.stderr)
             return EXIT_WRAPPER_ERROR
 
-        capsule = build_initial_capsule(args.prompt, pipeline_run_id)
+        capsule = build_initial_capsule(args.prompt, pipeline_run_id, sandbox)
         stage_logs: list[dict[str, Any]] = []
         dynamic_stage_specs: dict[str, dict[str, Any]] = {}
 
