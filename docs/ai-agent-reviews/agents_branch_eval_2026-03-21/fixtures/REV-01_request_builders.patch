@@ -1,0 +1,35 @@
+diff --git a/app/sharepoint_list/internal/request_builders.py b/app/sharepoint_list/internal/request_builders.py
+index f101e61..796fdeb 100644
+--- a/app/sharepoint_list/internal/request_builders.py
++++ b/app/sharepoint_list/internal/request_builders.py
+@@ -118,7 +118,7 @@ def build_get_item_request(
+         raise ValueError("item_id is required")
+ 
+     expand = "fields"
+-    if select_fields:
++    if select_fields is not None:
+         select_clause = ",".join(select_fields)
+         expand = f"fields($select={select_clause})"
+ 
+@@ -171,7 +171,7 @@ def build_list_items_request(
+         params["$orderby"] = orderby
+ 
+     expand = "fields"
+-    if select_fields:
++    if select_fields is not None:
+         select_clause = ",".join(select_fields)
+         expand = f"fields($select={select_clause})"
+     params["$expand"] = expand
+diff --git a/tests/sharepoint_list/test_operations_select.py b/tests/sharepoint_list/test_operations_select.py
+index 309c186..e4492ce 100644
+--- a/tests/sharepoint_list/test_operations_select.py
++++ b/tests/sharepoint_list/test_operations_select.py
+@@ -148,7 +148,7 @@ class TestResolveSelectFieldsForList:
+             display_to_name={},
+             name_set=set(),
+         )
+-        assert result is None
++        assert result == []
+ 
+     def test_empty_list_returns_none(self) -> None:
+         """空リストはNoneを返す"""

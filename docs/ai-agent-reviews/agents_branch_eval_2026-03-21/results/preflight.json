@@ -1,0 +1,13 @@
+{
+  "codex_cli_version": "codex-cli 0.117.0",
+  "codex_package_range": "^0.117.0",
+  "codex_path": "/home/devuser/workspace/node_modules/.bin/codex",
+  "dify_path": "/home/linuxbrew/.linuxbrew/Cellar/dify/0.5.3/bin/dify",
+  "dify_resolution": "env",
+  "dify_version": "v0.5.3",
+  "harness_revision": "2026-03-22-review-baseline",
+  "package_gate_available": true,
+  "pytest_version": "pytest 9.0.2",
+  "timestamp": "2026-03-27T16:11:06.794945+00:00",
+  "uv_path": "/home/devuser/.local/bin/uv"
+}

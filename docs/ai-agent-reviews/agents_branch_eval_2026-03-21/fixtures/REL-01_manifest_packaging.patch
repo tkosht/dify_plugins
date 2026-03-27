@@ -1,0 +1,24 @@
+diff --git a/app/openai_gpt5_responses/manifest.yaml b/app/openai_gpt5_responses/manifest.yaml
+--- a/app/openai_gpt5_responses/manifest.yaml
++++ b/app/openai_gpt5_responses/manifest.yaml
+@@ -18,7 +18,7 @@ resource:
+       llm: true
+ plugins:
+   models:
+-    - provider/openai_gpt5.yaml
++    - provider/openai_gpt5_broken.yaml
+ meta:
+   version: 0.0.4
+   arch:
+diff --git a/app/openai_gpt5_responses/provider/openai_gpt5.yaml b/app/openai_gpt5_responses/provider/openai_gpt5.yaml
+--- a/app/openai_gpt5_responses/provider/openai_gpt5.yaml
++++ b/app/openai_gpt5_responses/provider/openai_gpt5.yaml
+@@ -105,6 +105,6 @@ models:
+     position: "models/llm/_position.yaml"
+ extra:
+   python:
+-    provider_source: provider/openai_gpt5.py
++    provider_source: provider/openai_gpt5_missing.py
+     model_sources:
+-      - "models/llm/llm.py"
++      - "models/llm/runtime.py"

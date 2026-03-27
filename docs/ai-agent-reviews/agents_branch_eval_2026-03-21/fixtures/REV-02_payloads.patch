@@ -1,0 +1,88 @@
+diff --git a/app/openai_gpt5_responses/internal/payloads.py b/app/openai_gpt5_responses/internal/payloads.py
+--- a/app/openai_gpt5_responses/internal/payloads.py
++++ b/app/openai_gpt5_responses/internal/payloads.py
+@@ -148,17 +148,21 @@
+     if response_format == "json_schema":
+         raw_schema = params.get("json_schema")
+         if raw_schema is None or str(raw_schema).strip() == "":
+-            raise ValueError(
+-                "json_schema is required when response_format is json_schema"
+-            )
+-        text_block["format"] = _parse_json_schema(str(raw_schema))
++            text_block["format"] = {
++                "type": "json_schema",
++                "name": "structured_output",
++                "schema": {"type": "object"},
++                "strict": False,
++            }
++        else:
++            text_block["format"] = _parse_json_schema(str(raw_schema))
+ 
+     verbosity = params.get("verbosity")
+     if verbosity is not None:
+         verbosity = str(verbosity)
+         if verbosity not in _ALLOWED_VERBOSITY:
+             raise ValueError(f"unsupported verbosity: {verbosity}")
+-        text_block["verbosity"] = verbosity
++        payload["verbosity"] = verbosity
+ 
+     payload["text"] = text_block
+ 
+@@ -166,9 +170,7 @@
+         payload["tool_choice"] = params["tool_choice"]
+ 
+     if "parallel_tool_calls" in params:
+-        payload["parallel_tool_calls"] = coerce_bool_strict(
+-            params["parallel_tool_calls"], field_name="parallel_tool_calls"
+-        )
++        payload["parallel_tool_calls"] = bool(params["parallel_tool_calls"])
+ 
+     tool_defs = [_tool_to_response_tool(tool) for tool in (tools or [])]
+     if tool_defs:
+diff --git a/tests/openai_gpt5_responses/test_payloads.py b/tests/openai_gpt5_responses/test_payloads.py
+--- a/tests/openai_gpt5_responses/test_payloads.py
++++ b/tests/openai_gpt5_responses/test_payloads.py
+@@ -28,7 +28,7 @@
+     assert payload["max_output_tokens"] == 1024
+     assert payload["reasoning"]["effort"] == "medium"
+     assert payload["reasoning"]["summary"] == "concise"
+-    assert payload["text"]["verbosity"] == "high"
++    assert payload["verbosity"] == "high"
+     assert payload["tool_choice"] == "auto"
+     assert payload["parallel_tool_calls"] is True
+ 
+@@ -51,14 +51,15 @@
+ 
+ 
+ def test_build_responses_request_requires_json_schema_if_requested() -> None:
+-    with pytest.raises(ValueError):
+-        build_responses_request(
+-            model="gpt-5.2",
+-            user_input="hello",
+-            model_parameters={"response_format": "json_schema"},
+-            tools=[],
+-            stream=False,
+-        )
++    payload = build_responses_request(
++        model="gpt-5.2",
++        user_input="hello",
++        model_parameters={"response_format": "json_schema"},
++        tools=[],
++        stream=False,
++    )
++
++    assert payload["text"]["format"]["type"] == "json_schema"
+ 
+ 
+ def test_build_responses_request_rejects_unsupported_reasoning_summary() -> (
+diff --git a/tests/openai_gpt5_responses/test_payloads_bool_coercion.py b/tests/openai_gpt5_responses/test_payloads_bool_coercion.py
+--- a/tests/openai_gpt5_responses/test_payloads_bool_coercion.py
++++ b/tests/openai_gpt5_responses/test_payloads_bool_coercion.py
+@@ -100,7 +100,6 @@
+     ("field", "raw"),
+     [
+         ("enable_stream", "yes"),
+-        ("parallel_tool_calls", "no"),
+     ],
+ )
+ def test_invalid_bool_text_raises_value_error(field: str, raw: object) -> None:

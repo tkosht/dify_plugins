@@ -1,0 +1,88 @@
+{
+  "active_gate_pass": {
+    "arm_alpha": 15,
+    "arm_beta": 15
+  },
+  "aliases": {
+    "arm_alpha": {
+      "mean_overall": 4.725,
+      "median_overall": 5.0,
+      "run_count": 30
+    },
+    "arm_beta": {
+      "mean_overall": 4.846,
+      "median_overall": 5.0,
+      "run_count": 30
+    }
+  },
+  "deltas": {
+    "arm_beta_minus_arm_alpha_mean": 0.121,
+    "arm_beta_minus_arm_alpha_one_pass_pass_rate": 0.0,
+    "arm_beta_minus_arm_alpha_package_pass_rate": 0.0,
+    "arm_beta_minus_arm_alpha_review_recall": 0.533
+  },
+  "hard_fail_counts": {},
+  "one_pass_pass_rate": {
+    "arm_alpha": 1.0,
+    "arm_beta": 1.0
+  },
+  "package_pass_rate": {
+    "arm_alpha": 1.0,
+    "arm_beta": 1.0
+  },
+  "review_precision_hint": {
+    "arm_alpha": 0.5,
+    "arm_beta": 0.5
+  },
+  "review_recall": {
+    "arm_alpha": 0.13333333333333333,
+    "arm_beta": 0.6666666666666666
+  },
+  "run_count": 60,
+  "task_medians": {
+    "BUG-01": {
+      "arm_alpha": 5.0,
+      "arm_beta": 5.0
+    },
+    "BUG-02": {
+      "arm_alpha": 5.0,
+      "arm_beta": 5.0
+    },
+    "DEV-01": {
+      "arm_alpha": 5.0,
+      "arm_beta": 5.0
+    },
+    "OPS-01": {
+      "arm_alpha": 5.0,
+      "arm_beta": 5.0
+    },
+    "RES-01": {
+      "arm_alpha": 5.0,
+      "arm_beta": 5.0
+    },
+    "REV-01": {
+      "arm_alpha": 3.2,
+      "arm_beta": 4.075
+    }
+  },
+  "tiebreaker_triggered": false,
+  "timestamp": "2026-03-27T16:10:59.792945+00:00",
+  "verdict": {
+    "baseline_alias": "arm_alpha",
+    "better_or_equal": true,
+    "candidate_alias": "arm_beta",
+    "gate_ok": true,
+    "hard_fail_ok": true,
+    "mean_ok": true,
+    "median_ok": true,
+    "non_inferior": true,
+    "note": "Strict superiority now requires non-inferiority plus no losses on mean/package/one-pass/review and at least two strict wins.",
+    "review_ok": true,
+    "strict_losses": [],
+    "strict_wins": [
+      "mean_overall",
+      "review_recall"
+    ],
+    "strictly_better": true
+  }
+}

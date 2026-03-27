@@ -1,0 +1,27 @@
+{
+  "allow_dynamic_stages": false,
+  "allowed_stage_ids": [
+    "draft",
+    "execute",
+    "review",
+    "verify"
+  ],
+  "stages": [
+    {
+      "id": "draft",
+      "instructions": "最小修正案と成功条件を /draft に記録。根拠は /facts。"
+    },
+    {
+      "id": "execute",
+      "instructions": "許可範囲だけを編集し、必要なら最小限のローカルチェックを実行。結果を /facts と /revise に記録。"
+    },
+    {
+      "id": "review",
+      "instructions": "独立に diff と残リスクを確認し、/critique に記録。根拠必須。"
+    },
+    {
+      "id": "verify",
+      "instructions": "完了判定を急がず、残課題と gate 観点を /facts に追記。"
+    }
+  ]
+}

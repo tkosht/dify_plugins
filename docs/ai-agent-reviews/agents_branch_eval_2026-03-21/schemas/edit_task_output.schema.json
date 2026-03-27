@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "summary",
+    "files_touched",
+    "change_notes",
+    "checks_ran",
+    "assumptions",
+    "unknowns"
+  ],
+  "properties": {
+    "summary": {
+      "type": "string"
+    },
+    "files_touched": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "change_notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "checks_ran": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unknowns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
