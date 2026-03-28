@@ -38,7 +38,7 @@ dependencies = [
     "psycopg2>=2.9.10,<3",
     "gradio>=5.42.0,<6",
     "markdown-it-py>=4.0.0,<5",
-    "gunicorn[uvicorn]>=23.0.0,<24",
+    "gunicorn>=23.0.0,<24",
     "sqlalchemy~=2.0",
 ]
 

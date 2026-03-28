@@ -64,7 +64,7 @@ build-no-cache:
 
 reup: down up
 
-clean: clean-logs clean-venv clean-npm clean-container
+clean: clean-container clean-logs clean-venv clean-npm
 
 clean-venv:
 	rm -rf .venv uv.lock
