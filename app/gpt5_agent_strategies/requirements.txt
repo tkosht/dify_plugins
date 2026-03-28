@@ -1,2 +1,2 @@
-dify-plugin==0.7.1
+dify-plugin==0.7.4
 pydantic==2.12.5
