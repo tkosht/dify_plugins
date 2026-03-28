@@ -30,7 +30,6 @@ jobs:
         working-directory: .
     env:
       GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-      PIP_AUDIT_IGNORE_VULN: CVE-2026-27205
     
     steps:
       - name: Checkout code
@@ -66,23 +65,11 @@ jobs:
             exit 1
           fi
 
-      - name: Audit openai_gpt5_responses dependencies
+      - name: Run pip-audit gate
         run: |
-          # Temporary exception: official dify-plugin still pins Flask~=3.0.3.
-          # Remove this ignore after upstream ships a release that no longer
-          # resolves CVE-2026-27205.
-          uvx --with pip-audit pip-audit \
-            --ignore-vuln "${PIP_AUDIT_IGNORE_VULN}" \
-            -r app/openai_gpt5_responses/requirements.txt
-
-      - name: Audit gpt5_agent_strategies dependencies
-        run: |
-          # Temporary exception: official dify-plugin still pins Flask~=3.0.3.
-          # Remove this ignore after upstream ships a release that no longer
-          # resolves CVE-2026-27205.
-          uvx --with pip-audit pip-audit \
-            --ignore-vuln "${PIP_AUDIT_IGNORE_VULN}" \
-            -r app/gpt5_agent_strategies/requirements.txt
+          uv run python bin/pip_audit_gate.py \
+            app/openai_gpt5_responses/requirements.txt \
+            app/gpt5_agent_strategies/requirements.txt
 
       - name: Run bandit
         run: |

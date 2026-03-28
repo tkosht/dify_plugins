@@ -6,7 +6,15 @@
 
 version: 2
 updates:
- - package-ecosystem: "devcontainers"
-   directory: "/"
-   schedule:
-     interval: weekly
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    schedule:
+      interval: weekly
+  - package-ecosystem: "pip"
+    directory: "/app/openai_gpt5_responses"
+    schedule:
+      interval: weekly
+  - package-ecosystem: "pip"
+    directory: "/app/gpt5_agent_strategies"
+    schedule:
+      interval: weekly
