@@ -1,2 +1,2 @@
 dify-plugin==0.7.1
-pydantic==2.12.3
+pydantic==2.12.5
