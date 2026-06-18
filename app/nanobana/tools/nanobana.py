@@ -67,11 +67,17 @@ def normalize_resolution(value: Any) -> str:
 
 
 def normalize_images(value: Any) -> list[Any]:
-    if value is None:
+    if _is_empty_image_placeholder(value):
         return []
     if isinstance(value, list):
-        return value
+        return [
+            item for item in value if not _is_empty_image_placeholder(item)
+        ]
     return [value]
+
+
+def _is_empty_image_placeholder(value: Any) -> bool:
+    return value is None or (isinstance(value, str) and not value.strip())
 
 
 def _value(source: Any, *names: str) -> Any:
@@ -205,19 +211,18 @@ class NanobanaTool(Tool):
             yield self.create_text_message("Please input prompt.")
             return
 
+        model = normalize_model(tool_parameters.get("model"))
+        aspect_ratio = normalize_aspect_ratio(
+            tool_parameters.get("aspect_ratio")
+        )
+        image_size = normalize_resolution(tool_parameters.get("resolution"))
+        images = normalize_images(tool_parameters.get("images"))
         try:
-            model = normalize_model(tool_parameters.get("model"))
-            aspect_ratio = normalize_aspect_ratio(
-                tool_parameters.get("aspect_ratio")
-            )
-            image_size = normalize_resolution(
-                tool_parameters.get("resolution")
-            )
-            images = normalize_images(tool_parameters.get("images"))
             contents = build_contents(prompt, images)
-        except ValueError as exc:
+        except Exception as exc:
+            message = sanitize_error_message(exc, credentials)
             yield self.create_text_message(
-                f"Invalid nanobana image input: {exc}"
+                f"Invalid nanobana image input: {message}"
             )
             return
 

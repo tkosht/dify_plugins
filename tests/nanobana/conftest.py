@@ -12,6 +12,18 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 PLUGIN_DIR = BASE_DIR / "app" / "nanobana"
 
 
+def clear_nanobana_plugin_modules() -> None:
+    for module_name in [
+        "internal",
+        "internal.auth",
+        "provider",
+        "provider.nanobana",
+        "tools",
+        "tools.nanobana",
+    ]:
+        sys.modules.pop(module_name, None)
+
+
 def install_dify_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
     dify_plugin_mod = types.ModuleType("dify_plugin")
     entities_mod = types.ModuleType("dify_plugin.entities")
@@ -59,10 +71,8 @@ def install_dify_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
 def nanobana_imports(monkeypatch: pytest.MonkeyPatch) -> None:
     install_dify_stubs(monkeypatch)
     monkeypatch.syspath_prepend(str(PLUGIN_DIR))
-    for module_name in [
-        "internal.auth",
-        "provider.nanobana",
-        "tools.nanobana",
-    ]:
-        sys.modules.pop(module_name, None)
+    clear_nanobana_plugin_modules()
+    importlib.invalidate_caches()
+    yield
+    clear_nanobana_plugin_modules()
     importlib.invalidate_caches()

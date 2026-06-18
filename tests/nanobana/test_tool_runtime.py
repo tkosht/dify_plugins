@@ -215,6 +215,96 @@ def test_invoke_adds_multiple_image_parts(
     ]
 
 
+@pytest.mark.parametrize("images", ["", None, [None, ""], []])
+def test_invoke_ignores_empty_image_placeholders(
+    nanobana_imports: None,
+    monkeypatch: pytest.MonkeyPatch,
+    images: Any,
+) -> None:
+    _install_google_type_stubs(monkeypatch)
+    module = importlib.import_module("tools.nanobana")
+    response = SimpleNamespace(candidates=[])
+    fake_client = FakeClient(response)
+    monkeypatch.setattr(
+        module, "make_genai_client", lambda _config: fake_client
+    )
+
+    list(
+        _tool(module, {"api_key": "developer-key"})._invoke(
+            {
+                "prompt": "draw without references",
+                "images": images,
+            }
+        )
+    )
+
+    assert fake_client.models.calls[0]["contents"] == [
+        "draw without references"
+    ]
+
+
+def test_invoke_filters_empty_image_entries_from_list(
+    nanobana_imports: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_google_type_stubs(monkeypatch)
+    module = importlib.import_module("tools.nanobana")
+    response = SimpleNamespace(candidates=[])
+    fake_client = FakeClient(response)
+    monkeypatch.setattr(
+        module, "make_genai_client", lambda _config: fake_client
+    )
+    input_image = SimpleNamespace(blob=b"input-png", mime_type="image/png")
+
+    list(
+        _tool(module, {"api_key": "developer-key"})._invoke(
+            {
+                "prompt": "edit this image",
+                "images": [None, "", input_image],
+            }
+        )
+    )
+
+    contents = fake_client.models.calls[0]["contents"]
+    assert contents[0] == "edit this image"
+    assert len(contents) == 2
+    assert contents[1].data == b"input-png"
+    assert contents[1].mime_type == "image/png"
+
+
+def test_broken_image_blob_returns_text_without_api_call(
+    nanobana_imports: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_google_type_stubs(monkeypatch)
+    module = importlib.import_module("tools.nanobana")
+    response = SimpleNamespace(candidates=[])
+    fake_client = FakeClient(response)
+    monkeypatch.setattr(
+        module, "make_genai_client", lambda _config: fake_client
+    )
+
+    class BrokenImage:
+        mime_type = "image/png"
+
+        @property
+        def blob(self) -> bytes:
+            raise RuntimeError("file fetch failed for SECRET-KEY")
+
+    messages = list(
+        _tool(module, {"api_key": "SECRET-KEY"})._invoke(
+            {
+                "prompt": "edit broken image",
+                "images": BrokenImage(),
+            }
+        )
+    )
+
+    assert fake_client.models.calls == []
+    assert messages[0]["type"] == "text"
+    assert "Invalid nanobana image input" in messages[0]["text"]
+    assert "SECRET-KEY" not in messages[0]["text"]
+    assert "[REDACTED]" in messages[0]["text"]
+
+
 def test_invoke_returns_text_when_no_image(
     nanobana_imports: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
