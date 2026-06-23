@@ -1,7 +1,7 @@
 ## nanobana
 
 **Author:** tkosht
-**Version:** 0.1.0
+**Version:** 0.1.1
 **Type:** tool
 
 Generate and edit images with Gemini Nano Banana models from Dify workflows.

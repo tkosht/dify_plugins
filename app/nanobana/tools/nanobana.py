@@ -3,7 +3,7 @@ import mimetypes
 import uuid
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from dify_plugin import Tool
@@ -196,7 +196,10 @@ def _image_filename(mime_type: str) -> str:
         or mimetypes.guess_extension(mime_type)
         or ".bin"
     )
-    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    # Use timezone.utc so repo-level Python 3.10 import checks keep working.
+    timestamp = datetime.now(timezone.utc).strftime(  # noqa: UP017
+        "%Y%m%d_%H%M%S"
+    )
     unique_suffix = uuid.uuid4().hex[:8]
     return f"gemini_image_{timestamp}_{unique_suffix}{extension}"
 

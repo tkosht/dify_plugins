@@ -12,6 +12,11 @@ SENSITIVE_CREDENTIAL_KEYS = (
     "gemini_api_key",
     "vertex_service_account_key",
 )
+REQUIRED_SERVICE_ACCOUNT_FIELDS = (
+    "client_email",
+    "private_key",
+    "token_uri",
+)
 
 
 @dataclass(frozen=True)
@@ -43,9 +48,16 @@ def decode_service_account_key(key_b64: str) -> dict[str, Any]:
 
     if not isinstance(info, dict):
         raise ValueError("Service account key JSON must be an object.")
-    if not info.get("client_email") or not info.get("private_key"):
+    missing_fields = [
+        field
+        for field in REQUIRED_SERVICE_ACCOUNT_FIELDS
+        if not _clean_string(info.get(field))
+    ]
+    if missing_fields:
         raise ValueError(
-            "Service account key JSON must include client_email and private_key."
+            "Service account key JSON must include "
+            + ", ".join(REQUIRED_SERVICE_ACCOUNT_FIELDS)
+            + "."
         )
     return info
 

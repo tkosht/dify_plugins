@@ -10,12 +10,21 @@ from typing import Any
 import pytest
 
 
-def _service_account_key() -> str:
-    payload = {
+def _service_account_key(
+    overrides: dict[str, Any] | None = None,
+) -> str:
+    payload: dict[str, Any] = {
         "type": "service_account",
         "client_email": "svc@example.iam.gserviceaccount.com",
         "private_key": "-----BEGIN PRIVATE KEY-----\\nredacted\\n-----END PRIVATE KEY-----\\n",
+        "token_uri": "https://oauth2.googleapis.com/token",
     }
+    if overrides:
+        for key, value in overrides.items():
+            if value is None:
+                payload.pop(key, None)
+            else:
+                payload[key] = value
     return base64.b64encode(json.dumps(payload).encode()).decode()
 
 
@@ -56,6 +65,18 @@ def test_decode_service_account_key(nanobana_imports: None) -> None:
     info = auth.decode_service_account_key(wrapped_key)
 
     assert info["client_email"] == "svc@example.iam.gserviceaccount.com"
+    assert info["token_uri"] == "https://oauth2.googleapis.com/token"
+
+
+def test_decode_service_account_key_rejects_missing_token_uri(
+    nanobana_imports: None,
+) -> None:
+    auth = importlib.import_module("internal.auth")
+
+    with pytest.raises(ValueError, match="token_uri"):
+        auth.decode_service_account_key(
+            _service_account_key({"token_uri": None})
+        )
 
 
 def test_decode_service_account_key_rejects_wif_or_invalid_json(
@@ -114,3 +135,19 @@ def test_provider_validation_accepts_vertex_adc(
     provider.NanobanaProvider()._validate_credentials(
         {"vertex_project_id": "project-a"}
     )
+
+
+def test_provider_validation_rejects_incomplete_service_account_key(
+    nanobana_imports: None,
+) -> None:
+    provider = importlib.import_module("provider.nanobana")
+
+    with pytest.raises(Exception, match="token_uri"):
+        provider.NanobanaProvider()._validate_credentials(
+            {
+                "vertex_project_id": "project-a",
+                "vertex_service_account_key": _service_account_key(
+                    {"token_uri": None}
+                ),
+            }
+        )
