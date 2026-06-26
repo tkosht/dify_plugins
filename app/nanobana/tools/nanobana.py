@@ -122,6 +122,9 @@ def extract_generated_content(
 
     for candidate in _iter_candidates(response):
         for part in _iter_parts(candidate):
+            if _value(part, "thought") is True:
+                continue
+
             text = _value(part, "text")
             if text:
                 texts.append(str(text))

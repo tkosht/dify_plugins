@@ -166,6 +166,44 @@ def test_invoke_returns_only_last_generated_image(
     assert blob_messages[0]["blob"] == b"second-image"
 
 
+def test_invoke_skips_thought_parts_before_emitting_outputs(
+    nanobana_imports: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_google_type_stubs(monkeypatch)
+    module = importlib.import_module("tools.nanobana")
+    response = {
+        "candidates": [
+            {
+                "content": {
+                    "parts": [
+                        {"text": "internal reasoning", "thought": True},
+                        {
+                            "inlineData": {
+                                "data": b"thought-image",
+                                "mimeType": "image/png",
+                            },
+                            "thought": True,
+                        },
+                        {"text": "final caption"},
+                    ]
+                }
+            }
+        ]
+    }
+    fake_client = FakeClient(response)
+    monkeypatch.setattr(
+        module, "make_genai_client", lambda _config: fake_client
+    )
+
+    messages = list(
+        _tool(module, {"api_key": "developer-key"})._invoke(
+            {"prompt": "draw a small banana"}
+        )
+    )
+
+    assert messages == [{"type": "text", "text": "final caption"}]
+
+
 def test_invoke_closes_client_after_successful_generate_content(
     nanobana_imports: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
