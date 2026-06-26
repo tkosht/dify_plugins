@@ -39,18 +39,31 @@ def _install_google_type_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 class FakeModels:
-    def __init__(self, response: Any) -> None:
+    def __init__(
+        self, response: Any, generate_error: Exception | None = None
+    ) -> None:
         self.response = response
+        self.generate_error = generate_error
         self.calls: list[dict[str, Any]] = []
 
     def generate_content(self, **kwargs: Any) -> Any:
         self.calls.append(kwargs)
+        if self.generate_error is not None:
+            raise self.generate_error
         return self.response
 
 
 class FakeClient:
-    def __init__(self, response: Any) -> None:
-        self.models = FakeModels(response)
+    def __init__(
+        self, response: Any, generate_error: Exception | None = None
+    ) -> None:
+        self.models = FakeModels(response, generate_error)
+        self.closed = False
+        self.close_calls = 0
+
+    def close(self) -> None:
+        self.closed = True
+        self.close_calls += 1
 
 
 def _tool(module: Any, credentials: dict[str, Any]) -> Any:
@@ -108,7 +121,7 @@ def test_invoke_returns_text_and_blob(
     assert call["config"].image_config.image_size == "2K"
 
 
-def test_invoke_returns_only_first_generated_image(
+def test_invoke_returns_only_last_generated_image(
     nanobana_imports: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _install_google_type_stubs(monkeypatch)
@@ -150,7 +163,53 @@ def test_invoke_returns_only_first_generated_image(
         message for message in messages if message["type"] == "blob"
     ]
     assert len(blob_messages) == 1
-    assert blob_messages[0]["blob"] == b"first-image"
+    assert blob_messages[0]["blob"] == b"second-image"
+
+
+def test_invoke_closes_client_after_successful_generate_content(
+    nanobana_imports: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_google_type_stubs(monkeypatch)
+    module = importlib.import_module("tools.nanobana")
+    response = SimpleNamespace(candidates=[])
+    fake_client = FakeClient(response)
+    monkeypatch.setattr(
+        module, "make_genai_client", lambda _config: fake_client
+    )
+
+    list(
+        _tool(module, {"api_key": "developer-key"})._invoke(
+            {"prompt": "draw a small banana"}
+        )
+    )
+
+    assert fake_client.closed is True
+    assert fake_client.close_calls == 1
+
+
+def test_invoke_closes_client_after_generate_content_raises(
+    nanobana_imports: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_google_type_stubs(monkeypatch)
+    module = importlib.import_module("tools.nanobana")
+    fake_client = FakeClient(
+        SimpleNamespace(candidates=[]),
+        generate_error=RuntimeError("generation failed"),
+    )
+    monkeypatch.setattr(
+        module, "make_genai_client", lambda _config: fake_client
+    )
+
+    messages = list(
+        _tool(module, {"api_key": "developer-key"})._invoke(
+            {"prompt": "draw a small banana"}
+        )
+    )
+
+    assert fake_client.closed is True
+    assert fake_client.close_calls == 1
+    assert messages[0]["type"] == "text"
+    assert "Gemini image generation failed" in messages[0]["text"]
 
 
 def test_invoke_adds_single_image_part(

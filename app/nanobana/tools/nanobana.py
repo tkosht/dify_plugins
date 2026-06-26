@@ -135,15 +135,12 @@ def extract_generated_content(
             if not blob:
                 continue
 
-            if len(images) >= MAX_OUTPUT_IMAGES:
-                continue
-
             mime_type = (
                 _value(inline_data, "mime_type", "mimeType") or "image/png"
             )
             images.append(GeneratedImage(blob=blob, mime_type=str(mime_type)))
 
-    return texts, images
+    return texts, images[-MAX_OUTPUT_IMAGES:]
 
 
 def _build_generate_config(aspect_ratio: str, image_size: str) -> Any:
@@ -232,11 +229,17 @@ class NanobanaTool(Tool):
         try:
             auth_config = resolve_auth_config(credentials)
             client = make_genai_client(auth_config)
-            response = client.models.generate_content(
-                model=model,
-                contents=contents,
-                config=_build_generate_config(aspect_ratio, image_size),
-            )
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=contents,
+                    config=_build_generate_config(aspect_ratio, image_size),
+                )
+            finally:
+                try:
+                    client.close()
+                except Exception:
+                    pass
             texts, images = extract_generated_content(response)
         except Exception as exc:
             message = sanitize_error_message(exc, credentials)
