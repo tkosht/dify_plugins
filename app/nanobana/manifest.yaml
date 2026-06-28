@@ -1,4 +1,4 @@
-version: 0.0.1
+version: 0.1.1
 type: plugin
 author: tkosht
 name: nanobana
@@ -8,10 +8,10 @@ label:
   zh_Hans: nanobana
   pt_BR: nanobana
 description:
-  en_US: nanobanana 3 pro image generation tool
-  ja_JP: nanobanana 3 pro image generation tool
-  zh_Hans: nanobanana 3 pro image generation tool
-  pt_BR: nanobanana 3 pro image generation tool
+  en_US: Gemini Nano Banana image generation and editing tool
+  ja_JP: Gemini Nano Banana 画像生成・編集ツール
+  zh_Hans: Gemini Nano Banana image generation and editing tool
+  pt_BR: Gemini Nano Banana image generation and editing tool
 icon: icon.svg
 icon_dark: icon-dark.svg
 resource:
