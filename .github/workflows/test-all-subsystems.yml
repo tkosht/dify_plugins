@@ -30,8 +30,11 @@ jobs:
       - name: Discover subsystems
         id: set-matrix
         run: |
-          # Find all directories under app/ that contain pyproject.toml
-          SUBSYSTEMS=$(find app -name "pyproject.toml" -type f | xargs dirname | jq -R -s -c 'split("\n")[:-1]')
+          # Find app subsystems with pyproject.toml; fall back to the root project.
+          SUBSYSTEMS=$(find app -name "pyproject.toml" -type f -exec dirname {} \; | jq -R -s -c 'split("\n")[:-1]')
+          if [ "$SUBSYSTEMS" = "[]" ]; then
+            SUBSYSTEMS='["."]'
+          fi
           echo "Found subsystems: $SUBSYSTEMS"
           echo "matrix={\"subsystem\":$SUBSYSTEMS}" >> $GITHUB_OUTPUT
 
@@ -104,7 +107,7 @@ jobs:
         if: always()
         uses: codecov/codecov-action@v4
         with:
-          file: ./${{ matrix.subsystem }}/coverage.xml
+          file: ${{ matrix.subsystem == '.' && './output/coverage/coverage.xml' || format('./{0}/coverage.xml', matrix.subsystem) }}
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: ${{ matrix.subsystem }}-py${{ matrix.python-version }}
