@@ -57,6 +57,15 @@ tags: dify-plugin, requests, pip-audit, cve-2026-25645, dependabot, github-actio
 - The stale-waiver gate confirms that `CVE-2026-25645` is no longer reported
   without ignore flags, at which point the waiver must be deleted.
 
+## Resolution (2026-06-29)
+- Python baseline moved to 3.12 and the affected plugin requirement files moved
+  to `dify-plugin==0.9.1`.
+- `bin/pip_audit_gate.py` no longer carries the `CVE-2026-25645` waiver; with no
+  configured waivers, the gate runs each requirements file once without
+  `--ignore-vuln`.
+- The 2026-03-28 waiver decision remains historical context for the dependency
+  constraints that existed at that time; this update records the later removal.
+
 ## Sources
 - `https://github.com/advisories/GHSA-gc5v-m9x4-r6x2`
 - `https://github.com/psf/requests/releases/tag/v2.33.0`
