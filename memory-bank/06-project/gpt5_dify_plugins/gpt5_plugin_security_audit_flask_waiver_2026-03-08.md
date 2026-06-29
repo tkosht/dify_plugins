@@ -52,3 +52,11 @@ tags: dify-plugin, pip-audit, flask, cve-2026-27205, github-actions, ripgrep
 ## Notes
 - 今回の waiver は `CVE-2026-27205` 1 件に限定する。
 - `dify-plugin` の fork / vendor 化は実施していない。
+
+## Resolution (2026-06-29)
+- Python baseline を 3.12 に移行し、対象 plugin を `dify-plugin==0.9.1`
+  へ更新したことで、当時必要だった Flask waiver は不要になった。
+- `bin/pip_audit_gate.py` から `CVE-2026-27205` waiver を削除し、
+  waiver が空のときは通常の `pip-audit` を 1 回だけ実行する運用へ戻した。
+- 2026-03-08 時点の判断は、当時の upstream dependency constraint に基づく
+  一時対応として扱う。

@@ -54,7 +54,7 @@ jobs:
             - name: Setup Python environment
               uses: actions/setup-python@v5
               with:
-                  python-version: '3.10'
+                  python-version: '3.12'
                   cache: 'pip'
 
             - name: Install Python dependencies
@@ -82,4 +82,3 @@ jobs:
                   # Make development tools available to Claude
                   NODE_VERSION: ${{ env.NODE_VERSION }}
                   NPM_VERSION: ${{ env.NPM_VERSION }}
-

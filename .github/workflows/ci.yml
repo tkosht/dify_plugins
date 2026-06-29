@@ -23,8 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # PR では代表 3.11 のみ、push/main/develop では 3.10/3.11/3.12 を実行
-        python-version: ${{ fromJSON(github.event_name == 'pull_request' && '["3.11"]' || '["3.10","3.11","3.12"]') }}
+        # PR/push とも Python 3.12 baseline を必須 gate として実行
+        python-version: ['3.12']
     defaults:
       run:
         working-directory: .
@@ -69,7 +69,9 @@ jobs:
         run: |
           uv run python bin/pip_audit_gate.py \
             app/openai_gpt5_responses/requirements.txt \
-            app/gpt5_agent_strategies/requirements.txt
+            app/gpt5_agent_strategies/requirements.txt \
+            app/sharepoint_list/requirements.txt \
+            app/nanobana/requirements.txt
 
       - name: Run bandit
         run: |

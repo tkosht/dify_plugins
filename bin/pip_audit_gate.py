@@ -20,29 +20,10 @@ class WaivedVulnerability:
     removal_criteria: str
 
 
-WAIVED_VULNERABILITIES = (
-    WaivedVulnerability(
-        id="CVE-2026-27205",
-        package="flask",
-        reason="official dify-plugin still pins Flask~=3.0.3",
-        removal_criteria=(
-            "remove after upstream dify-plugin releases no longer resolve "
-            "Flask~=3.0.3"
-        ),
-    ),
-    WaivedVulnerability(
-        id="CVE-2026-25645",
-        package="requests",
-        reason="official dify-plugin still pins requests~=2.32.3",
-        removal_criteria=(
-            "remove after upstream dify-plugin releases allow "
-            "requests>=2.33.0"
-        ),
-    ),
-)
+WAIVED_VULNERABILITIES: tuple[WaivedVulnerability, ...] = ()
 
 DEFAULT_AUDIT_PYTHON = (
-    os.getenv("PIP_AUDIT_PYTHON") or os.getenv("UV_PYTHON") or "3.11"
+    os.getenv("PIP_AUDIT_PYTHON") or os.getenv("UV_PYTHON") or "3.12"
 )
 
 
@@ -186,12 +167,18 @@ def audit_requirements(
         emit(out, allowed_run.stdout)
         emit(err, allowed_run.stderr)
         if allowed_run.returncode != 0:
-            print(
-                f"pip-audit failed for {requirements_path} even after "
-                "applying configured waivers.",
-                file=err,
-            )
+            if waived_ids:
+                message = (
+                    f"pip-audit failed for {requirements_path} even after "
+                    "applying configured waivers."
+                )
+            else:
+                message = f"pip-audit failed for {requirements_path}."
+            print(message, file=err)
             return allowed_run.returncode or 1
+
+        if not waived_ids:
+            continue
 
         raw_run = runner(
             build_pip_audit_command(requirements_path, json_output=True)
@@ -223,6 +210,10 @@ def audit_requirements(
         summarize_present_waivers(
             requirements_path, current_vulnerabilities, out
         )
+
+    if not WAIVED_VULNERABILITIES:
+        print("pip-audit gate passed. No waivers configured.", file=out)
+        return 0
 
     stale_waivers = [
         waiver

@@ -53,49 +53,59 @@ def test_extract_json_payload_strips_preamble() -> None:
     assert payload == {"dependencies": [], "fixes": []}
 
 
-def test_audit_requirements_passes_when_waivers_still_needed() -> None:
+def test_collect_present_vulnerabilities_maps_ids_to_packages() -> None:
+    payload = json.loads(
+        _build_payload(
+            {
+                "flask": ["CVE-2026-27205"],
+                "requests": ["CVE-2026-25645"],
+            }
+        )
+    )
+
+    present = pip_audit_gate.collect_present_vulnerabilities(payload)
+
+    assert present == {
+        "CVE-2026-27205": {"flask"},
+        "CVE-2026-25645": {"requests"},
+    }
+
+
+def test_build_pip_audit_command_omits_ignore_vuln_without_waivers() -> None:
+    command = pip_audit_gate.build_pip_audit_command(Path("requirements.txt"))
+
+    assert command == [
+        "uvx",
+        "--python",
+        pip_audit_gate.DEFAULT_AUDIT_PYTHON,
+        "--with",
+        "pip-audit",
+        "pip-audit",
+        "-r",
+        "requirements.txt",
+    ]
+    assert "--ignore-vuln" not in command
+
+
+def test_audit_requirements_passes_without_waivers() -> None:
     requirements = [
         Path("app/openai_gpt5_responses/requirements.txt"),
         Path("app/gpt5_agent_strategies/requirements.txt"),
     ]
     queued_results = [
         _completed_process(
-            ["allowed-openai"],
-            stdout="No known vulnerabilities found, 2 ignored\n",
+            ["audit-openai"],
+            stdout="No known vulnerabilities found\n",
         ),
         _completed_process(
-            ["raw-openai"],
-            returncode=1,
-            stdout=(
-                "Found 2 known vulnerabilities in 2 packages\n"
-                + _build_payload(
-                    {
-                        "flask": ["CVE-2026-27205"],
-                        "requests": ["CVE-2026-25645"],
-                    }
-                )
-            ),
-        ),
-        _completed_process(
-            ["allowed-gpt5"],
-            stdout="No known vulnerabilities found, 2 ignored\n",
-        ),
-        _completed_process(
-            ["raw-gpt5"],
-            returncode=1,
-            stdout=(
-                "Found 2 known vulnerabilities in 2 packages\n"
-                + _build_payload(
-                    {
-                        "flask": ["CVE-2026-27205"],
-                        "requests": ["CVE-2026-25645"],
-                    }
-                )
-            ),
+            ["audit-gpt5"],
+            stdout="No known vulnerabilities found\n",
         ),
     ]
+    recorded_commands: list[list[str]] = []
 
-    def runner(_: list[str]) -> subprocess.CompletedProcess[str]:
+    def runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+        recorded_commands.append(command)
         return queued_results.pop(0)
 
     stdout = io.StringIO()
@@ -108,68 +118,25 @@ def test_audit_requirements_passes_when_waivers_still_needed() -> None:
     )
 
     assert exit_code == 0
-    assert "All configured waivers are still required." in stdout.getvalue()
+    assert len(recorded_commands) == len(requirements)
+    assert queued_results == []
+    assert all("--ignore-vuln" not in command for command in recorded_commands)
+    assert all("-f" not in command for command in recorded_commands)
+    assert "No waivers configured." in stdout.getvalue()
     assert stderr.getvalue() == ""
 
 
-def test_audit_requirements_fails_when_waiver_becomes_stale() -> None:
-    requirements = [
-        Path("app/openai_gpt5_responses/requirements.txt"),
-        Path("app/gpt5_agent_strategies/requirements.txt"),
-    ]
-    queued_results = [
-        _completed_process(
-            ["allowed-openai"],
-            stdout="No known vulnerabilities found, 1 ignored\n",
-        ),
-        _completed_process(
-            ["raw-openai"],
-            returncode=1,
-            stdout=(
-                "Found 1 known vulnerability in 1 package\n"
-                + _build_payload({"flask": ["CVE-2026-27205"]})
-            ),
-        ),
-        _completed_process(
-            ["allowed-gpt5"],
-            stdout="No known vulnerabilities found, 1 ignored\n",
-        ),
-        _completed_process(
-            ["raw-gpt5"],
-            returncode=1,
-            stdout=(
-                "Found 1 known vulnerability in 1 package\n"
-                + _build_payload({"flask": ["CVE-2026-27205"]})
-            ),
-        ),
-    ]
-
-    def runner(_: list[str]) -> subprocess.CompletedProcess[str]:
-        return queued_results.pop(0)
-
-    stdout = io.StringIO()
-    stderr = io.StringIO()
-    exit_code = pip_audit_gate.audit_requirements(
-        requirements,
-        runner=runner,
-        out=stdout,
-        err=stderr,
-    )
-
-    assert exit_code == 1
-    assert "CVE-2026-25645" in stderr.getvalue()
-    assert "requests" in stderr.getvalue()
-
-
-def test_audit_requirements_propagates_blocking_failure() -> None:
+def test_audit_requirements_propagates_blocking_failure_without_waivers() -> (
+    None
+):
     requirements = [Path("app/openai_gpt5_responses/requirements.txt")]
     queued_results = [
         _completed_process(
-            ["allowed-openai"],
-            returncode=1,
+            ["audit-openai"],
+            returncode=2,
             stdout="Found 1 known vulnerability\n",
             stderr="pip-audit failed\n",
-        )
+        ),
     ]
 
     def runner(_: list[str]) -> subprocess.CompletedProcess[str]:
@@ -184,6 +151,6 @@ def test_audit_requirements_propagates_blocking_failure() -> None:
         err=stderr,
     )
 
-    assert exit_code == 1
+    assert exit_code == 2
     assert "pip-audit failed" in stderr.getvalue()
-    assert "applying configured waivers" in stderr.getvalue()
+    assert "applying configured waivers" not in stderr.getvalue()

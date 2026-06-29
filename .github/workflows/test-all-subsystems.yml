@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
+        python-version: ['3.12']
         subsystem: ${{ fromJson(needs.discover-subsystems.outputs.matrix).subsystem }}
     defaults:
       run:
@@ -114,7 +114,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11']  # Run integration tests only on one Python version
+        python-version: ['3.12']  # Run integration tests only on the baseline Python version
         subsystem: ['.']  # Single root subsystem in this repo
     defaults:
       run:
@@ -160,7 +160,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
@@ -182,7 +182,9 @@ jobs:
         run: |
           uv run python bin/pip_audit_gate.py \
             app/openai_gpt5_responses/requirements.txt \
-            app/gpt5_agent_strategies/requirements.txt
+            app/gpt5_agent_strategies/requirements.txt \
+            app/sharepoint_list/requirements.txt \
+            app/nanobana/requirements.txt
 
       - name: Run bandit
         run: |

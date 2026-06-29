@@ -18,3 +18,11 @@ updates:
     directory: "/app/gpt5_agent_strategies"
     schedule:
       interval: weekly
+  - package-ecosystem: "pip"
+    directory: "/app/sharepoint_list"
+    schedule:
+      interval: weekly
+  - package-ecosystem: "pip"
+    directory: "/app/nanobana"
+    schedule:
+      interval: weekly
