@@ -69,6 +69,7 @@ build-backend = "hatchling.build"
 [tool.black]
 line-length = 79
 target-version = ['py312']
+extend-exclude = '^/app/pdf_text_pages/'
 exclude = '''
 /(
     \.git
