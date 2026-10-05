@@ -1,0 +1,17 @@
+identity:
+  author: tkosht
+  name: pdf_text_pages
+  label:
+    en_US: PDF Text and Pages
+    ja_JP: PDF本文・ページ画像
+  description:
+    en_US: PDF text and labeled page images, processed in the plugin environment.
+    ja_JP: プラグイン環境内でPDF本文とID付きページ画像を生成します。
+  icon: icon.svg
+  tags: [utilities]
+credentials_for_provider: {}
+tools:
+  - tools/pdf_text_pages.yaml
+extra:
+  python:
+    source: provider/pdf_text_pages.py
