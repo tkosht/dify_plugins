@@ -95,6 +95,8 @@ uv run python -m main
 
 ## エラーと制限
 
+拡張子のないファイル名（例 `README`）は、Dify 1.17.1がファイル保存時にMIMEから拡張子を補完します（例 `README.txt`）。bytes・MIME・出力順序は保持されますが、保存後のDify File名の完全一致は保証しません。根拠はDify 1.17.1の [`api/core/tools/tool_file_manager.py:74`](https://github.com/langgenius/dify/blob/8387590ace4a094de812b7847fc6a4c3a27cd52b/api/core/tools/tool_file_manager.py#L74)（commit `8387590a`）です。
+
 `INPUT`/`FETCH_DENIED`/`FETCH_HTTP`/`FETCH_FAILURE`/`FETCH_TIMEOUT`/`PDF_OPEN`/`PDF_TEXT`/`PDF_RENDER`/`LIMIT`/`PROCESS_TIMEOUT`/`PROCESS_EXIT`/`BUSY`で分類し、文書入力位置と可能なページ番号を示します。本文/filename/URL/署名query/元例外は通常ログやエラーへ含めません。処理途中の失敗で部分結果をyieldせず、全変換・整合検査・全message構築後に返します。返却開始後のDify通信障害はローカルでは再現しておらず、実機でノード失敗扱いを確認してください。
 
 上限を超える資料は黙って切り詰めず全体失敗します。管理者が十分な資源とDify/LLM側上限を確認した場合に、`PDF_TEXT_PAGES_LIMITS`（`config/debug-env.example`参照）で変更します。Difyツール画面のDPI maxは200なので、この値を超える運用はmanifest変更と再検証が必要です。会話をまたぐ保存/再取得は実装していません。追加質問へ資料を再利用する場合はChatflow側で同じ出力を再投入してください。
