@@ -5,8 +5,8 @@ identity:
     en_US: PDF Text and Pages
     ja_JP: PDF本文・ページ画像
   description:
-    en_US: PDF text and labeled page images, processed in the plugin environment.
-    ja_JP: プラグイン環境内でPDF本文とID付きページ画像を生成します。
+    en_US: PDF text and labeled page images, with other files passed through unchanged.
+    ja_JP: PDF本文とID付きページ画像を生成し、その他のファイルは元のまま返します。
   icon: icon.svg
   tags: [utilities]
 credentials_for_provider: {}

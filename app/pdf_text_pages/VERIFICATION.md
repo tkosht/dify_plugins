@@ -1,6 +1,26 @@
 # 検証記録
 
-## 0.1.5：既存file base→内部APIの同path/query取得（今回）
+## 0.1.6：PDF変換とその他ファイルの元bytes返却
+
+committed0.1.5 e8fc0d3/package SHA71c497f58f4d1bdb16973d0c4db6dc90c1bcb11dc0d258907c41c09d19978340が採用元です。ユーザーは同版の添付と空入力の正常動作を確認しています。0.1.6は拡張子優先/欠損時filename末尾/PDFだけsignature・parser検査、MIMEだけのPDF昇格無し。その他は既存fetchをそのまま使いbytes/filename/MIMEを返却し、混在filesの位置だけPDF metadataへ反映します。schema1.0/PDF-only documentsと内部PDF連番検査は不変。PDF無しtextは完全空、入力無しは従来の設定検査/通信/変換無しです。
+
+固定一次sourceを親が2026-10-05に有界確認：[graphon File](https://github.com/langgenius/graphon/blob/11e2dee8cbd6dc2e6bf1c2059d9bbf4d0437ebe5/src/graphon/file/models.py#L189)は画像もfor_external=False、[file_runtime](https://github.com/langgenius/dify/blob/8387590ace4a094de812b7847fc6a4c3a27cd52b/api/core/app/workflow/file_runtime.py#L58)はtransfer_method別の既存file-preview/tool/datasource routeを生成し、画像専用routeへ分岐しません。[upload service](https://github.com/langgenius/dify/blob/8387590ace4a094de812b7847fc6a4c3a27cd52b/api/services/upload_file_delivery_service.py#L67)は署名検証後storage stream、[upload controller](https://github.com/langgenius/dify/blob/8387590ace4a094de812b7847fc6a4c3a27cd52b/api/controllers/files/upload_file_delivery.py#L107)と[tool controller](https://github.com/langgenius/dify/blob/8387590ace4a094de812b7847fc6a4c3a27cd52b/api/controllers/files/tool_files.py#L43)はAcceptによるbody変換をしません。SVG/html等のresponse header安全化とbody不変を区別し、元File.MIMEを出力metaへ保持します。fetchのAccept/許可routeは変更不要です。REMOTE_URLも旧policy外なら拒否します。実環境の配信成功を保証するsourceではありません。
+
+既存max_filesとinputbyte/期限は全入力、output_file/totalは元ファイルとPNG合算、page上限はPDFだけ。全取得・変換・上限検査・message準備後にyieldします。新抽象・設定・診断・依存はありません。main/worker/runner/config/fetchとDPI/limits既定は0.1.5のままです。
+
+TDD新8caseは8failed/2warnings/1.02s→8passed/2warnings/1.14s。必要境界追加後11caseを含むfocusedは55passed/10warnings/16.30s。exact plugin full suiteは**required_now、148 passed / 16 warnings / 26.61s、exit0**、[結果](docs/phase8-test-results-0.1.6.txt)。ruff check成功、format19files成功。旧138成功は旧候補だけの証拠です。SDK由来warningsは実daemon互換性の保証ではありません。
+
+```bash
+.venv/bin/python -m pytest tests/test_passthrough.py tests/test_empty_input.py tests/test_fetch_adapter.py --tb=short
+.venv/bin/python -m pytest --tb=short > docs/phase8-test-results-0.1.6.txt 2>&1
+.venv/bin/ruff check pdf_core provider tools tests main.py
+.venv/bin/ruff format --check pdf_core provider tools tests main.py
+.local-bin/dify plugin package . -o dist/pdf_text_pages-0.1.6.difypkg
+```
+
+[CODE0.1.6](docs/CANDIDATE_CODE_SHA256-0.1.6.txt)、[BUILD_RECORD0.1.6](dist/BUILD_RECORD-0.1.6.json)、[SOURCE0.1.6](dist/SOURCE_SHA256-0.1.6.txt)で同一candidateを識別。全旧packages/records/r2保全と既存未trackedを保持。versionのみ0.1.6、meta0.1.0/minDify1.17.1/SDK0.10.2は不変。0.1.6の実Dify混在順/元bytes/metadata/LLM直結・精度、新規導入/更新/T13/T15は未実施です。同じ最終packageの通常更新→同Chatflowで混在入力を再実行するcheckpointへ延期し、環境変更/ログ提出を要求しません。原T07/T08–10/T11返却途中/T12/T14等、独立reviewとroot全体受入は残ります。
+
+## 0.1.5の履歴：既存file base→内部APIの同path/query取得
 
 ユーザーがexact0.1.4 SHA433c7fe42f624871eb38301fe69940d521e02644004e21dadfd1711a238a87e0導入/PDF1件でCONNECT_ECONNREFUSED scheme=https/address_kind=publicを観測。これは接続拒否factで、公開配信先へDockerから届かない推定は支持されますがactualenv対応/根本原因は未確定です。顧客Dify環境設定を変更しない条件で、独立既存file origin/routeから独立既存DIFY_INNER_API_URLへ同じrawpath/queryで取得する0.1.5候補です。実機修復成立/独立reviewは未実施。
 
