@@ -1,4 +1,4 @@
-version: 0.1.5
+version: 0.1.6
 type: plugin
 author: tkosht
 name: pdf_text_pages
@@ -6,8 +6,8 @@ label:
   en_US: PDF Text and Pages
   ja_JP: PDF本文・ページ画像
 description:
-  en_US: Extract PDF text and every page image with shared visible IDs.
-  ja_JP: PDF全ページの本文と画像を共通の可視ID付きで出力します。
+  en_US: Convert PDFs to text and all page images; pass other files through unchanged.
+  ja_JP: PDF全ページの本文とID付き画像を生成し、その他のファイルは元のまま返します。
 icon: icon.svg
 resource:
   memory: 2147483648

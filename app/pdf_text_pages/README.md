@@ -1,32 +1,40 @@
-# PDF本文・ページ画像プラグイン 0.1.5
+# PDF本文・ページ画像プラグイン 0.1.6
 
 PDFの全ページを、同じページレコードの本文とPNG画像から出力します。Dify Chatflowの標準LLMノードへ完成済み`text`と`files`を直接接続する設計です。Template・コードノード・リスト変換・`json`の追加入力を利用者へ要求しません。ローカルSDK・変換・安全性テストと公式CLIパッケージ化を実施しています。**顧客Dify上での直接接続とLLMの回答精度は未検証です。** 実施範囲は[VERIFICATION.md](VERIFICATION.md)を参照してください。
 
-## 0.1.5の取得先対応
+## 0.1.6のファイル入力
+
+`pdf_files`へ`sys.files`などのファイルリストを直接指定できます。拡張子が`pdf`または`.pdf`（大文字小文字を区別しない）のファイルだけを全ページ変換します。拡張子が未指定ならファイル名の末尾を使い、MIMEだけでPDFへ分類しません。PDF以外は画像・非画像を問わず、同じ安全な取得経路で取得したbytes、ファイル名、MIMEをそのまま返します。名前/MIMEが未指定の場合だけ`file`/`application/octet-stream`を使います。
+
+`files`は入力順を保ち、PDFの位置には全ページPNGをまとめて、そのほかの位置には元ファイルを一つ出力します。`text`はPDF本文と読み方だけで、PDFがなければ完全に空です。`json`のschema1.0とPDF文書だけの`documents`を維持し、各ページの`image_index`は混在後の`files`位置を示します。元ファイルについての説明文や追加JSON構造は生成しません。後続モデルが対応しない形式も除外しません。
+
+全入力へ既存の件数・入力byte・累積期限を適用し、元ファイルにも出力単体8MiB、PNGとの合計40MiBの既定上限を適用します。ページ上限はPDFだけを数えます。上限超過や後のファイルの取得・変換失敗では部分成功を返しません。0.1.6の混在入力とLLMの実機確認は未実施です。
+
+## 取得先対応
 
 顧客Difyの環境設定は変更しません。独立した既存FILES_URL等のoriginと限定file routeへ一致する入力だけを、既存の解決済DIFY_INNER_API_URLへ同じpath/queryで取得します。公開側へ接続を試してからfallbackする方式ではありません。INTERNAL_FILES_URL等が既に有効なら従来の直接取得を維持し、不要な内部API設定の検査を加えません。
 
 入力origin/pathの検査後、内部targetだけをDNS/IP固定/peer/Host/SNI/TLSで取得し、proxy/redirect・実byte/期限・機密非露出を維持します。入力URLから設定を生成せず、API defaultやPLUGIN_DIFY_INNER_API_URL aliasを推測しません。同originは元の直接path/queryを保持。origin変更が必要な場合は外部base pathが空、内部APIbaseがrootに限り、外部末尾/（//filesになる形）やnonroot prefixは対応未確認のため通信前CONFIGにします。strip/addprefixや環境変更を要求する回避策はありません。
 
-ユーザー操作は0.1.5へ通常更新して同じChatflow/同じPDFを再実行するだけです。実機の修復成立は未確認です。PDF入力一つ/0件正常終了、DPI、元の本文/全pagePNG対応は不変です。
+ユーザー操作は0.1.6へ通常更新して同じChatflow/同じPDFを再実行するだけです。実機の修復成立は未確認です。PDF入力一つ/0件正常終了、DPI、元の本文/全pagePNG対応は不変です。
 
-## 0.1.4の入力
+## 入力と空リスト
 
-PDF入力は`pdf_files`一つです。`sys.files`や任意のFileリスト、単一File変数を指定できます。Dify1.17.1のselectorはFile/Array[File]を許可し、単一Fileはcoreが一要素listへ変換してSDKへ渡します。ユーザー側でリスト化するノードは不要です。この経路は[固定sourceと検証記録](VERIFICATION.md)に基づき、実UIは未測です。
+ファイル入力は`pdf_files`一つです。`sys.files`や任意のFileリスト、単一File変数を指定できます。Dify1.17.1のselectorはFile/Array[File]を許可し、単一Fileはcoreが一要素listへ変換してSDKへ渡します。ユーザー側でリスト化するノードは不要です。この経路は[固定sourceと検証記録](VERIFICATION.md)に基づき、実UIは未測です。
 
-PDFが0件（空list・未指定・None）なら正常終了し、`text`は空文字、`files`は標準の空list、`json`は既存schemaでdocuments=[]を返します。通信・変換・slot/一時childを開始せず、不要な配信source/DPI/管理limits検査も行いません。list以外の不正値を空として扱わず、1件以上の検証・順序・重複・全page/空本文対応は0.1.2どおりです。
+入力ファイルが0件（空list・未指定・None）なら正常終了し、`text`は空文字、`files`は標準の空list、`json`は既存schemaでdocuments=[]を返します。通信・変換・slot/一時childを開始せず、不要な配信source/DPI/管理limits検査も行いません。list以外の不正値を空として扱わず、1件以上では配信設定・DPI・上限を検査します。PDFの順序・重複・全page/空本文対応を維持します。
 
 最新ユーザー指示で`pdf_file`パラメータと二入力口の併用を廃止しました。旧`pdf_file`を設定していたノードは、`pdf_files`へ同じFile変数を選び直してください。本文/imagesの後処理やJSON追加は不要です。原HANDOFFは変更せず、入力口の採用変更として本記録に分けて残します。
 
-旧0.1.2の無応答は既存Chatflow側の問題とユーザーが確認し、新しいChatflowでplugin invokeに到達しました。0.1.3-r2 SDK adapterは不採用で本版へ含めません。0.1.4の空入力・LLM接続の実機確認は未実施です。
+旧0.1.2の無応答は既存Chatflow側の問題とユーザーが確認し、新しいChatflowでplugin invokeに到達しました。0.1.3-r2 SDK adapterは不採用で本版へ含めません。ユーザーは0.1.5の添付入力と空入力が正常に動作したと確認しています。混在入力・LLM接続の全受入とは区別します。
 
 ## 導入
 
 対象はLinux amd64、Python 3.12です。固定依存は`requirements.txt`（全runtime依存の版とwheel hash）と`uv.lock`（開発依存も含む）に記録しています。SDK 0.10.2、pypdfium2 5.14.0（PDFium 156.0.8076.0）、Pillow 12.3.0を採用しました。最低Dify宣言は1.17.1です。認証修復は1.17.1のプラグインFile URL生成・設定の意味に合わせています。対象Dify 1.17.1は窓口の応答ヘッダー観測で確認済みですが、対象daemonの版・設定継承・実機直接接続・通常更新は未確認です。その他のDify版の互換性は未検証です。
 
 1. [SECURITY.md](SECURITY.md)の上限・保存方針と、顧客Dify/plugin-daemonの版、メモリ、Python、対象モデルの画像数/サイズ/入力長を確認します。
-2. DifyのPlugins画面から`dist/pdf_text_pages-0.1.5.difypkg`をローカルファイルとして導入します。署名必須環境では組織の署名/導入手続きを使ってください。本プラグインは署名検証設定を変更しません。
-3. Providerの認証設定はありません。配信JSON、固定IP、追加の環境設定、旧credentialの削除は通常利用の手順に含めません。0.1.0/0.1.1/0.1.2/0.1.4からは同じauthor/nameの0.1.5配布物を通常更新します。旧版の配布物と記録は保持しています。新規導入・通常更新で認証要求が消えることと、正規PDFを実行できることは実機確認が必要です。
+2. DifyのPlugins画面から`dist/pdf_text_pages-0.1.6.difypkg`をローカルファイルとして導入します。署名必須環境では組織の署名/導入手続きを使ってください。本プラグインは署名検証設定を変更しません。
+3. Providerの認証設定はありません。配信JSON、固定IP、追加の環境設定、旧credentialの削除は通常利用の手順に含めません。0.1.0/0.1.1/0.1.2/0.1.4からは同じauthor/nameの0.1.6配布物を通常更新します。旧版の配布物と記録は保持しています。新規導入・通常更新で認証要求が消えることと、正規PDFを実行できることは実機確認が必要です。
 
 取得先は入力Fileと独立したプラグインプロセスの既存管理設定から制限します。Dify 1.17.1に合わせ、`INTERNAL_FILES_URL`が存在しなければ既存の別名`SERVER_CONSOLE_API_URL`を読み、`FILES_URL`が存在しなければ`CONSOLE_API_URL`を読みます。primaryが存在して空文字の場合はその別名へ戻りません。その後、内部値が空でなければ内部値、空なら外部値を選びます。同じbaseの`/files/{id}/file-preview`と`/files/tools/{id}{extension}`だけを許可します。base pathも照合し、Difyのbaseとrouteの連結を保持します。既存管理設定による限定origin→内部API対応以外のURL書換えは行いません。
 
@@ -49,15 +57,16 @@ PDFが0件（空list・未指定・None）なら正常終了し、`text`は空�
 | 任意の単一File変数 | `pdf_files`へ直接指定。Dify coreが一要素listへ変換 |
 | 添付リスト`sys.files`等 | `pdf_files`へその変数を指定 |
 | 任意のファイルリスト変数 | `pdf_files`へ指定。元の順序と重複を保持 |
-| PDFなし | 未指定/空list/Noneでtext空・files空・文書0件JSON |
+| 入力なし | 未指定/空list/Noneでtext空・files空・文書0件JSON |
+| PDF以外のみ | text空・filesは元ファイル・文書0件JSON。取得設定を検査 |
 
-`pdf_files`は0..管理上限件です。1件以上で非PDFが混在すると入力位置を示して全体失敗し、黙って除外しません。同名/同内容/同一Fileの重複も独立文書として保持します。割当元変数名や業務上の役割は推定しません。`dpi`は既定150、36〜管理者上限（既定200）です。0件では変換しないためpluginのDPI検査も不要です。
+`pdf_files`は0..管理上限件です。PDF以外も取得して元ファイルとして返します。同名/同内容/同一Fileの重複も保持し、PDFの重複は独立文書にします。割当元変数名や業務上の役割は推定しません。`dpi`は既定150、36〜管理者上限（既定200）です。0件では変換しないためpluginのDPI検査も不要です。
 
 | 標準出力 | 内容 |
 |---|---|
 | `text` | 読み方、文書名/ID、PDF物理ページ番号/ID、そのページの抽出本文。1 text message |
-| `files` | 全文書入力順→全PDFページ順のPNG blob messages。MIMEはimage/png、metadata filenameはページID.png |
-| `json` | 1 JSON object message。batch→documents→pages、入力口/位置、ID、本文状態/文字数、画像位置/filename。本文全文/画像Base64を複製しない |
+| `files` | 入力順の元ファイルとPDF全ページのPNG blob messages。PNGはimage/png、filenameはページID.png |
+| `json` | 1 JSON object message。batch→PDF documents→pages、入力口/位置、ID、本文状態/文字数、混在files内の画像位置/filename。本文全文/画像Base64を複製しない |
 
 採用SDKで単一File/list[File]、TEXT/BLOB/JSON messagesを観測しました。Dify側での`files`のArray[File]認識、画像順、metadata filenameの採用、`json`のobject配列への集約は実機確認対象です。Difyの標準出力仕様から直接接続を設計し、SDK観測をDify実機完了へ読み替えていません。
 
@@ -93,8 +102,8 @@ uv run python -m main
 配布物作成は公式CLI 0.6.10です。
 
 ```bash
-.local-bin/dify plugin package . -o dist/pdf_text_pages-0.1.5.difypkg
-sha256sum dist/pdf_text_pages-0.1.5.difypkg
+.local-bin/dify plugin package . -o dist/pdf_text_pages-0.1.6.difypkg
+sha256sum dist/pdf_text_pages-0.1.6.difypkg
 ```
 
 [SECURITY.md](SECURITY.md)、[third_party/INDEX.md](third_party/INDEX.md)、[docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)に依存/通信/制限/更新方針を記録しています。原要件は[docs/DIFY_PDF_PLUGIN_HANDOFF.md](docs/DIFY_PDF_PLUGIN_HANDOFF.md)へ原文のままコピーし、workspace元ファイルも保持しています。

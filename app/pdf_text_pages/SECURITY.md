@@ -4,11 +4,11 @@
 
 ## 通信と権限
 
-PDF0件のempty pathは通信/変換を行わず、配信設定・DPI・limits検査を開始しません。PDF1件以上の次の安全条件は0.1.2のまま維持します。
+入力ファイル0件のempty pathは通信/変換を行わず、配信設定・DPI・limits検査を開始しません。1件以上はPDF以外も同じ安全取得経路を使います。
 
 プラグインはOpenAI/LLM/外部変換サービスを呼ばず、APIキーを要求しません。入力取得はDify SDK `File`だけを受け付け、URL/path文字列を拒否します。SDK `File.blob`は`httpx.get(...).content`で未bounded取得するので使いません。
 
-0.1.5のPDF1件以上ではProvider credentials schemaを空にし、入力URL・旧資格情報JSONを許可先のsourceにしません。既存環境設定のpresence-aware別名を解決し、`INTERNAL_FILES_URL or FILES_URL`の一つのbaseでアップロード・tool/datasource由来の両download routeを許可します。詳細は[README](README.md)参照。必要なscheme/host/port/base path/routeだけを受け付け、不足・不適合は通信前の日本語CONFIGエラーです。値やURLは出しません。入力URLからのallowlist生成、推測default、追加認証/必須設定fallbackはありません。0.1.5は既存の管理設定で対応する二つのbaseに限り、承認file origin/routeから独立既存内部APIbaseへ同path/query取得を対応付けます。他のURL書換えは行いません。旧JSON例・load_sources関数は過去の書式/固定IPテストのため保持しますが、invokeの許可設定には使用しません。
+1件以上ではProvider credentials schemaを空にし、入力URL・旧資格情報JSONを許可先のsourceにしません。既存環境設定のpresence-aware別名を解決し、`INTERNAL_FILES_URL or FILES_URL`の一つのbaseでアップロード・tool/datasource由来の両download routeを許可します。詳細は[README](README.md)参照。必要なscheme/host/port/base path/routeだけを受け付け、不足・不適合は通信前の日本語CONFIGエラーです。値やURLは出しません。入力URLからのallowlist生成、推測default、追加認証/必須設定fallbackはありません。0.1.5は既存の管理設定で対応する二つのbaseに限り、承認file origin/routeから独立既存内部APIbaseへ同path/query取得を対応付けます。他のURL書換えは行いません。旧JSON例・load_sources関数は過去の書式/固定IPテストのため保持しますが、invokeの許可設定には使用しません。
 
 承認設定のhostだけをisolated Python子プロセスでDNS解決します。取得の累積期限をsubprocess timeoutへ渡し、期限超過では子をkill/waitで回収します。一回の解決結果をsnapshotとして当該取得へ固定し、接続失敗時だけそのsnapshot内の次IPを同じ累積期限で試します。各失敗socketをcloseし、別host/別DNS/URLrewriteへ進みません。peer/TLS検証失敗やHTTP送信後の再試行はしません。成功IPについて、hostnameを再解決せずliteral IP socketへ接続し、TLS前後でpeer IP/portを照合します。私設IPは管理下Dify配信に必要な場合を許容します。resolver/networkの信頼・coreの解決済み配信設定との対応は導入時の成立条件であり、環境値だけで確認済みとはしません。設定不一致は任意URL許可で回避しません。
 
@@ -30,6 +30,8 @@ Linux parent-death signalはparentの突然の終了時にchildを停止しま�
 
 Dify実行履歴/出力ファイルは別の保存面です。Dify管理者がworkspace閲覧権限、保持期間、バックアップ、削除を定め、出力本文/画像の保存を説明してください。後続OpenAI LLMからの本文/画像外部送信は別途顧客承認事項です。
 
+元ファイル返却はbytesを加工せず、元Fileのfilename/MIMEを保持します。PDF内部ページの連番は変更せず、JSONのimage_indexだけ混在files位置へ補正します。入力件数上限は全形式、ページ上限はPDFのみです。出力件数は既存のPDF総ページ上限と入力件数上限の和以内で、後続モデルの対応形式/最大量は別途の実機受入条件です。
+
 ## 初期処理上限
 
 すべて`Limits`を唯一の正本とし、実行開始時に管理環境`PDF_TEXT_PAGES_LIMITS`を検証してimmutable値へ固定します。PDFやDify tool入力で上限を変えません。DPIだけは利用者指定できますが管理上限以内に検証します。
@@ -42,7 +44,7 @@ Dify実行履歴/出力ファイルは別の保存面です。Dify管理者がwo
 | DPI | 既定150、最大200、最低36 | render前 |
 | PNG幅/高さ（余白込み） | 各5000px | render確保前と実raster確認 |
 | PNG総画素（余白込み、1画像） | 16,000,000 | render確保前 |
-| PNG単体/全画像byte | 8/40 MiB | encode中/生成中 |
+| 出力単体/総byte（PNGと元ファイル） | 8/40 MiB | PNG encode中/生成中、元ファイル取得後と全出力準備前 |
 | 完成text/抽出本文総文字数 | 1,000,000 | 抽出前/中、整形後 |
 | 1 file取得 | 20s | header/bodyを含む累積deadline |
 | native処理 | 60s | child wall timeout、CPU limit |

@@ -283,16 +283,9 @@ def test_no_partial_yield_for_whole_request_deadline(server, monkeypatch):
         {"pdf_files": "http://x"},
         {"pdf_files": "/tmp/x"},
         {"pdf_files": ["http://x"]},
-        {
-            "pdf_files": [
-                File(
-                    url="http://x", type="image", extension="png", mime_type="image/png"
-                )
-            ]
-        },
     ],
 )
-def test_no_urls_paths_or_non_pdf(parameters):
+def test_no_urls_or_paths(parameters):
     with pytest.raises(ConversionError):
         normalize(parameters, Limits())
 

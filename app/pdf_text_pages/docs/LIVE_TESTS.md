@@ -4,12 +4,12 @@
 
 ## 今回の変更と確認
 
-0.1.5は既存file origin→既存内部APIの同path/query対応だけを追加します。顧客環境設定の変更は行わず、0.1.5通常更新→同Chatflow/同PDF再実行が最小手順です。empty normal/単一変数/全page対応の再利用と実機未確認を区別します。
+ユーザーは0.1.5の添付/空入力が正常に動作したと確認しています。0.1.6はPDF拡張子の全ページ変換を維持し、その他のファイルを元bytes/filename/MIMEのまま入力順に返します。環境設定を変更せず、0.1.6通常更新→同ChatflowでPDFと画像等の混在リストを再実行します。PDFの全ページgroupと元ファイルが入力順で並び、textはPDFだけ、JSONのPDF page.image_indexが実files位置に一致することを確認します。非画像ファイルも返却しますが、後続モデルの対応は別に確認します。PDF以外だけならtext空/files元ファイル、入力0件ならtext空/files空です。今回leafは実行していません。
 
 ユーザーが新Chatflowでinvoke到達し、旧flow側が無応答の原因だったことを確認しました。0.1.4は0.1.2を基に、pdf_filesのみ/0件正常終了を実装しています。0.1.3-r2は不採用で含めません。以下は窓口がadmitする実機手順で、本leafは実行していません。
 
-1. 同一最終`pdf_text_pages-0.1.5.difypkg`へ通常更新し、入力欄がpdf_filesのみであることを確認。旧pdf_file設定はpdf_filesへ同じFile変数を選び直す。
-2. PDFなしで実行し、text空文字/files空配列/documents=[] JSON、通常のLLM質問が進むことを確認。設定sourceやDPIの新入力を要求しない。
+1. 同一最終`pdf_text_pages-0.1.6.difypkg`へ通常更新し、入力欄がpdf_filesのみであることを確認。旧pdf_file設定はpdf_filesへ同じFile変数を選び直す。
+2. 入力ファイルなしで実行し、text空文字/files空配列/documents=[] JSON、通常のLLM質問が進むことを確認。設定sourceやDPIの新入力を要求しない。
 3. 同じ新Chatflowで単一File変数・sys.files・任意listをpdf_filesへ割当し、1件以上の完成text/全pagefilesがLLM USER/Visionへ直接入ることを確認。単一Fileのリスト化/後処理/JSON追加はしない。
 
 1件以上の実通信/安全性/LLM精度と原受入は別に記録します。元二入力口併用はuser指示で廃止され、一つのlistへ指定した順序/重複の検証と区別します。
