@@ -1,0 +1,30 @@
+version: 0.1.0
+type: plugin
+author: tkosht
+name: read_region
+label:
+  en_US: Read Region (integration pending)
+  ja_JP: 領域OCR（実機結合待ち）
+description:
+  en_US: Local region OCR. Stock Dify run-context integration fails closed.
+  ja_JP: 社内領域OCR。安全な実行文脈が未確認の場合は接続を拒否します。
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  tools:
+  - provider/read_region.yaml
+meta:
+  version: 0.1.0
+  arch:
+  - amd64
+  - arm64
+  runner:
+    language: python
+    version: '3.12'
+    entrypoint: main
+  minimum_dify_version: 1.18.0
+created_at: '2026-11-13T00:00:00Z'
+privacy: PRIVACY.md
+verified: false

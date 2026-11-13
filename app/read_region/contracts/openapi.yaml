@@ -1,0 +1,650 @@
+openapi: 3.1.0
+info:
+  title: Local Region OCR internal service
+  version: 0.1.0
+  description: Service contract only. Do not import registration/deletion into an
+    Agent. Stock Dify trusted run integration is pending.
+security:
+- ServiceBearer: []
+paths:
+  /healthz:
+    get:
+      security: []
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    const: ok
+                required:
+                - status
+                additionalProperties: false
+        '400':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '415':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '504':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/images:
+    post:
+      parameters: &id003
+      - name: X-Execution-Id
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_-]{15,127}$
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                page_number:
+                  type: integer
+                  minimum: 1
+              required:
+              - file
+              additionalProperties: false
+      responses:
+        '201':
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  image_id:
+                    type: string
+                  width:
+                    type: integer
+                  height:
+                    type: integer
+                  page_number:
+                    type:
+                    - integer
+                    - 'null'
+                  expires_at:
+                    type: string
+                    format: date-time
+                  overview: &id004
+                    type: object
+                    properties:
+                      schema_version:
+                        const: '1.0'
+                      request_id:
+                        type: string
+                        pattern: ^req_[0-9a-f]{32}$
+                      status:
+                        enum:
+                        - ok
+                        - no_text
+                        - needs_review
+                      content_role:
+                        const: untrusted_document_data
+                      image_id:
+                        type: string
+                        pattern: ^img_[0-9a-f]{32}$
+                      page_number:
+                        type:
+                        - integer
+                        - 'null'
+                        minimum: 1
+                      geometry:
+                        type: object
+                        properties:
+                          coordinate_space:
+                            const: normalized_original_after_exif
+                          source_size: &id001
+                            type: object
+                            properties:
+                              width:
+                                type: integer
+                                minimum: 1
+                              height:
+                                type: integer
+                                minimum: 1
+                            required:
+                            - width
+                            - height
+                            additionalProperties: false
+                          requested_region: &id002
+                            type: array
+                            items:
+                              type: number
+                              minimum: 0
+                              maximum: 1
+                            minItems: 4
+                            maxItems: 4
+                          crop_pixels:
+                            type: array
+                            items:
+                              type: integer
+                              minimum: 0
+                            minItems: 4
+                            maxItems: 4
+                          requested_scale:
+                            type: number
+                            exclusiveMinimum: 0
+                            maximum: 4
+                          output_size: *id001
+                          effective_scale:
+                            type: object
+                            properties:
+                              x:
+                                type: number
+                                exclusiveMinimum: 0
+                              y:
+                                type: number
+                                exclusiveMinimum: 0
+                            required:
+                            - x
+                            - y
+                            additionalProperties: false
+                        required:
+                        - coordinate_space
+                        - source_size
+                        - requested_region
+                        - crop_pixels
+                        - requested_scale
+                        - output_size
+                        - effective_scale
+                        additionalProperties: false
+                      text:
+                        type: string
+                        maxLength: 20000
+                      blocks:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            block_id:
+                              type: string
+                            text:
+                              type: string
+                              maxLength: 20000
+                            bbox: *id002
+                            confidence:
+                              type:
+                              - number
+                              - 'null'
+                              minimum: 0
+                              maximum: 1
+                            needs_review:
+                              type: boolean
+                          required:
+                          - block_id
+                          - text
+                          - bbox
+                          - confidence
+                          - needs_review
+                          additionalProperties: false
+                        maxItems: 500
+                      truncated:
+                        type: boolean
+                      needs_review:
+                        type: boolean
+                      warnings:
+                        type: array
+                        items:
+                          enum:
+                          - NO_TEXT_DETECTED
+                          - TEXT_DETECTED_BUT_UNREADABLE
+                          - LOW_OCR_CONFIDENCE
+                          - RESPONSE_TRUNCATED
+                          - SOURCE_RESOLUTION_LIMIT
+                          - GEOMETRY_UNCERTAIN
+                        uniqueItems: true
+                        maxItems: 16
+                      engine:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          version:
+                            type: string
+                          model_id:
+                            type: string
+                          confidence_kind:
+                            enum:
+                            - engine_score_not_probability
+                            - unavailable
+                          reading_order:
+                            const: engine_order
+                        required:
+                        - name
+                        - version
+                        - model_id
+                        - confidence_kind
+                        - reading_order
+                        additionalProperties: false
+                    required:
+                    - schema_version
+                    - request_id
+                    - status
+                    - content_role
+                    - image_id
+                    - page_number
+                    - geometry
+                    - text
+                    - blocks
+                    - truncated
+                    - needs_review
+                    - warnings
+                    - engine
+                    additionalProperties: false
+                    allOf:
+                    - if:
+                        properties:
+                          status:
+                            const: no_text
+                      then:
+                        properties:
+                          text:
+                            const: ''
+                          blocks:
+                            maxItems: 0
+                          needs_review:
+                            const: true
+                          warnings:
+                            contains:
+                              const: NO_TEXT_DETECTED
+                    - if:
+                        properties:
+                          status:
+                            const: ok
+                      then:
+                        properties:
+                          truncated:
+                            const: false
+                          needs_review:
+                            const: false
+                    - if:
+                        properties:
+                          truncated:
+                            const: true
+                      then:
+                        properties:
+                          status:
+                            const: needs_review
+                          needs_review:
+                            const: true
+                          warnings:
+                            contains:
+                              const: RESPONSE_TRUNCATED
+                    $schema: https://json-schema.org/draft/2020-12/schema
+                required:
+                - image_id
+                - width
+                - height
+                - page_number
+                - expires_at
+                - overview
+                additionalProperties: false
+        '400':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '415':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '504':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      parameters: *id003
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_images:
+                    type: integer
+                    minimum: 0
+                  execution_revoked:
+                    const: true
+                required:
+                - deleted_images
+                - execution_revoked
+                additionalProperties: false
+        '400':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '415':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '504':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/read-region:
+    post:
+      parameters: *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                image_id:
+                  type: string
+                  pattern: ^img_[0-9a-f]{32}$
+                region: *id002
+                scale:
+                  type: number
+                  minimum: 0.25
+                  maximum: 4
+                  default: 2
+              required:
+              - image_id
+              - region
+              additionalProperties: false
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema: *id004
+        '400':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '415':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '504':
+          description: Safe error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    ServiceBearer:
+      type: http
+      scheme: bearer
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            request_id:
+              type: string
+            retryable:
+              type: boolean
+          required:
+          - code
+          - message
+          - request_id
+          - retryable
+          additionalProperties: true
+      required:
+      - error
+      additionalProperties: false

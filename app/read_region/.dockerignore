@@ -1,0 +1,8 @@
+.venv
+.local-bin
+.runtime
+**/__pycache__
+**/*.pyc
+*.difypkg
+verification
+.git

@@ -1,0 +1,24 @@
+identity:
+  name: prepare_images
+  author: tkosht
+  label:
+    en_US: prepare_images
+description:
+  human:
+    en_US: Register images in order and return overview OCR. Fixed node only; do not
+      expose to Agent.
+  llm: Register images in order and return overview OCR. Fixed node only; do not expose
+    to Agent.
+parameters:
+- name: images
+  type: files
+  required: true
+  label:
+    en_US: images
+  human_description:
+    en_US: images
+  llm_description: images
+  form: form
+extra:
+  python:
+    source: tools/prepare_images.py
