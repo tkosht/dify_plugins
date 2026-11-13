@@ -1,6 +1,6 @@
 version: 0.0.8
 type: plugin
-author: tkosht
+author: agen-i
 name: sharepoint_list
 label:
   en_US: SharePoint List

@@ -16,7 +16,7 @@ PDFの全ページを、同じページレコードの本文とPNG画像から�
 
 入力origin/pathの検査後、内部targetだけをDNS/IP固定/peer/Host/SNI/TLSで取得し、proxy/redirect・実byte/期限・機密非露出を維持します。入力URLから設定を生成せず、API defaultやPLUGIN_DIFY_INNER_API_URL aliasを推測しません。同originは元の直接path/queryを保持。origin変更が必要な場合は外部base pathが空、内部APIbaseがrootに限り、外部末尾/（//filesになる形）やnonroot prefixは対応未確認のため通信前CONFIGにします。strip/addprefixや環境変更を要求する回避策はありません。
 
-ユーザー操作は0.1.6へ通常更新して同じChatflow/同じPDFを再実行するだけです。実機の修復成立は未確認です。PDF入力一つ/0件正常終了、DPI、元の本文/全pagePNG対応は不変です。
+既存の `tkosht` 配布物同士の更新と、現在の `agen-i` ソースへの名前空間移行は、下の導入手順で区別します。実機の修復成立は未確認です。PDF入力一つ/0件正常終了、DPI、元の本文/全pagePNG対応は不変です。
 
 ## 入力と空リスト
 
@@ -24,23 +24,25 @@ PDFの全ページを、同じページレコードの本文とPNG画像から�
 
 入力ファイルが0件（空list・未指定・None）なら正常終了し、`text`は空文字、`files`は標準の空list、`json`は既存schemaでdocuments=[]を返します。通信・変換・slot/一時childを開始せず、不要な配信source/DPI/管理limits検査も行いません。list以外の不正値を空として扱わず、1件以上では配信設定・DPI・上限を検査します。PDFの順序・重複・全page/空本文対応を維持します。
 
-最新ユーザー指示で`pdf_file`パラメータと二入力口の併用を廃止しました。旧`pdf_file`を設定していたノードは、`pdf_files`へ同じFile変数を選び直してください。本文/imagesの後処理やJSON追加は不要です。原HANDOFFは変更せず、入力口の採用変更として本記録に分けて残します。
+ファイル入力は `pdf_files` に統一し、従来の `pdf_file` パラメータと二入力口の併用を廃止しました。旧`pdf_file`を設定していたノードは、`pdf_files`へ同じFile変数を選び直してください。本文/imagesの後処理やJSON追加は不要です。設計資料にも現在の入力仕様を記載しています。
 
-旧0.1.2の無応答は既存Chatflow側の問題とユーザーが確認し、新しいChatflowでplugin invokeに到達しました。0.1.3-r2 SDK adapterは不採用で本版へ含めません。ユーザーは0.1.5の添付入力と空入力が正常に動作したと確認しています。混在入力・LLM接続の全受入とは区別します。
+現在の配布物では、混在入力・LLM接続を含む実機検証は未実施です。
 
 ## 導入
 
-対象はLinux amd64、Python 3.12です。固定依存は`requirements.txt`（全runtime依存の版とwheel hash）と`uv.lock`（開発依存も含む）に記録しています。SDK 0.10.2、pypdfium2 5.14.0（PDFium 156.0.8076.0）、Pillow 12.3.0を採用しました。最低Dify宣言は1.17.1です。認証修復は1.17.1のプラグインFile URL生成・設定の意味に合わせています。対象Dify 1.17.1は窓口の応答ヘッダー観測で確認済みですが、対象daemonの版・設定継承・実機直接接続・通常更新は未確認です。その他のDify版の互換性は未検証です。
+対象はLinux amd64、Python 3.12です。固定依存は`requirements.txt`（全runtime依存の版とwheel hash）と`uv.lock`（開発依存も含む）に記録しています。SDK 0.10.2、pypdfium2 5.14.0（PDFium 156.0.8076.0）、Pillow 12.3.0を採用しました。最低Dify宣言は1.17.1です。認証修復は1.17.1のプラグインFile URL生成・設定の意味に合わせています。対象daemonの版・設定継承・実機直接接続・通常更新は未確認です。その他のDify版の互換性は未検証です。
 
 1. [SECURITY.md](SECURITY.md)の上限・保存方針と、顧客Dify/plugin-daemonの版、メモリ、Python、対象モデルの画像数/サイズ/入力長を確認します。
-2. DifyのPlugins画面から`dist/pdf_text_pages-0.1.6.difypkg`をローカルファイルとして導入します。署名必須環境では組織の署名/導入手続きを使ってください。本プラグインは署名検証設定を変更しません。
-3. Providerの認証設定はありません。配信JSON、固定IP、追加の環境設定、旧credentialの削除は通常利用の手順に含めません。0.1.0/0.1.1/0.1.2/0.1.4からは同じauthor/nameの0.1.6配布物を通常更新します。旧版の配布物と記録は保持しています。新規導入・通常更新で認証要求が消えることと、正規PDFを実行できることは実機確認が必要です。
+2. DifyのPlugins画面から `dist/pdf_text_pages-0.1.6.difypkg` をローカルファイルとして導入します。作者名は `agen-i` です。署名必須環境では組織の署名・導入手続きを使ってください。本プラグインは署名検証設定を変更しません。
+3. Providerの認証設定はありません。配信JSON、固定IP、追加の環境設定、既存credentialの削除は通常利用の手順に含めません。認証要求のない画面と、正規ファイルを取得・実行できることは対象環境で確認してください。
+
+`agen-i/pdf_text_pages` は、従来の `tkosht/pdf_text_pages` と別の名前空間です。同じプラグインの通常更新として扱わず、導入後にChatflowのツールと必要な変数を選び直し、動作を確認してください。新しい配布物のソース・ハッシュ・ローカル検証結果は `dist/BUILD_RECORD-0.1.6.json` に記録します。実機導入・名前空間移行・LLM直接接続は未検証です。
 
 取得先は入力Fileと独立したプラグインプロセスの既存管理設定から制限します。Dify 1.17.1に合わせ、`INTERNAL_FILES_URL`が存在しなければ既存の別名`SERVER_CONSOLE_API_URL`を読み、`FILES_URL`が存在しなければ`CONSOLE_API_URL`を読みます。primaryが存在して空文字の場合はその別名へ戻りません。その後、内部値が空でなければ内部値、空なら外部値を選びます。同じbaseの`/files/{id}/file-preview`と`/files/tools/{id}{extension}`だけを許可します。base pathも照合し、Difyのbaseとrouteの連結を保持します。既存管理設定による限定origin→内部API対応以外のURL書換えは行いません。
 
-設定不足・不適合は通信前に短い日本語のノードエラーになります。例：「FILES_URL / INTERNAL_FILES_URL（既存の別名設定を含む）が未設定です。管理者はDifyの既存配信設定とプラグインへの継承を確認してください。」値・URL・署名は表示しません。管理者は既存設定の解決値と継承を確認し、窓口が次案を判断します。認証JSONや新しい必須設定を追加して解決済みとは扱いません。coreのremote/TOML設定とpluginの環境設定が一致する保証はなく、公式composeのAPI専用`api.env`の値がdaemonへ渡る保証もありません。
+設定不足・不適合は通信前に短い日本語のノードエラーになります。例：「FILES_URL / INTERNAL_FILES_URL（既存の別名設定を含む）が未設定です。管理者はDifyの既存配信設定とプラグインへの継承を確認してください。」値・URL・署名は表示しません。管理者は既存設定の解決値とプラグインへの継承を確認してください。認証JSONや新しい必須設定を追加して解決済みとは扱いません。coreのremote/TOML設定とpluginの環境設定が一致する保証はなく、公式composeのAPI専用`api.env`の値がdaemonへ渡る保証もありません。
 
-承認hostのDNSは取得期限内に停止・回収可能な子プロセスで解決し、一回のDNS解決結果内のIPへ固定して実socket peerのIP/portを確認します。接続失敗時だけ同じsnapshot内の次IPを、累積期限内で試します。peer/TLS検証失敗やHTTP送信後は再試行しません。HTTP Host/TLS SNIと標準CA/hostname検証を維持し、redirect・環境proxy・userinfo・fragment・encoding/traversalを拒否します。resolver/networkとcore設定の対応は対象環境で確認する条件です。[旧JSON例](config/allowed_sources.example.json)は0.1.0の書式証拠として保持しており、0.1.1の認証入力や設定sourceには使いません。署名付きURLをチャットや通常ログへ貼らないでください。
+承認hostのDNSは取得期限内に停止・回収可能な子プロセスで解決し、一回のDNS解決結果内のIPへ固定して実socket peerのIP/portを確認します。接続失敗時だけ同じsnapshot内の次IPを、累積期限内で試します。peer/TLS検証失敗やHTTP送信後は再試行しません。HTTP Host/TLS SNIと標準CA/hostname検証を維持し、redirect・環境proxy・userinfo・fragment・encoding/traversalを拒否します。resolver/networkとcore設定の対応は対象環境で確認する条件です。署名付きURLをチャットや通常ログへ貼らないでください。
 
 4. 非機密合成PDFで[実機検証手順](docs/LIVE_TESTS.md)を実施します。`text`と`files`が標準LLMへ入った実行traceを確認してから顧客資料へ進んでください。
 
@@ -83,13 +85,13 @@ uv run pytest
 uv run ruff check pdf_core provider tools tests main.py
 ```
 
-Dify Pluginsのdebugアイコンで表示された**到達可能なdaemon host:port**を使います。[config/debug-env.example](config/debug-env.example)をローカルで`.env`へコピーし、`REMOTE_INSTALL_URL`と`REMOTE_INSTALL_KEY`を設定してください。キーはチャット/ログへ出さず、`.env*`はパッケージから除外します。source repoには同じ内容の`.env.example`もあり、Gitはそのtemplateだけを含めます。エージェントも`.env`本文を読みません。
+Dify Pluginsのdebugアイコンで表示された**到達可能なdaemon host:port**を使います。[config/debug-env.example](config/debug-env.example)をローカルで`.env`へコピーし、`REMOTE_INSTALL_URL`と`REMOTE_INSTALL_KEY`を設定してください。キーはチャット/ログへ出さず、`.env*`はパッケージから除外します。エージェントも`.env`本文を読みません。
 
 ```bash
 uv run python -m main
 ```
 
-2026-10-04 UTCの到達probeでは`dify`→172.18.0.2、HTTP80は到達、HTTPS443/daemon候補5003は拒否、`plugin_daemon`/`plugin-daemon`はDNS解決不可でした。HTTP UIへ到達できてもdebug socketへ到達できるとは限りません。管理者がUI表示のhost:portを確認し、必要ならdaemonネットワーク公開を管理してください。版APIの返却値1.16.1はinstalled版の証拠としては採用していません。
+HTTPの管理画面へ到達できても、プラグインのdebug socketへ接続できるとは限りません。debugを使う場合は管理画面に表示されたhost:portを確認し、導入先のネットワークで到達可能かを管理者が確認してください。
 
 ソースdebugは任意の開発経路です。配布物の導入・実機確認にはdebug key/socketを要求しません。debugでもProvider資格情報は使わず、実行プロセスに既に存在する独立した配信設定を検査します。設定不足はローカル合成テストを阻害しませんが正規ファイル取得の成立確認が残ります。OpenAI APIキーは本プラグインでは不要で、後続LLMのprovider設定に属します。
 
@@ -101,11 +103,11 @@ uv run python -m main
 
 上限を超える資料は黙って切り詰めず全体失敗します。管理者が十分な資源とDify/LLM側上限を確認した場合に、`PDF_TEXT_PAGES_LIMITS`（`config/debug-env.example`参照）で変更します。Difyツール画面のDPI maxは200なので、この値を超える運用はmanifest変更と再検証が必要です。会話をまたぐ保存/再取得は実装していません。追加質問へ資料を再利用する場合はChatflow側で同じ出力を再投入してください。
 
-配布物作成は公式CLI 0.6.10です。
+配布物作成には公式CLI 0.6.10を使います。再作成時は、作者名・版・ソース・新しいハッシュ・検証結果を対応付けて記録してください。署名とハッシュを別の配布物から流用することはできません。
 
 ```bash
-.local-bin/dify plugin package . -o dist/pdf_text_pages-0.1.6.difypkg
+dify plugin package . -o dist/pdf_text_pages-0.1.6.difypkg
 sha256sum dist/pdf_text_pages-0.1.6.difypkg
 ```
 
-[SECURITY.md](SECURITY.md)、[third_party/INDEX.md](third_party/INDEX.md)、[docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)に依存/通信/制限/更新方針を記録しています。原要件は[docs/DIFY_PDF_PLUGIN_HANDOFF.md](docs/DIFY_PDF_PLUGIN_HANDOFF.md)へ原文のままコピーし、workspace元ファイルも保持しています。
+[SECURITY.md](SECURITY.md)、[third_party/INDEX.md](third_party/INDEX.md)、[docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)に依存/通信/制限/更新方針を記録しています。設計と受入条件は[docs/DIFY_PDF_PLUGIN_HANDOFF.md](docs/DIFY_PDF_PLUGIN_HANDOFF.md)を参照してください。

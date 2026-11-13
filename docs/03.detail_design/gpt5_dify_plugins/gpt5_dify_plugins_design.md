@@ -326,7 +326,7 @@ app/gpt5_agent_strategies/
 標準実行:
 
 ```bash
-cd /home/devuser/workspace
+cd <repo-root>
 uv run pytest -q --no-cov tests/openai_gpt5_responses tests/gpt5_agent_strategies
 uv run pytest -q tests/openai_gpt5_responses tests/gpt5_agent_strategies
 ```

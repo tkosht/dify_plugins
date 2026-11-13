@@ -43,7 +43,7 @@ oauth_schema:
         ja_JP: "有効期限"
 
 identity:
-  author: "tkosht"
+  author: "agen-i"
   name: "sharepoint_list"
   label:
     en_US: "SharePoint List"

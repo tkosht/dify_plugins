@@ -1,38 +1,27 @@
-# 実機検証の引継ぎ
+# 実機検証の手順
 
-実施ownerは顧客Dify workspace管理者と、その実行環境へのアクセスを許可された担当者です。窓口は2026-10-05の応答ヘッダー`X-Version: 1.17.1` / `X-Env: PRODUCTION`で対象Dify installed版を確認しました。対象daemon実版・pluginへの設定継承・直接接続は未確認です。コード/ローカル変換の合格を実機受入へ読み替えません。
+Dify workspaceの管理者と、検証環境へのアクセスを許可された担当者が実施します。対象は現在の `agen-i/pdf_text_pages` 0.1.6配布物です。ローカル試験の合格と、Difyでの直接接続・LLMの回答精度は分けて判定します。以下の実機試験は未実施です。
 
-## 今回の変更と確認
+## 導入と入力の確認
 
-ユーザーは0.1.5の添付/空入力が正常に動作したと確認しています。0.1.6はPDF拡張子の全ページ変換を維持し、その他のファイルを元bytes/filename/MIMEのまま入力順に返します。環境設定を変更せず、0.1.6通常更新→同ChatflowでPDFと画像等の混在リストを再実行します。PDFの全ページgroupと元ファイルが入力順で並び、textはPDFだけ、JSONのPDF page.image_indexが実files位置に一致することを確認します。非画像ファイルも返却しますが、後続モデルの対応は別に確認します。PDF以外だけならtext空/files元ファイル、入力0件ならtext空/files空です。今回leafは実行していません。
+既存の `tkosht/pdf_text_pages` からは名前空間が変わります。新しい配布物を導入し、Chatflowのツール・変数を選び直してください。同一プラグインの通常更新や認証情報の引継ぎが成立するとは限りません。対象packageとハッシュは [BUILD_RECORD](../dist/BUILD_RECORD-0.1.6.json) で確認します。
 
-ユーザーが新Chatflowでinvoke到達し、旧flow側が無応答の原因だったことを確認しました。0.1.4は0.1.2を基に、pdf_filesのみ/0件正常終了を実装しています。0.1.3-r2は不採用で含めません。以下は窓口がadmitする実機手順で、本leafは実行していません。
+1. Plugins画面で作者名・名前・版を確認します。Provider/tool画面に認証要求、配信JSON、固定接続先等の追加入力が出ないことを確認します。
+2. `pdf_files` 一つへ単一File変数、`sys.files`、任意のファイルリストを割り当てます。従来の `pdf_file` を使うノードは変数を選び直します。リスト化・後処理ノード・JSON追加入力は不要です。
+3. 入力0件で `text` 空文字・`files` 空配列・`documents=[]` のJSONを返し、通常の質問へ進めることを確認します。
+4. PDFと画像等を混在させ、PDFの全ページPNGと元ファイルが入力順に並ぶこと、本文はPDFだけであること、JSONの `page.image_index` が実際の `files` 位置と一致することを確認します。非画像の元ファイルも返却しますが、後続モデルがその形式を扱えるかは別に確認します。
+5. 正規PDFから得た `text` をLLM USERへ、`files` をVisionへ直接接続します。実入力traceに両方があることを確認し、LLMの自己申告だけでは合格にしません。
 
-1. 同一最終`pdf_text_pages-0.1.6.difypkg`へ通常更新し、入力欄がpdf_filesのみであることを確認。旧pdf_file設定はpdf_filesへ同じFile変数を選び直す。
-2. 入力ファイルなしで実行し、text空文字/files空配列/documents=[] JSON、通常のLLM質問が進むことを確認。設定sourceやDPIの新入力を要求しない。
-3. 同じ新Chatflowで単一File変数・sys.files・任意listをpdf_filesへ割当し、1件以上の完成text/全pagefilesがLLM USER/Visionへ直接入ることを確認。単一Fileのリスト化/後処理/JSON追加はしない。
+設定不足・不適合で失敗した場合は、値・URL・署名を含まないノードエラーと対象版を記録します。管理者は既存の配信設定とプラグインへの継承を確認してください。任意URLの許可、認証情報の削除、新しい必須設定の追加で通信制限を回避しないでください。
 
-1件以上の実通信/安全性/LLM精度と原受入は別に記録します。元二入力口併用はuser指示で廃止され、一つのlistへ指定した順序/重複の検証と区別します。
+## T13の前提と通信境界
 
-## 未実施の認証・直接接続受入（窓口の別admission）
+認証要求のない画面・T15の直接接続と、T13の通信制限は別に判定します。許可された検証環境で、不許可URL/route、取得失敗、署名queryを含む例外を試し、不許可先への通信がなく、機密値がノードエラー・通常ログへ出ないことを確認します。画面でURL/path文字列をFileへ変換できず拒否された場合は、その結果だけを記録し、redirect/proxy/TLS/実受信量/累積期限の試験完了とは扱いません。
 
-同一の最終配布物`dist/pdf_text_pages-0.1.5.difypkg`を使います。version/hash/source対応は`dist/BUILD_RECORD-0.1.5.json`で識別します。ここに書く導入/更新/実機操作はまだ実施していません。実施の採否は窓口が所有します。
-
-1. 既存0.1.0/0.1.1/0.1.2のPlugins画面から0.1.4配布物へ通常更新し、版が0.1.4になったことを確認します。credential削除・再認証・再導入は行いません。新規導入を確認できる許可済み検証workspaceがある場合も同じ配布物を使い、認証情報がない状態を確認します。新規成功から旧認証状態の更新成功を推論しません。
-2. Provider/tool画面に認証要求、`allowed_sources` JSON、固定IP等の追加入力が出ないことを確認します。既存Chatflowで合成`mixed.pdf`を単一File入力へ割り当て実行します。設定が不足すると、ノードに「FILES_URL / INTERNAL_FILES_URL（既存の別名設定を含む）が未設定です。管理者はDifyの既存配信設定とプラグインへの継承を確認してください。」と表示されます。不適合時は該当設定名と同じ確認事項を表示し、値・URL・署名を表示しません。
-3. 成功時は`text`と4ページ分の画像`files`を確認し、USERへ`text`、Visionへ`files`を直接接続します。Template・コード・単一Fileのリスト化・JSON追加は行いません。LLM実入力traceに本文と画像の両方があることを確認します。これがT15の疎通証拠であり、インストール成功やLLMの自己申告だけでは合格にしません。
-4. 添付`sys.files`、任意Fileリスト、tool由来の任意Fileも正規配信routeで同じ直接接続を試します。一listの順序、重複、空本文の詳細は下のT01–T07へ引き継ぎます。
-
-設定不足・core設定との不一致で失敗した場合は、秘密のないノードエラーと対象版だけを窓口へ返します。管理者が既存設定の解決・pluginへの継承を確認し、窓口がAの成立とB等の再採否を判断します。ユーザーへホストコマンド、認証JSON、新しい必須envやcredential削除を要求する手順にはしません。
-
-## T13の扱いと先に確認する条件
-
-T13は認証要求なし/T15と別に合格を判定します。許可済み検証環境で不許可URL/route、取得失敗、署名queryを含む例外を試し、不許可先への通信がなく、URL/query/資格情報がノードエラー・通常ログへ出ないことを確認します。画面がURL/path文字列をFileへ変換できない場合は、その拒否を記録し、実行環境の担当が既存のFile境界試験を引き継ぎます。文字列拒否だけをredirect/proxy/TLS/実byte/累積期限の対象試験完了とは扱いません。実到達先・DNS/peer/TLSと実受信量・期限を対象環境で確認する部分は担当ownerへ残します。実URL・署名queryをチャットや共有ログへ貼りません。
-
-- Dify/plugin-daemon/OpenAI provider pluginの実installed版、Linux CPU/Python、daemonメモリ/timeout/parallelism、モデル名/画像detail設定を記録します。公式composeのdaemon0.6.10-localを実daemon版の証拠にはしません。
-- 管理者は独立した既存配信設定とcoreの解決済みbase、pluginへの継承、必要route、resolver/network/CAを確認します。API専用`api.env`やremote/TOML補完がpluginへ一致して渡る保証はありません。追加設定を通常利用の前提として持ち込まず、成立しなければ窓口へ返します。
-- ソースdebugが必要な場合だけ、Plugins > debugの到達可能host:portとworkspace keyを使います。keyをチャットへ貼らずローカルで設定し、agentは`.env`本文を読み/表示しません。最終配布物の画面確認にdebug key/socketは不要です。
-- インストール/ワークフロー実行の権限と承認を確認します。本番設定やDify版の更新は本開発taskの許可範囲に含めません。
+- Dify・plugin-daemon・LLM provider pluginの実版、OS/CPU/Python、daemonのメモリ・期限・同時実行数、モデルと画像detail設定を記録します。公式composeの例を導入先の実版とみなしません。
+- 既存配信設定とcoreの解決済みbase、プラグインへの継承、必要route、resolver/network/CAを管理者が確認します。API専用設定やremote/TOML補完がプラグインにも一致して渡る保証はありません。
+- ソースdebugが必要な場合だけ、Plugins画面に表示された到達可能host:portとworkspace keyをローカルで設定します。keyをチャットや共有ログへ貼らず、`.env` 本文も共有しません。最終配布物の画面確認にdebug接続は不要です。
+- インストールとワークフロー実行の権限を確認します。本番設定やDify版を変更する場合は、環境の管理手順に従います。
 
 ## T01–T07 / T15
 
@@ -60,6 +49,7 @@ T09はテスト用Chatflowだけでimage順を入れ替え、textは同じにし
 
 既存配信設定の不足・不適合は意図した通信前fail-closedであり、疎通不良のために任意URLを許可する回避策へ変更しません。daemon/network運用は顧客管理者が扱います。
 
-## 原要件全体の残件
 
-認証要求なし、新規/通常更新、T13、T15の成立だけで全体完了にはしません。T01–T06の実UI、T07の対象表示/縮小、T08–T10のLLM分析精度、T11の返却途中障害、T12の対象上限適合/daemon enforcement、T14の対象daemon運用/回復は実機未実施です。窓口がこの同一packageの検証checkpointと担当を採否し、VERIFICATIONの受入表へ証拠を返します。I3の再fetch、I4の2秒idle、I5–I9の表示/設定/権限/返却に関する未検証候補も保持し、この認証修復から追加仕様変更へ自動変換しません。
+## 記録する結果
+
+各試験の対象package・ハッシュ・環境・入力条件・期待値・結果・未実施理由を記録し、[VERIFICATION](../VERIFICATION.md)の受入表と対応付けます。新規導入、名前空間移行、T13、T15だけで全体完了とは扱わず、対象環境の表示・精度・上限・回復まで確認してください。

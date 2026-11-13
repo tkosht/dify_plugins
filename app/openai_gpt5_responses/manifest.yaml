@@ -1,6 +1,6 @@
 version: 0.1.2
 type: plugin
-author: tkosht
+author: agen-i
 name: openai_gpt5_responses
 label:
   en_US: OpenAI GPT-5 Responses
