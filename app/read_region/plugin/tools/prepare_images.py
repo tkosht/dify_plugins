@@ -22,6 +22,6 @@ class PrepareImagesTool(Tool):
                 adapter.prepare(tool_parameters.get("images"))
             )
         except Failure as exc:
-            raise ValueError(exc.code) from None
+            raise ValueError(f"HTTP {exc.status} {exc.code}") from None
         except Exception:
             raise ValueError("TOOL_FAILED") from None

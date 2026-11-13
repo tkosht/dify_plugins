@@ -20,6 +20,6 @@ class CleanupImagesTool(Tool):
             adapter = Adapter(self.runtime.credentials, context)
             yield self.create_json_message(adapter.cleanup())
         except Failure as exc:
-            raise ValueError(exc.code) from None
+            raise ValueError(f"HTTP {exc.status} {exc.code}") from None
         except Exception:
             raise ValueError("TOOL_FAILED") from None

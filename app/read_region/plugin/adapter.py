@@ -90,6 +90,60 @@ class PinnedHTTPS(http.client.HTTPSConnection):
         self.sock = self._context.wrap_socket(raw, server_hostname=self.host)
 
 
+def service_failure(status: int, data: bytes) -> Failure:
+    allowed = {
+        400: {"INVALID_IMAGE", "INVALID_REQUEST"},
+        401: {"UNAUTHENTICATED"},
+        403: {"CONTEXT_REQUIRED"},
+        404: {"IMAGE_NOT_AVAILABLE"},
+        413: {"INPUT_TOO_LARGE"},
+        415: {"UNSUPPORTED_MEDIA_TYPE"},
+        422: {"INVALID_REGION", "OUTPUT_LIMIT_EXCEEDED", "INVALID_REQUEST"},
+        429: {"BUDGET_EXCEEDED", "BUSY"},
+        500: {"INTERNAL_ERROR"},
+        502: {"OCR_FAILED"},
+        503: {"OCR_UNAVAILABLE"},
+        504: {"OCR_TIMEOUT"},
+    }
+    try:
+        body = json.loads(data)
+        if not isinstance(body, dict) or set(body) != {"error"}:
+            raise ValueError("error envelope")
+        item = body["error"]
+        required = {"code", "message", "request_id", "retryable"}
+        optional = {"suggested_scale_max", "retry_after_seconds"}
+        if (
+            not isinstance(item, dict)
+            or not required <= set(item)
+            or set(item) - required - optional
+        ):
+            raise ValueError("error schema")
+        if (
+            item["code"] not in allowed.get(status, set())
+            or not isinstance(item["message"], str)
+            or len(item["message"]) > 512
+            or not isinstance(item["request_id"], str)
+            or not re.fullmatch(r"req_[0-9a-f]{32}", item["request_id"])
+            or type(item["retryable"]) is not bool
+        ):
+            raise ValueError("error fields")
+        if "suggested_scale_max" in item and (
+            type(item["suggested_scale_max"]) not in (int, float)
+            or not 0 <= item["suggested_scale_max"] <= 4
+        ):
+            raise ValueError("scale")
+        if "retry_after_seconds" in item and (
+            type(item["retry_after_seconds"]) is not int
+            or not 0 <= item["retry_after_seconds"] <= 60
+        ):
+            raise ValueError("retry")
+        # Return only a whitelisted code/status. Never propagate body, message,
+        # URL, credential, traceback or server-supplied request metadata.
+        return Failure(status, item["code"])
+    except Exception:
+        return Failure(502, "UPSTREAM_FAILED")
+
+
 def exchange(
     target: Destination,
     method: str,
@@ -107,8 +161,8 @@ def exchange(
         connection.request(method, path, body, headers)
         result = connection.getresponse()
         # No redirects, no response/error body or signed URL in exception output.
-        if result.status not in (200, 201):
-            raise Failure(502, "UPSTREAM_FAILED")
+        success = result.status in (200, 201)
+        bound = maximum if success else 4096
         data = bytearray()
         while True:
             if time.monotonic() >= deadline:
@@ -117,12 +171,17 @@ def exchange(
                 connection.sock.settimeout(
                     max(0.001, deadline - time.monotonic())
                 )
-            part = result.read(min(65_536, maximum + 1 - len(data)))
+            part = result.read(min(65_536, bound + 1 - len(data)))
             data.extend(part)
-            if len(data) > maximum:
-                raise Failure(413, "INPUT_TOO_LARGE")
+            if len(data) > bound:
+                raise Failure(
+                    413 if success else 502,
+                    "INPUT_TOO_LARGE" if success else "UPSTREAM_FAILED",
+                )
             if not part:
                 break
+        if not success:
+            raise service_failure(result.status, bytes(data))
         return bytes(data)
     except Failure:
         raise

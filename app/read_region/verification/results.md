@@ -2,7 +2,7 @@
 
 **Local implementation tested; stock Dify plugin non-operational/fail-closed; Dify integration, representative quality and production security NOT accepted.** Exact commands and supported scope are in README.md. No Dify deployment, global network/model/log change, external OCR/API/storage or PDF change was performed.
 
-Evidence: `pytest-deps-final.txt` (local tests, including test doubles), `real-ocr-deps-final.json` (one actual synthetic Japanese OCR input under Docker network-none), `source-release-sha256.txt` (candidate identities), `package.txt` (actual CLI package check), `image.json` (container identity), `environment.md`, `security.md`, `failed-ocr-attempt.md`. Mock adapter tests inject trusted context outside tool arguments; this is not stock Dify runtime evidence. Each table distinguishes local observations from complete requirement acceptance.
+Evidence: `pytest-errors-final.txt` (local tests, including test doubles), `real-ocr-deps-final.json` (one actual synthetic Japanese OCR input under Docker network-none), `source-errors-final-sha256.txt` (candidate identities), `package-errors-final.txt` (actual CLI package check), `image.json` (container identity), `environment.md`, `security.md`, `failed-ocr-attempt.md`. Mock adapter tests inject trusted context outside tool arguments; this is not stock Dify runtime evidence. Each table distinguishes local observations from complete requirement acceptance.
 
 | Requirement | Local observation | Whole requirement |
 |---|---|---|
@@ -51,3 +51,5 @@ Quality: `real-ocr-deps-final.json` is one non-secret synthetic20px Japanese fie
 Draft-to-ready conditions: a separately authorized, reviewed trusted per-run transport integration; real P0 file/context/JSON validation including duplicate/concurrent turns and injected arguments; all required Dify/security cases with actual host/model/retention evidence; representative approved ground truth and B0/B1/T comparison; dependency/container vulnerability disposition; installation and rollback rehearsal. Current local test/package success does not satisfy these conditions.
 
 Per-ID machine-readable statuses and scope: [acceptance.json](acceptance.json). Final local dependency audit reports no known advisories for the final service lock and plugin lock; initial52reported findings (including aliases) in Pillow12.3.0/python-multipart0.0.22 were repaired with13.0.0/0.0.31. No container OS vulnerability audit is claimed.
+
+Final plugin error-category repair preserves only whitelisted service HTTP status/code after a bounded strict error-envelope check. Unknown/malformed/oversized errors remain generic; server messages and metadata are never forwarded. This was covered by parameterized local mocks; no service/image change or repeat OCR was needed.
