@@ -172,12 +172,13 @@
     "N08": {
       "status": "未実施",
       "scope": "whole nonfunctional acceptance remains incomplete",
-      "local_result": "合格",
+      "local_result": "未実施",
       "evidence": [
         "pytest-errors-final.txt",
         "security.md"
       ],
-      "remaining": "Actual Dify/LLM/network/retention or representative-data checks; see results.md"
+      "remaining": "Actual Dify/LLM/network/retention or representative-data checks; see results.md",
+      "synthetic_proxy_observation": "One synthetic manual region proxy executed; same text and strict CER as overview, no accuracy gain. B0/full Agent T and representative ground-truth comparison unperformed."
     },
     "T01": {
       "status": "合格",
