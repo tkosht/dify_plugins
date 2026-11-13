@@ -1,6 +1,6 @@
 # 選定と一次資料の記録
 
-確認日2026-10-04 UTC。顧客installed版は確認できていません。選定は要件を満たす最小試行で具体化し、原handoffの合意済み入出力/全page保持/一体record契約を変更していません。
+依存関係の選定と固定版の確認記録です。全ページの本文・画像対応を保つ設計に基づき、ローカル試験で採用構成を確認しています。導入先のdaemonとの互換性は実機未検証です。
 
 | 選定 | 根拠・実測 | 影響と未確認 |
 |---|---|---|
@@ -11,7 +11,7 @@
 | 150 DPI、PNG、上余白80px/32px label | 少量A4/横長/回転で欠落なし。768px幅縮小labelを人間可視確認 | LLMが識別できる精度はT08–T10へ留保 |
 | UUID4 full32hex batch prefix | 標準random UUID、入力順D/physical P、batch内unique検査 | 122bit randomで極低衝突確率。グローバル永続登録はしない |
 | limits初期値 | 150DPI少量試行と資源境界失敗/復旧から保守的に選定 | 顧客daemon/model最大量の保証値ではない。管理者が適合確認 |
-| pinned-IP downloader | File.blobのunbounded取得不足を補う。Host/SNI保持、proxy/redirectなし、actual byte/time cap | provider管理allowlistが必須。正規source IP/port/path unknownは導入時解消 |
+| pinned-IP downloader | File.blobのunbounded取得不足を補う。Host/SNI保持、proxy/redirectなし、actual byte/time cap | 既存管理設定から許可先を制限。正規配信先・port・pathは導入時に確認 |
 | 専用逐次child+flock | PDFium同process複数thread同時呼出し禁止とnative停止可能性を守る | Linuxのみamd64を宣言。processはnetwork/filesystem sandboxではない |
 | official CLI 0.6.10 | release binary version確認、quick initとpackage実行成功 | 顧客daemon installと同一difypkgの実機検証は別checkpoint |
 
@@ -36,5 +36,3 @@
 - [Pillow releases](https://pillow.readthedocs.io/en/stable/releasenotes/index.html)、[固定PyPI12.3.0](https://pypi.org/project/Pillow/12.3.0/): PNG/font/canvas。wheel license全文を保持。
 - [Aileron designer公式](https://dotcolon.net/fonts/aileron): curl取得したpage JSON-LD licenseはCC0。Pillow固定ImageFont.pyはAileron subset使用を明記。
 - [OpenAI images/vision](https://developers.openai.com/api/docs/guides/images-vision): filename/metadataに依存せず、画像内pixel IDで照合する理由と縮小に関する限界。APIをプラグインから呼ぶ設計ではない。
-
-HTTP probeの`/console/api/version?current_version=1.10.0`でversion1.16.1を観測しましたが、API意味上latest/update情報かもしれず、顧客installed版へ昇格しません。HTTP reachabilityとremote debug socket reachabilityも分けて記録しました。

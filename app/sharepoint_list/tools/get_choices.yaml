@@ -1,6 +1,6 @@
 identity:
   name: sharepoint_list_get_choices
-  author: tkosht
+  author: agen-i
   label:
     en_US: Get Choice Options
     ja_JP: 選択肢一覧取得

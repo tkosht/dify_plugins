@@ -1,6 +1,6 @@
 identity:
   name: gpt5_function_calling
-  author: tkosht
+  author: agen-i
   label:
     en_US: GPT-5 Function Calling
     ja_JP: GPT-5 Function Calling

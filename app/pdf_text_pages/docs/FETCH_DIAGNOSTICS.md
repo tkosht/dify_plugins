@@ -1,4 +1,4 @@
-# 取得失敗の安全な診断（0.1.2）
+# 取得失敗の安全な診断
 
 表示例は`FETCH_FAILURE: CONNECT_ECONNREFUSED; scheme=http; address_kind=private`です。URL・host/IPそのもの・署名query・設定値・元例外str/reprは出しません。stageと限定errno/DNS種別だけを使い、一般的な例外型名や任意の例外文をコピーしません。通常ログは追加していません。
 
@@ -20,6 +20,6 @@ schemeは承認設定のhttp/httpsのみです。address_kindは接続対象と�
 
 既存のFETCH_DENIED、FETCH_HTTP、FETCH_TIMEOUT、LIMIT等は維持します。HTTP非200はFETCH_HTTP（redirect追従なし）、取得の累積期限超過はFETCH_TIMEOUT、実byte超過はLIMITです。idle2秒・取得/要求期限とbyte上限は変更していません。
 
-一回の承認host DNSsnapshotの複数IPを取得中に固定し、接続失敗時だけ次IPを試します。別host/別origin/再DNS/default/URL書換えを使わず、同じscheme/host/port/path、期限、Host/SNI/TLS/peer条件を維持します。peer/TLS失敗やHTTP送信後は再試行しません。これでローカル再現した先頭IPのみの失敗経路を閉じますが、0.1.1実機エラーの原因と一致する証拠はありません。
+許可されたhostの一回のDNS snapshotに含まれる複数IPを取得中に固定し、接続失敗時だけ次のIPを試します。別host・origin・再DNS・URL書換えを使わず、scheme/host/port/path、累積期限、Host/SNI/TLS/peer条件を維持します。peer/TLSの失敗やHTTP送信後は再試行しません。この経路はローカルで検証していますが、導入先で起きた個別エラーの原因まで特定するものではありません。
 
-ユーザーの操作は0.1.2へ更新して同じChatflowを再実行するだけです。ホストコマンド・ログ提出・新しい配信設定・credential削除を要求しません。窓口が段階コードを内部採否の証拠として扱い、単一のstageから対象構成や根本原因が全て確定したと扱わず、他の利用可能な内部経路を比較して継続します。
+段階コードは、管理者が調べる範囲を絞るための情報です。一つのコードだけで対象構成や根本原因を断定せず、既存の配信設定・接続先への到達・CA等を確認してください。URL、接続先の実値、署名query、資格情報、元例外を共有する必要はありません。

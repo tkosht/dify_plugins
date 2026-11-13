@@ -28,7 +28,7 @@ Dify 上の実動作を手動確認し、以下を判定する。
 ### 3.1 Plugin A
 
 ```bash
-cd /home/devuser/workspace/app/openai_gpt5_responses
+cd <repo-root>/app/openai_gpt5_responses
 cp .env.example .env
 ```
 
@@ -50,7 +50,7 @@ uv pip install -r requirements.txt
 ### 3.2 Plugin B
 
 ```bash
-cd /home/devuser/workspace/app/gpt5_agent_strategies
+cd <repo-root>/app/gpt5_agent_strategies
 cp .env.example .env
 ```
 
@@ -72,7 +72,7 @@ uv pip install -r requirements.txt
 ## 4. ローカル回帰（Dify 接続前）
 
 ```bash
-cd /home/devuser/workspace
+cd <repo-root>
 uv run pytest -q --no-cov tests/openai_gpt5_responses tests/gpt5_agent_strategies
 uv run pytest -q tests/openai_gpt5_responses tests/gpt5_agent_strategies
 ```
@@ -87,14 +87,14 @@ uv run pytest -q tests/openai_gpt5_responses tests/gpt5_agent_strategies
 ### 5.1 起動
 
 ```bash
-cd /home/devuser/workspace/app/openai_gpt5_responses
+cd <repo-root>/app/openai_gpt5_responses
 uv run python -m main
 ```
 
 監査ログ確認を行う場合:
 
 ```bash
-cd /home/devuser/workspace/app/openai_gpt5_responses
+cd <repo-root>/app/openai_gpt5_responses
 OPENAI_GPT5_AUDIT_LOG=true uv run python -m main
 ```
 
@@ -154,7 +154,7 @@ OPENAI_GPT5_AUDIT_LOG=true uv run python -m main
 ### 6.1 起動
 
 ```bash
-cd /home/devuser/workspace/app/gpt5_agent_strategies
+cd <repo-root>/app/gpt5_agent_strategies
 uv run python -m main
 ```
 
@@ -211,8 +211,8 @@ uv run python -m main
 ## 8. `.difypkg` 再検証
 
 ```bash
-dify plugin package /home/devuser/workspace/app/openai_gpt5_responses
-dify plugin package /home/devuser/workspace/app/gpt5_agent_strategies
+dify plugin package <repo-root>/app/openai_gpt5_responses
+dify plugin package <repo-root>/app/gpt5_agent_strategies
 ```
 
 生成 `.difypkg` を Dify へ `Install Plugin -> Via Local File` で導入し、5章〜7章を再実行する。

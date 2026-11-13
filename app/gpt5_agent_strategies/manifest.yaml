@@ -1,6 +1,6 @@
 version: 0.1.1
 type: plugin
-author: tkosht
+author: agen-i
 name: gpt5_agent_strategies
 label:
   en_US: GPT-5 Agent Strategies
