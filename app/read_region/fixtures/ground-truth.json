@@ -1,0 +1,13 @@
+{
+  "text": "温度 -12.5 mm",
+  "numeric": "-12.5",
+  "region": [
+    0.15,
+    0.3,
+    0.65,
+    0.5
+  ],
+  "font": "IPAexGothic",
+  "font_size": 20,
+  "source": "synthetic generated using Pillow; no customer content"
+}

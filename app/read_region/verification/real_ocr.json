@@ -1,0 +1,92 @@
+{
+  "scope": "one synthetic input, manually selected region; no Agent/Dify; B0 and full T not performed",
+  "fixture_sha256": "459a6b4829b1c0a3719ab6986ad4da41b3949a3cd768bac8270fd6d6406adbac",
+  "engine": {
+    "name": "tesseract",
+    "version": "5.3.0",
+    "model_id": "tessdata_fast/4.1.0:jpn+eng",
+    "confidence_kind": "engine_score_not_probability",
+    "reading_order": "engine_order"
+  },
+  "network": "Docker --network none; kernel isolated; native connection attempts not traced",
+  "missing_models_fail_closed": true,
+  "results": {
+    "B1_local_overview": {
+      "seconds": 0.5649990891106427,
+      "ocr_calls": 1,
+      "text": "温度\n-12.5\nmm",
+      "expected": "温度 -12.5 mm",
+      "edit_distance": 2,
+      "cer_strict": 0.18181818181818182,
+      "important_numeric_exact": true,
+      "status": "needs_review",
+      "geometry": {
+        "coordinate_space": "normalized_original_after_exif",
+        "source_size": {
+          "width": 2000,
+          "height": 1000
+        },
+        "requested_region": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "crop_pixels": [
+          0,
+          0,
+          2000,
+          1000
+        ],
+        "requested_scale": 1,
+        "output_size": {
+          "width": 2000,
+          "height": 1000
+        },
+        "effective_scale": {
+          "x": 1.0,
+          "y": 1.0
+        }
+      }
+    },
+    "region_manual_proxy": {
+      "seconds": 0.46648106491193175,
+      "ocr_calls": 1,
+      "text": "温度\n-12.5\nmm",
+      "expected": "温度 -12.5 mm",
+      "edit_distance": 2,
+      "cer_strict": 0.18181818181818182,
+      "important_numeric_exact": true,
+      "status": "ok",
+      "geometry": {
+        "coordinate_space": "normalized_original_after_exif",
+        "source_size": {
+          "width": 2000,
+          "height": 1000
+        },
+        "requested_region": [
+          0.15,
+          0.3,
+          0.65,
+          0.5
+        ],
+        "crop_pixels": [
+          300,
+          300,
+          1300,
+          500
+        ],
+        "requested_scale": 2,
+        "output_size": {
+          "width": 2000,
+          "height": 400
+        },
+        "effective_scale": {
+          "x": 2.0,
+          "y": 2.0
+        }
+      }
+    }
+  },
+  "representative_quality_accepted": false
+}

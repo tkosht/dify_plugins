@@ -1,0 +1,32 @@
+name: Read Region candidate
+on:
+  pull_request:
+    paths: ['app/read_region/**', '.github/workflows/read-region.yml']
+  push:
+    paths: ['app/read_region/**', '.github/workflows/read-region.yml']
+permissions:
+  contents: read
+jobs:
+  local-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --project app/read_region --frozen
+      - run: uv run --project app/read_region pytest app/read_region/tests -c app/read_region/pyproject.toml
+      - run: uv run --project app/read_region ruff check app/read_region
+      - run: uv run --project app/read_region black --check --config pyproject.toml app/read_region
+      - name: Validate real CLI package
+        run: |
+          mkdir -p app/read_region/.local-bin
+          curl -fsSL https://github.com/langgenius/dify-plugin-daemon/releases/download/0.6.10/dify-plugin-linux-amd64 -o app/read_region/.local-bin/dify
+          echo '0cef74bcae375a4337c2ff7d42e4787717981a795e1c23cf56bb27ec07ec8304  app/read_region/.local-bin/dify' | sha256sum --check
+          chmod +x app/read_region/.local-bin/dify
+          app/read_region/.local-bin/dify plugin package app/read_region/plugin -o app/read_region/read_region-0.1.0.difypkg
+          uv run --project app/read_region python app/read_region/scripts/check_package.py app/read_region/read_region-0.1.0.difypkg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: read-region-unverified-integration
+          path: app/read_region/read_region-0.1.0.difypkg

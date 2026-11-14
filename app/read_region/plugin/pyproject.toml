@@ -1,0 +1,7 @@
+[project]
+name = "read-region-plugin"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["dify-plugin==0.10.2"]
+[tool.uv]
+package = false

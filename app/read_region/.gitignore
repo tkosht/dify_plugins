@@ -1,0 +1,10 @@
+.venv/
+.local-bin/
+.runtime/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+verification/build.log
+verification/global-*.txt
+!read_region-0.1.0.difypkg

@@ -1,0 +1,67 @@
+identity:
+  author: tkosht
+  name: read_region
+  label:
+    en_US: Read Region
+  description:
+    en_US: Local OCR with run isolation; integration pending
+  icon: icon.svg
+  tags:
+  - utilities
+credentials_for_provider:
+  service_origin:
+    type: text-input
+    required: true
+    label:
+      en_US: Approved HTTPS OCR origin
+    placeholder:
+      en_US: Configure outside model arguments
+  service_ips:
+    type: text-input
+    required: true
+    label:
+      en_US: Pinned OCR IPs (comma separated)
+    placeholder:
+      en_US: Configure outside model arguments
+  service_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: OCR service token
+    placeholder:
+      en_US: Configure outside model arguments
+  file_origin:
+    type: text-input
+    required: true
+    label:
+      en_US: Approved HTTPS Dify file origin
+    placeholder:
+      en_US: Configure outside model arguments
+  file_ips:
+    type: text-input
+    required: true
+    label:
+      en_US: Pinned Dify file IPs
+    placeholder:
+      en_US: Configure outside model arguments
+  file_prefix:
+    type: text-input
+    required: true
+    label:
+      en_US: Allowed file path prefix (/files/...)
+    placeholder:
+      en_US: Configure outside model arguments
+  app_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Expected Dify application ID
+    placeholder:
+      en_US: Configure outside model arguments
+tools:
+- tools/prepare_images.yaml
+- tools/read_region.yaml
+- tools/cleanup_images.yaml
+extra:
+  python:
+    source: provider/read_region.py
