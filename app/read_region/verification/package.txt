@@ -1,0 +1,2 @@
+2026/11/13 17:57:22 INFO plugin packaged successfully output_path=app/read_region/read_region-0.1.0.difypkg
+CLI package source payload matches: d94c833d73e56c721ec4cdb6303e4b57ecb13a41d5dffe005311c19779b92c95

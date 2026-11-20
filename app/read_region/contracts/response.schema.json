@@ -1,0 +1,319 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "request_id": {
+      "type": "string",
+      "pattern": "^req_[0-9a-f]{32}$"
+    },
+    "status": {
+      "enum": [
+        "ok",
+        "no_text",
+        "needs_review"
+      ]
+    },
+    "content_role": {
+      "const": "untrusted_document_data"
+    },
+    "image_id": {
+      "type": "string",
+      "pattern": "^img_[0-9a-f]{32}$"
+    },
+    "page_number": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "geometry": {
+      "type": "object",
+      "properties": {
+        "coordinate_space": {
+          "const": "normalized_original_after_exif"
+        },
+        "source_size": {
+          "type": "object",
+          "properties": {
+            "width": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "width",
+            "height"
+          ],
+          "additionalProperties": false
+        },
+        "requested_region": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "crop_pixels": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "requested_scale": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 4
+        },
+        "output_size": {
+          "type": "object",
+          "properties": {
+            "width": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "width",
+            "height"
+          ],
+          "additionalProperties": false
+        },
+        "effective_scale": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "y": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "coordinate_space",
+        "source_size",
+        "requested_region",
+        "crop_pixels",
+        "requested_scale",
+        "output_size",
+        "effective_scale"
+      ],
+      "additionalProperties": false
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 20000
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "block_id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "bbox": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "confidence": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "needs_review": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "block_id",
+          "text",
+          "bbox",
+          "confidence",
+          "needs_review"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 500
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "needs_review": {
+      "type": "boolean"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "NO_TEXT_DETECTED",
+          "TEXT_DETECTED_BUT_UNREADABLE",
+          "LOW_OCR_CONFIDENCE",
+          "RESPONSE_TRUNCATED",
+          "SOURCE_RESOLUTION_LIMIT",
+          "GEOMETRY_UNCERTAIN"
+        ]
+      },
+      "uniqueItems": true,
+      "maxItems": 16
+    },
+    "engine": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "model_id": {
+          "type": "string"
+        },
+        "confidence_kind": {
+          "enum": [
+            "engine_score_not_probability",
+            "unavailable"
+          ]
+        },
+        "reading_order": {
+          "const": "engine_order"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "model_id",
+        "confidence_kind",
+        "reading_order"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "request_id",
+    "status",
+    "content_role",
+    "image_id",
+    "page_number",
+    "geometry",
+    "text",
+    "blocks",
+    "truncated",
+    "needs_review",
+    "warnings",
+    "engine"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "no_text"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "text": {
+            "const": ""
+          },
+          "blocks": {
+            "maxItems": 0
+          },
+          "needs_review": {
+            "const": true
+          },
+          "warnings": {
+            "contains": {
+              "const": "NO_TEXT_DETECTED"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ok"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "truncated": {
+            "const": false
+          },
+          "needs_review": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "truncated": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "needs_review"
+          },
+          "needs_review": {
+            "const": true
+          },
+          "warnings": {
+            "contains": {
+              "const": "RESPONSE_TRUNCATED"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

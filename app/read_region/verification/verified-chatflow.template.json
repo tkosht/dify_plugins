@@ -1,0 +1,157 @@
+{
+  "artifact_type": "sanitized template from verified official draft graph; not an exported/import-tested DSL",
+  "conversation_variables": [],
+  "features": {
+    "file_upload": {
+      "allowed_file_extensions": [
+        ".PNG",
+        ".JPG",
+        ".JPEG"
+      ],
+      "allowed_file_types": [
+        "image"
+      ],
+      "allowed_file_upload_methods": [
+        "local_file"
+      ],
+      "enabled": true,
+      "number_limits": 10
+    },
+    "opening_statement": "",
+    "retriever_resource": {
+      "enabled": false
+    },
+    "sensitive_word_avoidance": {
+      "enabled": false
+    },
+    "speech_to_text": {
+      "enabled": false
+    },
+    "suggested_questions": [],
+    "suggested_questions_after_answer": {
+      "enabled": false
+    },
+    "text_to_speech": {
+      "enabled": false,
+      "language": "",
+      "voice": ""
+    }
+  },
+  "fixture_model": "proof/deterministic_region_model/deterministic is local deterministic test-only",
+  "graph": {
+    "edges": [
+      {
+        "data": {
+          "sourceType": "start",
+          "targetType": "agent"
+        },
+        "id": "start-agent",
+        "source": "start",
+        "sourceHandle": "source",
+        "target": "agent",
+        "targetHandle": "target",
+        "type": "custom"
+      },
+      {
+        "data": {
+          "sourceType": "agent",
+          "targetType": "answer"
+        },
+        "id": "agent-answer",
+        "source": "agent",
+        "sourceHandle": "source",
+        "target": "answer",
+        "targetHandle": "target",
+        "type": "custom"
+      }
+    ],
+    "nodes": [
+      {
+        "data": {
+          "title": "Start",
+          "type": "start",
+          "variables": []
+        },
+        "id": "start",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "type": "custom"
+      },
+      {
+        "data": {
+          "agent_parameters": {
+            "images": {
+              "type": "variable",
+              "value": [
+                "sys",
+                "files"
+              ]
+            },
+            "model": {
+              "type": "constant",
+              "value": {
+                "completion_params": {},
+                "mode": "chat",
+                "model": "proof-function-caller",
+                "model_type": "llm",
+                "provider": "proof/deterministic_region_model/deterministic"
+              }
+            },
+            "query": {
+              "type": "variable",
+              "value": [
+                "sys",
+                "query"
+              ]
+            },
+            "workflow_run_id": {
+              "type": "variable",
+              "value": [
+                "sys",
+                "workflow_run_id"
+              ]
+            }
+          },
+          "agent_strategy_label": "Region OCR",
+          "agent_strategy_name": "region_ocr",
+          "agent_strategy_provider_name": "tkosht/read_region_agent/region_ocr",
+          "title": "Region OCR",
+          "tool_node_version": "2",
+          "type": "agent"
+        },
+        "id": "agent",
+        "position": {
+          "x": 300,
+          "y": 0
+        },
+        "type": "custom"
+      },
+      {
+        "data": {
+          "answer": "{{#agent.text#}}",
+          "title": "Answer",
+          "type": "answer"
+        },
+        "id": "answer",
+        "position": {
+          "x": 600,
+          "y": 0
+        },
+        "type": "custom"
+      }
+    ],
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "zoom": 1
+    }
+  },
+  "official_yaml_export": {
+    "available": false,
+    "include_secret": false,
+    "status": 400
+  },
+  "private_verified_draft_sha256": "46fe07ef00c18f3ff58676719f3c5c09c6d28b5348b4b18e3740a751aed555b2"
+}

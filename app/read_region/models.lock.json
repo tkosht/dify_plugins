@@ -1,0 +1,11 @@
+{
+  "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast",
+  "commit": "65727574dfcd264acbb0c3e07860e4e9e9b22185",
+  "tag": "4.1.0",
+  "license": "Apache-2.0",
+  "license_url": "https://github.com/tesseract-ocr/tessdata_fast/blob/65727574dfcd264acbb0c3e07860e4e9e9b22185/LICENSE",
+  "sha256": {
+    "jpn.traineddata": "1f5de9236d2e85f5fdf4b3c500f2d4926f8d9449f28f5394472d9e8d83b91b4d",
+    "eng.traineddata": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+  }
+}

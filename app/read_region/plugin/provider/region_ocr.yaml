@@ -1,0 +1,13 @@
+identity:
+  author: tkosht
+  name: region_ocr
+  label:
+    en_US: Region OCR Agent
+  description:
+    en_US: Private execution context and fixed OCR lifecycle around a configured Dify model.
+  icon: icon.svg
+strategies:
+  - strategies/region_ocr.yaml
+extra:
+  python:
+    source: provider/region_ocr.py

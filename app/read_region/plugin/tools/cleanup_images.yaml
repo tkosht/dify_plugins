@@ -1,0 +1,15 @@
+identity:
+  name: cleanup_images
+  author: tkosht
+  label:
+    en_US: cleanup_images
+description:
+  human:
+    en_US: Revoke this execution and delete service images. Fixed node only; do not
+      expose to Agent.
+  llm: Revoke this execution and delete service images. Fixed node only; do not expose
+    to Agent.
+parameters: []
+extra:
+  python:
+    source: tools/cleanup_images.py

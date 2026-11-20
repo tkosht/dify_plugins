@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Region OCR Agent arguments",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["image_id", "x_min", "y_min", "x_max", "y_max"],
+  "properties": {
+    "image_id": {"type": "string", "pattern": "^img_[0-9a-f]{32}$"},
+    "x_min": {"type": "number", "minimum": 0, "maximum": 1},
+    "y_min": {"type": "number", "minimum": 0, "maximum": 1},
+    "x_max": {"type": "number", "minimum": 0, "maximum": 1},
+    "y_max": {"type": "number", "minimum": 0, "maximum": 1},
+    "scale": {"type": "number", "minimum": 0.25, "maximum": 4, "default": 2}
+  },
+  "$comment": "Code additionally rejects bool, numeric strings, nonfinite values, reversed/zero-area bounds. Transport context is never an argument."
+}

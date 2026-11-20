@@ -1,0 +1,3 @@
+Observed attempt before explicit TSV creation flag: native tool output from exec session 65251 (2026-11-13), final output returned through write_stdin, recorded B1 and manual region text="", CER=1.0, status=no_text despite exit zero. The exact initial output remains in that execution history; the current real_ocr.json supersedes it. No missing raw artifact is reconstructed here.
+
+Repair: explicit tessedit_create_tsv=1 works with a custom model directory without configs/tsv. Strict TSV header/row validation maps malformed plain text output to OCR_FAILED. Current real_ocr.json and parser regression tests are the replacement evidence. This failure invalidated the initial OCR success interpretation; it did not invalidate geometry/storage unit results.

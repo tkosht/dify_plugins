@@ -1,0 +1,153 @@
+{
+  "version": "0.2.0",
+  "local_tests": {
+    "command": "uv run --project app/read_region pytest app/read_region/tests -c app/read_region/pyproject.toml",
+    "passed": 98,
+    "failed": 0,
+    "seconds": 4.14,
+    "warning": "Starlette TestClient httpx deprecation"
+  },
+  "lint": {
+    "ruff": "clean-index candidate passed",
+    "black": "clean-index candidate passed",
+    "ignored_foreign_runtime": "excluded from clean staged candidate; not a pass for the original foreign-checkout traversal"
+  },
+  "packages": {
+    "read_region-0.2.0.difypkg": {
+      "sha256": "eb025b7f0c6d3d2254145b45c0b409a4d76e1b25207169cb0640e5ef2cae1076",
+      "category": "tools",
+      "official_cli": "0.6.10",
+      "canonical_payload_match": true
+    },
+    "read_region_agent-0.2.0.difypkg": {
+      "sha256": "3964297f20919b53e47b26681979dfee2ea2f6d7bc14e7cb71afb3368d2b3579",
+      "category": "agent_strategies",
+      "official_cli": "0.6.10",
+      "canonical_payload_match": true
+    }
+  },
+  "tested_agent_package_sha256": "82d11f9b51e57680cf99d07722fc477df46bce35b004d956a61e0ed55a7e07a6",
+  "tested_agent_python": {
+    "adapter.py": "b93907609f26c48b88bd6b32548dd14967277cc88b676758f6bc33c2edde9efe",
+    "main.py": "1fc5cf4319a5bb06a877d653b43dcfe56f0a37c2b3c3c363aea123a67ae10780",
+    "provider/region_ocr.py": "e95c4b959817c65a1a0e6ef5859253fb7e586c7a174c1f554d4495fc9ecf40b0",
+    "region_contract.py": "500d76e4a70224b5702d0a1b95056653fb94bc861de47d4cb9706a3ab4e8e694",
+    "strategies/region_ocr.py": "61878abd8171747a23b62f19615325694db584550dd5bbd6809576ab04db1b44",
+    "strategy_core.py": "e0db02a122c04d40bcfb3caad9354297fcca18915ca246b2f964bd73e92f7ea2"
+  },
+  "release_delta": "Guide/privacy documentation only; all tested Agent Python payloads match the immutable tested candidate byte-for-byte.",
+  "template": {
+    "file": "verified-chatflow.template.json",
+    "modified": true,
+    "import_tested": false,
+    "official_export_http_status": 400,
+    "authenticated_draft_http_status": 200
+  },
+  "status": "Draft: production rollout and representative real-model quality are not accepted.",
+  "sandbox_proof": {
+    "candidate": {
+      "agent_package_sha256": "82d11f9b51e57680cf99d07722fc477df46bce35b004d956a61e0ed55a7e07a6",
+      "daemon_version": "0.6.10-local",
+      "dify_version": "1.18.0",
+      "sdk_version": "0.10.2",
+      "strategy_core_sha256": "e0db02a122c04d40bcfb3caad9354297fcca18915ca246b2f964bd73e92f7ea2",
+      "wrapper_sha256": "61878abd8171747a23b62f19615325694db584550dd5bbd6809576ab04db1b44"
+    },
+    "delivery": {
+      "official_export_include_secret": false,
+      "official_yaml_export_status": 400,
+      "template_is_modified_not_executed_dsl": true,
+      "template_sha256": "3e5bab3a183acfe9447d9e2f4b04ec9bfa54155d7f8da2ec10a5d93b01034e1d"
+    },
+    "direct_real_service_checks": {
+      "accepted_budget_calls": 8,
+      "cleanup_then_read": 404,
+      "cleanup_then_reregister_same_run": 404,
+      "cross_application": 404,
+      "cross_execution": 404,
+      "ninth_call": 429
+    },
+    "limitations": [
+      "Deterministic fake provider proves orchestration only; representative-document model/OCR quality is unproven.",
+      "Standalone tool remains fail-closed for unsupported trusted run context.",
+      "Single IPv4 deny is not a full DNS/native outbound trace.",
+      "Service cleanup does not delete Dify attachments, conversations, or execution history.",
+      "Official YAML export returned400; supplied template derives from successful official draft graph read and is not an import-tested DSL."
+    ],
+    "logs": {
+      "known_private_values_checked": 30,
+      "raw_synthetic_measurement_present": false,
+      "scope": "owned container and SDK process logs; persisted Dify conversations remain separate",
+      "secret_matches": 0
+    },
+    "model_boundary": {
+      "additional_properties": false,
+      "credentials_outside_model_parameters": true,
+      "exact_argument_keys": [
+        "image_id",
+        "x_min",
+        "y_min",
+        "x_max",
+        "y_max",
+        "scale"
+      ],
+      "only_tool": "read_region",
+      "remote_or_paid_model_api_used": false,
+      "standard_dify_sdk_model_invocation": true,
+      "trusted_app_from_sdk_session": true,
+      "trusted_run_from_system_binding": true
+    },
+    "negative_actual_agent_runs": {
+      "additional_authorization_arguments": "422 INVALID_TOOL_ARGUMENTS before OCR dispatch",
+      "all_four_failure_runs_cleaned": true,
+      "foreign_image_id": "422 INVALID_TOOL_ARGUMENTS before OCR dispatch",
+      "happy_and_failure_image_reads_after_cleanup": "404 IMAGE_NOT_AVAILABLE",
+      "identical_repeat": "422 INVALID_TOOL_ARGUMENTS after one OCR call",
+      "nine_tool_calls_in_single_message": "422 INVALID_TOOL_ARGUMENTS before OCR dispatch"
+    },
+    "normal_flow": {
+      "model_invocations": 2,
+      "nodes": [
+        "start",
+        "agent",
+        "answer"
+      ],
+      "official_app_creation": 201,
+      "official_fixture_upload": 201,
+      "official_graph_sync": 200,
+      "official_provider_registration": true,
+      "real_ocr_text_equals_second_model_text_equals_final_answer_sha256": "90b2a3bb0ca1bfa80154e52830fc5dcd8681d792504f18dc5da207dc39bae0ef",
+      "region_calls": 1,
+      "source_evidence": [
+        "overview",
+        "region"
+      ],
+      "source_fields": [
+        "engine",
+        "geometry",
+        "image_id",
+        "kind",
+        "page_number",
+        "request_id",
+        "status"
+      ],
+      "synthetic_japanese_present": true,
+      "synthetic_number_present": true,
+      "sys_run_equals_service_execution": true,
+      "workflow_succeeded": true
+    },
+    "schema_version": 1,
+    "scope": "official Dify Chatflow Agent plus local deterministic SDK model provider and real internal Tesseract; synthetic input only",
+    "transport": {
+      "approved_ips_pinned": true,
+      "blocked_external_probe_payload_bytes": 0,
+      "https_hostname_and_certificate_verified": true,
+      "ocr_actual_docker_internal_network": true,
+      "owned_private_ca": true,
+      "published_host_ports": 0,
+      "single_external_ipv4_connect_denied_errno": 101
+    }
+  },
+  "sandbox_resources_stopped": true,
+  "proof_projection_note": "The source report field connection_payload_bytes is renamed blocked_external_probe_payload_bytes; zero refers only to blocked external probes, not all traffic."
+}
