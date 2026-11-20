@@ -70,15 +70,22 @@ def view(
                     or source.width * source.height > limits.source_pixels
                 ):
                     raise ImageFailure("INPUT_LIMIT_EXCEEDED")
+                source_16bit_gray = source.format == "PNG" and data[24] == 16
+                if source_16bit_gray and data[25] != 0:
+                    raise ImageFailure("UNSUPPORTED_BIT_DEPTH")
                 source.verify()
             with Image.open(io.BytesIO(data)) as source:
                 oriented = ImageOps.exif_transpose(source)
-                normalized = oriented.convert(
-                    "RGBA"
-                    if "A" in oriented.getbands()
-                    or "transparency" in oriented.info
-                    else "RGB"
-                )
+                if source_16bit_gray:
+                    # PNG color-type0 keeps its native 16-bit grayscale samples.
+                    normalized = oriented
+                else:
+                    normalized = oriented.convert(
+                        "RGBA"
+                        if "A" in oriented.getbands()
+                        or "transparency" in oriented.info
+                        else "RGB"
+                    )
                 width, height = normalized.size
                 pixels = [
                     int(

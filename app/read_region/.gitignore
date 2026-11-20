@@ -6,3 +6,5 @@ __pycache__/
 .runtime/
 
 !read_region-0.4.1.difypkg
+
+!read_region-0.4.2.difypkg

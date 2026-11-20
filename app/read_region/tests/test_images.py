@@ -62,3 +62,72 @@ def test_output_cap_and_malformed_input():
     source, data = original()
     with pytest.raises(ImageFailure, match="OUTPUT_LIMIT_EXCEEDED"):
         view(data, [0, 0, 1, 1], replace(Limits(), output_bytes=32))
+
+
+def grayscale16_png():
+    import struct
+
+    source = Image.frombytes(
+        "I;16",
+        (4, 2),
+        struct.pack("<8H", 1000, 2000, 4096, 65535, 256, 1024, 32768, 60000),
+    )
+    data = io.BytesIO()
+    source.save(data, format="PNG")
+    return source, data.getvalue()
+
+
+def test_16bit_grayscale_full_keeps_distinct_native_samples():
+    source, data = grayscale16_png()
+    output, meta = view(data, [0, 0, 1, 1])
+    with Image.open(io.BytesIO(output)) as result:
+        assert list(result.get_flattened_data()) == list(
+            source.get_flattened_data()
+        )
+        assert (
+            result.getpixel((0, 0)) == 1000 and result.getpixel((1, 0)) == 2000
+        )
+    assert output[24] == 16 and output[25] == 0
+    assert meta["resized"] is False
+
+
+def test_16bit_grayscale_crop_keeps_exact_native_roi():
+    source, data = grayscale16_png()
+    output, meta = view(data, [0.25, 0, 0.75, 1])
+    with Image.open(io.BytesIO(output)) as result:
+        assert result.size == (2, 2)
+        assert list(result.get_flattened_data()) == list(
+            source.crop((1, 0, 3, 2)).get_flattened_data()
+        )
+    assert output[24] == 16 and meta["crop_pixels"] == [1, 0, 3, 2]
+
+
+@pytest.mark.parametrize("color_type,channels", [(2, 3), (4, 2), (6, 4)])
+def test_unsupported_16bit_color_rejected_before_loss(color_type, channels):
+    import struct
+    import zlib
+
+    def chunk(kind, body):
+        return (
+            struct.pack(">I", len(body))
+            + kind
+            + body
+            + struct.pack(">I", zlib.crc32(kind + body) & 0xFFFFFFFF)
+        )
+
+    data = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(
+            b"IHDR", struct.pack(">IIBBBBB", 1, 1, 16, color_type, 0, 0, 0)
+        )
+        + chunk(
+            b"IDAT",
+            zlib.compress(
+                b"\x00"
+                + struct.pack(">" + "H" * channels, *([1000] * channels))
+            ),
+        )
+        + chunk(b"IEND", b"")
+    )
+    with pytest.raises(ImageFailure, match="UNSUPPORTED_BIT_DEPTH"):
+        view(data, [0, 0, 1, 1])
