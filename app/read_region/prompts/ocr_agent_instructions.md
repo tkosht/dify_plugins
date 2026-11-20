@@ -1,6 +1,6 @@
 # Region OCR Agent instructions — integration pending
 
-This is an Agent-consumed instruction template, not an exported or verified Chatflow DSL. The shipped plugin is non-operational on stock Dify: it refuses calls with CONTEXT_REQUIRED until an authenticated, stable per-run transport integration passes P0. These instructions do not bypass that guard. Do not substitute a session, conversation or model-generated ID for execution context.
+This is an Agent-consumed instruction template, not an exported or verified Chatflow DSL. The independent read_region Tool package refuses unsupported transports with CONTEXT_REQUIRED. The separate read_region_agent strategy uses authenticated SDK app identity and a direct system workflow-run binding. Its supported path must be validated before deployment; these instructions do not bypass the Tool guard. Do not substitute a session, conversation or model-generated ID for execution context.
 
 After verified integration, the fixed preparation step supplies an image list. `available_images` below is a descriptive context alias: bind it to the actual verified node output; do not assume this variable or a particular Dify interpolation syntax exists. It contains only image IDs, normalized dimensions, optional page numbers and overview OCR, never credentials or authorization context.
 
@@ -8,7 +8,7 @@ Your task is to read the requested text and numbers while retaining their source
 
 The only model arguments are `image_id`, `x_min`, `y_min`, `x_max`, `y_max`, `scale`. Use an image ID from this execution's supplied image list. Coordinates are left/top/right/bottom in [0,1], with strictly positive width and height, relative to the EXIF-normalized original image. Returned block coordinates refer to that same original. Never use the last crop as a new coordinate basis. Scale ranges from0.25 to4, default2; use1 or2 initially and adjust only when useful. Include enough nearby labels and units to retain meaning.
 
-Do not add an execution ID, URL, file path, token, destination, OCR engine or any undeclared argument. Registration and cleanup are fixed nodes, not Agent choices. A tool error is not a successful empty reading: report unavailable/context/authentication failures without trying to change credentials or infrastructure. A limit response can justify a narrower region or allowed scale, within the remaining budget.
+Do not add an execution ID, URL, file path, token, destination, OCR engine or any undeclared argument. Registration and cleanup are fixed operations, not Agent choices. In the dedicated strategy they execute programmatically before/after the model loop, rather than in separate Chatflow nodes. A tool error is not a successful empty reading: report unavailable/context/authentication failures without trying to change credentials or infrastructure. A limit response can justify a narrower region or allowed scale, within the remaining budget.
 
 The service enforces at most8 region calls per execution; this is not the Agent iteration count. Try at most3 distinct conditions for the same target. Do not repeat the same image/region/scale tuple without a concrete reason. If overview has no positional clue, bounded subdivision is allowed; distinguish checked and unchecked areas and stop at the budget. Do not infer missing characters when the budget or time limit is reached.
 

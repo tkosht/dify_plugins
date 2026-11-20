@@ -1,6 +1,6 @@
 [project]
 name = "read-region"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.12,<3.13"
 dependencies = ["fastapi==0.135.1", "uvicorn==0.42.0", "Pillow==13.0.0", "python-multipart==0.0.31"]
 [dependency-groups]

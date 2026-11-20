@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Private Region OCR Agent runtime configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["applications"],
+  "properties": {
+    "applications": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"type": "string", "minLength": 1, "maxLength": 128},
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["adapter"],
+        "properties": {
+          "adapter": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["app_id", "service_origin", "service_ips", "service_token", "file_origin", "file_ips", "file_prefix"],
+            "properties": {
+              "app_id": {"type": "string", "minLength": 1, "maxLength": 128},
+              "service_origin": {"type": "string", "pattern": "^https://[^/?#]+/?$"},
+              "service_ips": {"type": "string", "minLength": 1},
+              "service_token": {"type": "string", "minLength": 32, "writeOnly": true, "format": "password"},
+              "file_origin": {"type": "string", "pattern": "^https://[^/?#]+/?$"},
+              "file_ips": {"type": "string", "minLength": 1},
+              "file_prefix": {"type": "string", "pattern": "^/files/"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Keep this configuration outside packages/Git and ordinary logs. The application map key and adapter.app_id must equal authenticated SDK session.app_id; code enforces that comparison. IP fields contain only approved literal IP pins. Model credentials/endpoints are not configuration fields; use Dify's normal model selector."
+}

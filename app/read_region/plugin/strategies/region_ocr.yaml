@@ -1,0 +1,34 @@
+identity:
+  author: tkosht
+  name: region_ocr
+  label:
+    en_US: Region OCR
+description:
+  en_US: Fixed preparation and cleanup with six-argument region OCR calls through the configured Dify model. Bind run only to sys.workflow_run_id.
+parameters:
+  - name: workflow_run_id
+    type: string
+    required: true
+    label:
+      en_US: System workflow run ID
+    help:
+      en_US: Bind directly to sys.workflow_run_id. Never use a user input, conversation ID, message ID, or literal alias.
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Query
+  - name: images
+    type: files
+    required: true
+    label:
+      en_US: Authorized input images
+  - name: model
+    type: model-selector
+    scope: tool-call&llm
+    required: true
+    label:
+      en_US: Configured model
+extra:
+  python:
+    source: strategies/region_ocr.py

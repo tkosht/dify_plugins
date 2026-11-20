@@ -1,7 +1,7 @@
 {
   "overall": "未実施",
   "whole_task_complete": false,
-  "source_manifest": "source-errors-final-sha256.txt",
+  "source_manifest": "release-source.sha256",
   "results": {
     "F01": {
       "status": "合格",
@@ -12,19 +12,17 @@
       ]
     },
     "F02": {
-      "status": "未実施",
-      "scope": "local implementation only; not production or Dify acceptance",
+      "status": "合格",
+      "scope": "Controlled synthetic Dify sandbox only; no production/real-model-quality claim",
       "evidence": [
-        "pytest-errors-final.txt",
-        "real-ocr-deps-final.json"
+        "release-validation.json"
       ]
     },
     "F03": {
-      "status": "未実施",
-      "scope": "local implementation only; not production or Dify acceptance",
+      "status": "合格",
+      "scope": "Controlled synthetic Dify sandbox only; no production/real-model-quality claim",
       "evidence": [
-        "pytest-errors-final.txt",
-        "real-ocr-deps-final.json"
+        "release-validation.json"
       ]
     },
     "F04": {
@@ -301,8 +299,11 @@
       ]
     },
     "D01": {
-      "status": "未実施",
-      "scope": "real Dify not accessed; default plugin is non-operational"
+      "status": "合格",
+      "scope": "Controlled synthetic Dify sandbox only; no production/real-model-quality claim",
+      "evidence": [
+        "release-validation.json"
+      ]
     },
     "D02": {
       "status": "未実施",
@@ -317,8 +318,11 @@
       "scope": "real Dify not accessed; default plugin is non-operational"
     },
     "D05": {
-      "status": "未実施",
-      "scope": "real Dify not accessed; default plugin is non-operational"
+      "status": "合格",
+      "scope": "Controlled synthetic Dify sandbox only; no production/real-model-quality claim",
+      "evidence": [
+        "release-validation.json"
+      ]
     },
     "D06": {
       "status": "未実施",
@@ -333,8 +337,11 @@
       "scope": "real Dify not accessed; default plugin is non-operational"
     },
     "D09": {
-      "status": "未実施",
-      "scope": "real Dify not accessed; default plugin is non-operational"
+      "status": "合格",
+      "scope": "Controlled synthetic Dify sandbox only; no production/real-model-quality claim",
+      "evidence": [
+        "release-validation.json"
+      ]
     },
     "D10": {
       "status": "未実施",
@@ -494,5 +501,7 @@
         "pip-audit-plugin.json"
       ]
     }
-  }
+  },
+  "current_sandbox_report": "release-validation.json",
+  "current_scope": "Standard Dify1.18 synthetic orchestration verified; target production and representative quality unaccepted."
 }

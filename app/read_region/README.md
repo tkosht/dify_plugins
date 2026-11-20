@@ -1,64 +1,67 @@
-# Read Region
+# Read Region: OCR service, guarded tools and dedicated Agent strategy
 
-PNG/JPEG を登録し、画像全体の OCR、元画像の座標による領域切り出しと OCR、実行後の後片付けを行う内部サービスです。Tesseract と固定の日本語・英語モデルを使います。
+A reusable internal PNG/JPEG OCR service with two separately installable Dify packages. Only the dedicated Agent strategy has an execution-context integration path. The independent tool package retains its fail-closed guard on unsupported transports.
 
-**Dify との実接続は未完了で、本番利用できません。** Dify 1.18.0 / SDK 0.10.2 ではワークフロー実行ごとの信頼できるコンテキストが未確認のため、標準のプラグインツール 3 つはすべて `CONTEXT_REQUIRED` で停止します。下記の合成画像での OCR 成功は、精度向上や Agent の成功を示すものではありません。検証状況は [results.md](verification/results.md) を参照してください。
+| Package | Purpose | Context boundary |
+|---|---|---|
+| `read_region-0.2.0.difypkg` | Independent `prepare_images`, `read_region`, `cleanup_images` tools | Stock tool invocations return `CONTEXT_REQUIRED`; no conversation/session substitution |
+| `read_region_agent-0.2.0.difypkg` | Dedicated `region_ocr` Agent strategy | SDK application identity plus the workflow's system run binding; only six region arguments reach model tool calls |
 
-## ローカル確認
+Validation used a task-owned Dify1.18.0 installation, the standard SDK model-provider path, a deterministic local fake provider and real Tesseract OCR. This proves the tested orchestration path, not real-model reasoning, representative accuracy or production rollout. No Dify core/SDK patch, external OCR or paid model API is required by that path. See [verification/results.md](verification/results.md) for acceptance scope and current evidence. The [Chatflow template](verification/verified-chatflow.template.json) is a modified projection of an authenticated draft, **not an import-tested official export**: the export call returned400, while draft retrieval returned200.
 
-リポジトリのルートで実行します。
+## Build and local checks
+
+From repository root:
 
 ```sh
 uv sync --project app/read_region --frozen
 uv run --project app/read_region pytest app/read_region/tests -c app/read_region/pyproject.toml
 uv run --project app/read_region ruff check app/read_region
-uv run --project app/read_region black --check app/read_region
+uv run --project app/read_region black --check --config pyproject.toml app/read_region
 ```
 
-ビルド時はネットワークから固定依存関係を取得し、OCR モデルのハッシュを検証します。
+With the official CLI0.6.10 at `app/read_region/.local-bin/dify`, generate fresh, category-exclusive overlays from the single canonical `plugin/` source tree. Destination directories must not already exist:
 
 ```sh
-docker build -t read-region-local:20261113 app/read_region
+uv run --project app/read_region python app/read_region/scripts/build_plugin.py \
+  --kind tool --destination app/read_region/.package-build/tool-release \
+  --package app/read_region/read_region-0.2.0.difypkg
+uv run --project app/read_region python app/read_region/scripts/build_plugin.py \
+  --kind agent --destination app/read_region/.package-build/agent-release \
+  --package app/read_region/read_region_agent-0.2.0.difypkg
+uv run --project app/read_region python app/read_region/scripts/check_package.py \
+  app/read_region/read_region-0.2.0.difypkg
+uv run --project app/read_region python app/read_region/scripts/check_package.py \
+  app/read_region/read_region_agent-0.2.0.difypkg
 ```
 
-次はネットワークなしで合成画像の全体と手動指定領域を比較する確認です。
+The daemon requires a single plugin category. Shared adapter/validation/strategy code is copied by the builder, never maintained as a second implementation. The old0.1 package and dated evidence are historical candidates.
+
+## Service and private runtime setup
+
+Build the OCR service with `docker build -t read-region-ocr app/read_region`. Models are fetched only at build time and checked against `models.lock.json`; missing/mismatched runtime models fail closed. Run one service worker, with a private credential-file mount, persistent state mount, private temporary storage, appropriate resource limits and an approved internal TLS frontend. The service's Dockerfile exposes container port8000; do not publish it publicly. Apply egress restrictions to this service without changing shared Dify networking.
+
+Service credentials are a private JSON mapping from application scope to distinct random tokens of at least32 characters, supplied through `READ_REGION_CREDENTIALS_FILE`. Keep state across restarts: durable revocation prevents old executions resetting their TTL/budget. `Limits` in `service/core.py` owns the service defaults.
+
+The Agent process requires `READ_REGION_STRATEGY_CONFIG_FILE` pointing to a private JSON file matching [config/strategy-config.schema.json](config/strategy-config.schema.json). Each application entry contains only adapter configuration: matching app ID, fixed HTTPS OCR/file origins, approved literal IP pins, file path prefix and service token. Keep it outside Git/packages, readable only by the runtime. No model endpoint or model key belongs in that file.
+
+Trust the organization's approved CA in this process, for example through `SSL_CERT_FILE`. The adapter preserves certificate/hostname verification, pins approved IPs, restricts file paths and follows no redirects. Dify must supply file URLs matching that approved HTTPS file origin; the validation environment used its own `INTERNAL_FILES_URL` configuration. Do not infer or change another deployment's settings.
+
+The tested remote-runtime launch uses the generated Agent overlay and the standard SDK. Supply remote SDK settings through a separate private environment file, never shell `source`, prompts or node inputs:
 
 ```sh
-docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
-  --tmpfs /tmp:rw,size=512m \
-  -v "$PWD/app/read_region/scripts/real_ocr.py:/app/real_ocr.py:ro" \
-  -v "$PWD/app/read_region/fixtures:/fixtures:ro" \
-  --entrypoint python read-region-local:20261113 \
-  /app/real_ocr.py /fixtures/synthetic-japanese.png /fixtures/ground-truth.json
+cd app/read_region/.package-build/agent-release
+uv run --env-file /approved/private/agent-runtime.env --project ../../plugin python -m main
 ```
 
-## サービスの設定
+That private environment selects remote installation and supplies the approved daemon address/debug key, `READ_REGION_STRATEGY_CONFIG_FILE` and CA path. Remote debug registration is temporary and ends with the process. A packaged install into a daemon-managed runtime still needs an operator-supported private-config mount/environment mechanism; that production deployment is not established by the sandbox test.
 
-Git の外に、アプリケーションごとの scope を 32 文字以上のランダムなサービス token に対応付ける JSON ファイルを用意します。権限は `0600` とし、UID 10001 だけが読めるようにします。認証情報を LLM の引数やログに入れないでください。状態ディレクトリは UID 10001 所有の非公開領域とし、再起動後も保持します。暗号化とバックアップ除外は組織の方針に従います。ワーカーは必ず 1 つだけ起動します。
+## Dify Agent configuration and rollback
 
-以下は loopback に限定する起動例です。プラグイン接続前に、組織が承認した内部 TLS エンドポイントの背後に配置してください。
+Choose provider `tkosht/read_region_agent/region_ocr`, strategy `region_ocr`. Configure `workflow_run_id` directly from `sys.workflow_run_id`, `query` from the intended query, authorized image files, and the normal Dify model selector for a tool-calling model. App identity comes from the SDK session, not a parameter. User/model values must never replace the system run binding. Model credentials remain in Dify's configured provider path.
 
-```sh
-docker run --rm --name read-region-local \
-  --read-only --cap-drop ALL --security-opt no-new-privileges \
-  --tmpfs /tmp:rw,size=512m \
-  --mount type=bind,src=/approved/private/read-region-state,dst=/state \
-  --mount type=bind,src=/approved/private/read-region-credentials.json,dst=/run/credentials.json,readonly \
-  -e READ_REGION_CREDENTIALS_FILE=/run/credentials.json \
-  -p 127.0.0.1:18080:8000 read-region-local:20261113
-```
+Preparation and cleanup run as fixed strategy code before and after the model loop, rather than as separate Chatflow nodes. The model can choose only `read_region(image_id,x_min,y_min,x_max,y_max,scale)`. Strict validation occurs before dispatch; finally-cleanup covers failures. This placement differs from the original separate-node proposal. The JSON result retains bounded non-content overview/region source references alongside the answer.
 
-HTTP サービスの外向き通信には、上記のオフライン確認とは別に、承認済みのサービス単位の通信ポリシーが必要です。共通の Dify ネットワークは変更しません。利用可能な環境ではコンテナのメモリ・PID 制限を設定してください。この開発ホストでは cgroup 制限を使えませんでした。固定モデルが欠落または不一致なら 503 を返し、実行時にダウンロードしません。外部 OCR、外部 API、外部ストレージは使いません。認証と運用上の詳細は [security.md](verification/security.md) と [environment.md](verification/environment.md) を参照してください。
+Use a duplicated validation app first. Roll back by restoring its prior workflow/strategy and stopping only the owned remote Agent/OCR processes. Remove a package only after checking its consumers. Retire private configuration/state under the operator's retention policy after continuations end. Service deletion does not delete Dify attachments, conversations, execution logs, provider or observability copies.
 
-## Dify と復旧
-
-公式 CLI 0.6.10 でパッケージを作成できます。作成・検証は対象 Dify へのインストールを意味しません。
-
-```sh
-app/read_region/.local-bin/dify plugin package app/read_region/plugin \
-  -o app/read_region/read_region-0.1.0.difypkg
-```
-
-既存 Chatflow とプラグインのバージョンを保持し、Dify、Agent の方式、モデル、既存 PDF 入出力、共有ネットワークやログ設定を変更しないでください。`prepare_images` と `cleanup_images` は固定の前後ノードに置き、Agent に渡すツールは `read_region` だけです。実際の Chatflow に接続する前に、信頼できるコンテキスト連携について P0（同一実行内の安定性、異なる実行・アプリの拒否、不明引数の拒否、ファイル取得、JSON の反復、後片付け）を満たす必要があります。認証情報はプロバイダー側で設定します。
-
-戻すときは、実験用に複製した Chatflow から 3 ツールのノード・参照を外して元の経路に戻します。他のアプリが使っていないことを確認してからプラグインをアンインストールしてください。実行終了後、対象サービスだけを `docker stop read-region-local` で停止します。状態と認証情報は継続利用の必要がなくなった後、保持方針に従って処理し、他のシステムのデータは保持します。
+The sandbox's native execution IDs can appear in Dify execution metadata. Service/model credentials and private assertions must not enter model prompts or normal node values. OCR text is sent to the selected Dify model and may be retained by Dify/provider logs. Production retention, target compatibility and representative B0/B1/T quality remain separate acceptance work; no accuracy improvement or confidential-data safety guarantee is claimed.
