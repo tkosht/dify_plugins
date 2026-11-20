@@ -131,3 +131,20 @@ def test_unsupported_16bit_color_rejected_before_loss(color_type, channels):
     )
     with pytest.raises(ImageFailure, match="UNSUPPORTED_BIT_DEPTH"):
         view(data, [0, 0, 1, 1])
+
+
+def test_16bit_grayscale_transparency_survives_full_and_crop():
+    source, _ = grayscale16_png()
+    data = io.BytesIO()
+    source.save(data, format="PNG", transparency=1000)
+    for box, pixels in [
+        ([0, 0, 1, 1], (0, 0, 4, 2)),
+        ([0, 0, 0.75, 1], (0, 0, 3, 2)),
+    ]:
+        output, meta = view(data.getvalue(), box)
+        with Image.open(io.BytesIO(output)) as result:
+            assert list(result.get_flattened_data()) == list(
+                source.crop(pixels).get_flattened_data()
+            )
+            assert result.info.get("transparency") == 1000
+        assert output[24] == 16 and meta["resized"] is False

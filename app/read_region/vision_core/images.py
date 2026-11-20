@@ -99,9 +99,18 @@ def view(
                     for i, value in enumerate(box)
                 ]
                 region = normalized.crop(tuple(pixels))
+                save_options: dict[str, Any] = {}
+                if source_16bit_gray and "transparency" in oriented.info:
+                    transparency = oriented.info["transparency"]
+                    if (
+                        type(transparency) is not int
+                        or not 0 <= transparency <= 65535
+                    ):
+                        raise ImageFailure("UNSUPPORTED_TRANSPARENCY")
+                    save_options["transparency"] = transparency
                 region.info.clear()
                 out = BoundedBuffer(limits.output_bytes)
-                region.save(out, format="PNG")
+                region.save(out, format="PNG", **save_options)
                 metadata = {
                     "coordinate_space": "normalized_original_after_exif",
                     "source_size": {"width": width, "height": height},

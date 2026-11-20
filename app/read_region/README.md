@@ -10,7 +10,7 @@ The Tool takes `source_image` from the current job's authorized native file refe
 
 The fetcher permits only that authenticated native origin, `/files/<UUID>/file-preview` and the exact timestamp/nonce/sign signature fields. It bypasses proxies, follows no redirect and relies on the Dify server to verify the signed bearer capability. A marker dictionary is not authorization. Remote URLs, arbitrary paths and derived tool-file inputs are rejected; each new crop must use the original upload.
 
-Limits:15MiB input,20million decoded pixels,12,000px maximum source side,10MiB output PNG, bounded20-second download. Oversized output fails and asks for a narrower crop; there is no silent downsampling. 16-bit grayscale PNG samples remain16-bit through full/crop output; other16-bit PNG color modes are explicitly rejected before a lossy conversion. Image metadata is stripped from output. Existing Dify storage/model-provider retention still applies; no new cross-invocation isolation or whole-system zero-retention claim is made.
+Limits:15MiB input,20million decoded pixels,12,000px maximum source side,10MiB output PNG, bounded20-second download. Oversized output fails and asks for a narrower crop; there is no silent downsampling. 16-bit grayscale PNG samples and valid integer tRNS transparency remain intact through full/crop output; other16-bit PNG color modes are explicitly rejected before a lossy conversion. Image metadata is stripped from output. Existing Dify storage/model-provider retention still applies; no new cross-invocation isolation or whole-system zero-retention claim is made.
 
 Local checks/build from repository root:
 
