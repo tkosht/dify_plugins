@@ -1,0 +1,10 @@
+{
+  "manifest.yaml": "aae13441708e6b248f60cfa7f0eb6c6227143bf64f1781ceb808214b4215d338",
+  "main.py": "b007040a9fef813106bbd2147f44dc794e1069bf48c024fed44e289f7b1db218",
+  "vision_core/__init__.py": "6ba8ac4ce4f8ba764c6fc3958ff5d28d09a314b661edd323b74d635141528d5c",
+  "vision_core/fetch.py": "5853b09f51b02042a8e37ffffc5dbd81a46e6786d47554eca8d403eab38543c9",
+  "vision_core/images.py": "521121f93a8b5c055acb9b4156f143b2170eeb03ccb28a01103aa9dbf6d2c5ec",
+  "vision_core/origin.py": "a21de801b1b9353b3734a1099faad547486978f7b9f07858e488f383fd2caa9f",
+  "tools/read_region.py": "d936491abef10ee7f03bf84ee194f3192099a37598da6a842a163142e3b21e5e",
+  "read_region-0.4.1.difypkg": "011bd9329a5a27e6182f0c22da25537cf6c66fe5aa5162b0a48e964995f29095"
+}
